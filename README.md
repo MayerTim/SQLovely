@@ -8,8 +8,9 @@ It is focused on Watcom SQL by default and also includes a small MSSQL-oriented 
 
 - SQL syntax highlighting for regular `.sql` files
 - Conservative SQL formatting
-- Optional metadata-header extras for procedures, functions and triggers
+- Optional metadata-header extras for every detected procedure, function and trigger in a script
 - Diagnostics and quick fixes for supported SQLovely rules
+- Legacy metadata-header normalization with version/history synchronization
 - Watcom SQL as the default dialect
 - Basic MSSQL support for common T-SQL-style files
 
@@ -76,15 +77,18 @@ Directory formatting intentionally applies formatting only. SQLovely Extras are 
 
 SQLovely Extras are optional file-updating features beyond pure formatting.
 
-The current extra inserts or updates a metadata header for procedures, functions and triggers. Generated metadata headers also receive dedicated syntax scopes so themes can distinguish the markers, field names, versions, dates, TODO placeholders and history entries:
+The current extra inserts or updates metadata headers for every detected procedure, function and trigger in a script. Generated metadata headers also receive dedicated syntax scopes so themes can distinguish the markers, field names, versions, dates, TODO placeholders, update authors and history entries:
 
 ```sql
 CREATE PROCEDURE dbo.my_proc()
 -- METADATA
 --
--- Description : <TODO>
+-- Description : First line of the description
+--               Manually kept second line, with automatic wrapping if the
+--               configured line-length limit would be exceeded.
 -- Version     : 1.0
 -- Author      : my-user
+-- Updated By  : my-user
 -- Created     : 2026-06-09
 -- Updated     : 2026-06-09
 --
@@ -97,9 +101,11 @@ BEGIN
 END;
 ```
 
-The header is inserted directly before the first `BEGIN` line of the detected object. Repeated runs update the existing SQLovely block instead of duplicating it.
+Headers are inserted directly before each detected object's first `BEGIN` line. Repeated runs update existing SQLovely blocks instead of duplicating them.
 
-When SQLovely finds a loose legacy metadata-style comment block for the detected object, it normalizes the block to the generated SQLovely format instead of adding a second header. Legacy detection is conservative and requires a recognizable version field so regular explanatory comments are left in place.
+When SQLovely finds a loose legacy metadata-style comment block for a detected object, it normalizes the block to the generated SQLovely format instead of adding a second header. Legacy detection supports common `--`, `//`, `/` and simple block-comment styles, but stays conservative and requires a recognizable version field so regular explanatory comments are left in place.
+
+Metadata updates also normalize date values to `YYYY-MM-DD`, preserve multiline descriptions, wrap long description lines to `sqlovely.diagnostics.maxLineLength.limit`, and keep manual description line breaks. `Version` is synchronized with the latest history entry: newer valid history entries update the field, version bumps add missing history entries, and invalid jumps are coerced to a one-step bump.
 
 Extras are applied during normal SQLovely formatting by default:
 
@@ -146,7 +152,7 @@ The syntax grammar is intentionally broad. Dialect-specific behavior is handled 
 
 SQLovely can show diagnostics for supported rules, such as:
 
-- missing metadata headers for procedures, functions and triggers
+- missing metadata headers for procedures, functions and triggers, including multi-object scripts
 - SQL lines longer than the configured line-length limit
 
 Diagnostics do not modify files by themselves. Quick fixes can apply supported changes when selected.
@@ -171,7 +177,7 @@ Diagnostics do not modify files by themselves. Quick fixes can apply supported c
 - no full Watcom SQL parser
 - no full T-SQL parser
 - no automatic dialect migration
-- one primary SQL object per file is assumed for metadata-header insertion
+- loose legacy metadata detection is best effort and intentionally conservative
 
 ## License
 
