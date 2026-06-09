@@ -1,6 +1,7 @@
 import type { SqlDialect } from '../dialects';
 import { collectSqlWordsOutsideLiteralsAndComments, applyKeywordCaseToLine } from './keywordCase';
 import { DEFAULT_FORMAT_SQL_OPTIONS, type FormatSqlOptions } from './options';
+import { expandWatcomInlineIfLine } from './inlineIfFormatting';
 import { createInitialSqlLineScanState, cloneSqlLineScanState } from './sqlLineScanner';
 
 export interface FormatSqlResult {
@@ -29,56 +30,63 @@ export function formatSql(
   let blankLineCount = 0;
   let keywordScanState = createInitialSqlLineScanState();
   let wordScanState = createInitialSqlLineScanState();
+  let inlineIfScanState = createInitialSqlLineScanState();
 
-  for (const originalLine of split.lines) {
-    const withoutTrailingWhitespace = originalLine.replace(/[ \t]+$/u, '');
-    const trimmedLine = withoutTrailingWhitespace.trim();
+  for (const sourceLine of split.lines) {
+    const expandedLineResult = expandWatcomInlineIfLine(sourceLine, dialect, inlineIfScanState);
+    inlineIfScanState = expandedLineResult.nextState;
 
-    const keywordResult = applyKeywordCaseToLine(
-      withoutTrailingWhitespace,
-      dialect,
-      resolvedOptions.keywordCase,
-      keywordScanState
-    );
-    keywordScanState = keywordResult.nextState;
+    for (const originalLine of expandedLineResult.lines) {
+      const withoutTrailingWhitespace = originalLine.replace(/[ \t]+$/u, '');
+      const trimmedLine = withoutTrailingWhitespace.trim();
 
-    const wordResult = collectSqlWordsOutsideLiteralsAndComments(trimmedLine, wordScanState);
-    wordScanState = wordResult.nextState;
+      const keywordResult = applyKeywordCaseToLine(
+        withoutTrailingWhitespace,
+        dialect,
+        resolvedOptions.keywordCase,
+        keywordScanState
+      );
+      keywordScanState = keywordResult.nextState;
 
-    if (trimmedLine.length === 0) {
-      if (blankLineCount < resolvedOptions.maxConsecutiveBlankLines) {
-        formattedLines.push('');
+      const wordResult = collectSqlWordsOutsideLiteralsAndComments(trimmedLine, wordScanState);
+      wordScanState = wordResult.nextState;
+
+      if (trimmedLine.length === 0) {
+        if (blankLineCount < resolvedOptions.maxConsecutiveBlankLines) {
+          formattedLines.push('');
+        }
+
+        blankLineCount += 1;
+        continue;
       }
 
-      blankLineCount += 1;
-      continue;
-    }
+      blankLineCount = 0;
 
-    blankLineCount = 0;
+      const lineWords = [...wordResult.words];
+      const firstWord = lineWords[0];
+      const isBatchSeparator = isBatchSeparatorLine(lineWords, dialect);
+      const shouldTemporarilyReincrease = firstWord === 'else' || firstWord === 'elseif';
+      const continuationIndentLevel = isLogicalContinuationLine(trimmedLine, lineWords) ? 1 : 0;
 
-    const lineWords = [...wordResult.words];
-    const firstWord = lineWords[0];
-    const isBatchSeparator = isBatchSeparatorLine(lineWords, dialect);
-    const shouldTemporarilyReincrease = firstWord === 'else' || firstWord === 'elseif';
+      if (isBatchSeparator) {
+        indentLevel = 0;
+      } else if (firstWord && DECREASE_BEFORE_LINE.has(firstWord)) {
+        indentLevel = Math.max(0, indentLevel - 1);
+      }
 
-    if (isBatchSeparator) {
-      indentLevel = 0;
-    } else if (firstWord && DECREASE_BEFORE_LINE.has(firstWord)) {
-      indentLevel = Math.max(0, indentLevel - 1);
-    }
+      const formattedContent = keywordResult.line.trim();
+      formattedLines.push(`${indentString.repeat(indentLevel + continuationIndentLevel)}${formattedContent}`);
 
-    const formattedContent = keywordResult.line.trim();
-    formattedLines.push(`${indentString.repeat(indentLevel)}${formattedContent}`);
+      if (isBatchSeparator) {
+        indentLevel = 0;
+        continue;
+      }
 
-    if (isBatchSeparator) {
-      indentLevel = 0;
-      continue;
-    }
+      indentLevel = Math.max(0, indentLevel + getIndentIncreaseAfterLine(lineWords));
 
-    indentLevel = Math.max(0, indentLevel + getIndentIncreaseAfterLine(lineWords));
-
-    if (shouldTemporarilyReincrease) {
-      indentLevel += 1;
+      if (shouldTemporarilyReincrease) {
+        indentLevel += 1;
+      }
     }
   }
 
@@ -142,7 +150,11 @@ function getIndentIncreaseAfterLine(words: readonly string[]): number {
     increase += countWord(words, 'begin');
   }
 
-  if (firstWord === 'if' && containsWord(words, 'then') && !containsWord(words, 'endif')) {
+  if (firstWord === 'if' && containsWord(words, 'then') && !containsEndIfPhrase(words)) {
+    increase += 1;
+  }
+
+  if (firstWord === 'then') {
     increase += 1;
   }
 
@@ -155,6 +167,19 @@ function getIndentIncreaseAfterLine(words: readonly string[]): number {
   }
 
   return increase;
+}
+
+function isLogicalContinuationLine(line: string, words: readonly string[]): boolean {
+  const firstWord = words[0];
+  return (firstWord === 'and' || firstWord === 'or') && line.trim().length > firstWord.length;
+}
+
+function containsEndIfPhrase(words: readonly string[]): boolean {
+  if (containsWord(words, 'endif')) {
+    return true;
+  }
+
+  return words.some((word, index) => word === 'end' && words[index + 1] === 'if');
 }
 
 function containsWord(words: readonly string[], expected: string): boolean {

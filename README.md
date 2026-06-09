@@ -55,11 +55,12 @@ SQLovely formats conservatively. It keeps SQL structure intact and focuses on re
 
 - keyword and function casing
 - basic block indentation
+- compact Watcom `IF ... THEN ... END IF` normalization
 - trailing whitespace removal
 - limiting consecutive blank lines
 - final newline handling
 
-The formatter does not rewrite queries, split statements, align joins or migrate SQL between dialects.
+Apart from normalizing compact Watcom `IF ... THEN ... END IF` control-flow statements, the formatter does not rewrite queries, align joins or migrate SQL between dialects.
 
 ### Format one file
 

@@ -51,6 +51,7 @@ Useful smoke tests:
 - run **SQLovely: Show Active Dialect**
 - run **SQLovely: Format Current SQL File**
 - run **SQLovely: Format SQL Files in Directory**
+- verify compact Watcom inline `IF ... THEN ... END IF` statements expand without leaking indentation
 - run **SQLovely: Insert or Update Metadata Header**
 - verify diagnostics and quick fixes
 - verify metadata headers in a script with multiple procedures, functions or triggers

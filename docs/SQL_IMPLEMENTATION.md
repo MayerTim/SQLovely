@@ -60,7 +60,7 @@ The grammar highlights useful lexical regions in `.sql` files.
 | General DML | yes | conservative keyword casing | not object-relevant |
 | General DDL | yes | conservative keyword casing | routines supported |
 | Watcom routines | yes | basic indentation | procedure/function/trigger supported |
-| Watcom control flow | yes | basic indentation | not object-relevant |
+| Watcom control flow | yes | basic indentation and compact inline IF normalization | not object-relevant |
 | Watcom handlers/exceptions | yes | keyword casing | not object-relevant |
 | Transactions and savepoints | yes | keyword casing | not object-relevant |
 | MSSQL batches with `GO` | yes | root-level keyword handling | not object-relevant |
@@ -76,6 +76,8 @@ Loose legacy metadata-style comments are normalized only when a recognizable ver
 Metadata updates normalize supported date formats to `YYYY-MM-DD`, preserve and wrap multiline descriptions, add the `Updated By` field, and synchronize the `Version` field with the latest history entry. Version bumps are constrained to a single logical step, such as `1.0` to `1.1`, `1.0` to `2.0`, or `1.0.0` to `1.0.1`.
 
 ## Design boundaries
+
+SQLovely normalizes compact Watcom `IF ... THEN ... END IF` statements into block form before indentation is applied so closed inline IF statements do not leak indentation into following statements or objects.
 
 SQLovely currently does not provide:
 

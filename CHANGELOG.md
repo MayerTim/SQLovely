@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed Watcom formatter indentation after compact inline `IF ... THEN ... END IF` statements by expanding them into stable block form.
 - Added dedicated syntax scopes for generated metadata headers, including markers, fields, values, dates, TODO placeholders, update authors and history entries.
 - Added normalization of loose legacy metadata-style comment headers to the current SQLovely metadata format.
 - Added metadata-header processing for every detected procedure, function and trigger in multi-object SQL scripts.
