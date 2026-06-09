@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Documented directory SQL formatting command usage.
+
 ## 0.1.6
 
 - Changed generated metadata headers to the compact pre-`BEGIN` `-- METADATA` layout.

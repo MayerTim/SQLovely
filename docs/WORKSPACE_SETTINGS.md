@@ -88,3 +88,10 @@ SQLovely can report lines that exceed the configured line-length limit. The defa
   "sqlovely.diagnostics.maxLineLength.limit": 120
 }
 ```
+
+
+## Directory formatting
+
+**SQLovely: Format SQL Files in Directory** uses the same `sqlovely.format.*` settings as normal document formatting.
+
+SQLovely Extras are intentionally not applied by the directory formatter. Use **SQLovely: Apply SQLovely Extras** or the dedicated Extras settings when metadata-header updates are desired.

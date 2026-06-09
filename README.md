@@ -62,6 +62,7 @@ Extras can also run as a separate save participant. This is disabled by default 
 - **SQLovely: Show Active Dialect**
 - **SQLovely: Switch Dialect**
 - **SQLovely: Format Current SQL File**
+- **SQLovely: Format SQL Files in Directory**
 - **SQLovely: Insert or Update Metadata Header**
 - **SQLovely: Apply SQLovely Extras**
 
@@ -128,6 +129,16 @@ Formatter settings:
   "sqlovely.format.ensureFinalNewline": true
 }
 ```
+
+### Format all SQL files in a directory
+
+Use **SQLovely: Format SQL Files in Directory** to format multiple `.sql` files at once.
+
+After running the command, select the directory that should be processed. SQLovely searches for `.sql` files recursively, asks for confirmation, and then applies the normal SQL formatter to each file.
+
+This command intentionally formats only. SQLovely Extras are not applied by the directory formatter, even when `sqlovely.extras.applyWithFormatting` is enabled. This makes the command safer for larger batch formatting runs.
+
+The command skips common local/build folders such as `.git`, `node_modules`, `out` and `dist`. Open files with unsaved changes are skipped so their editor state is not overwritten.
 
 ## SQLovely Extras
 

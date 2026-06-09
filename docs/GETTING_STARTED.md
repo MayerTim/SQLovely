@@ -24,3 +24,10 @@ SQLovely Extras are applied with SQLovely formatting by default. Set `sqlovely.e
 ## Metadata headers
 
 SQLovely can insert or update a metadata header for procedures, functions and triggers. The header is placed directly before the first `BEGIN` line.
+
+
+## Formatting multiple SQL files
+
+Run **SQLovely: Format SQL Files in Directory** to format every `.sql` file inside a selected folder.
+
+The command opens a folder picker, searches recursively for `.sql` files and asks for confirmation before writing changes. It uses SQLovely's formatter settings, but does not apply SQLovely Extras during the batch run.
