@@ -6,7 +6,7 @@
   "sqlovely.extras.applyOnSave": false,
   "sqlovely.diagnostics.enabled": true,
   "[sql]": {
-    "editor.defaultFormatter": "tim-mayer.sqlovely"
+    "editor.defaultFormatter": "MayerTim.sqlovely"
   },
   "sqlovely.format.indentSize": 2,
   "sqlovely.format.insertSpaces": true

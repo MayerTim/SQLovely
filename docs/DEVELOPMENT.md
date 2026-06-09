@@ -68,7 +68,7 @@ A practical development workspace setup is:
   "sqlovely.extras.applyWithFormatting": true,
   "sqlovely.extras.applyOnSave": false,
   "[sql]": {
-    "editor.defaultFormatter": "tim-mayer.sqlovely"
+    "editor.defaultFormatter": "MayerTim.sqlovely"
   }
 }
 ```
@@ -81,7 +81,7 @@ For MSSQL-oriented smoke tests:
   "sqlovely.extras.applyWithFormatting": true,
   "sqlovely.extras.applyOnSave": false,
   "[sql]": {
-    "editor.defaultFormatter": "tim-mayer.sqlovely"
+    "editor.defaultFormatter": "MayerTim.sqlovely"
   }
 }
 ```
