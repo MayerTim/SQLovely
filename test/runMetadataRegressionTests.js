@@ -145,7 +145,7 @@ runTest('synchronizes version and history independently for multiple existing he
   assertInObjectSection(result.text, 'dbo.first_existing', '-- Version     : 1.1');
   assertInObjectSection(result.text, 'dbo.first_existing', '--   v1.1: Added validation - 2020-02-03 First Author');
   assertInObjectSection(result.text, 'dbo.second_existing', '-- Version     : 2.0');
-  assertInObjectSection(result.text, 'dbo.second_existing', '--   v2.0: <TODO> - 2026-06-09 Second Author');
+  assertInObjectSection(result.text, 'dbo.second_existing', '--   v2.0: <TODO> - 2026-06-09 Test Author');
 });
 
 runTest('normalizes invalid history version jumps to consecutive one-step bumps', () => {
@@ -205,7 +205,7 @@ runTest('preserves patch-version schemes when adding missing history entries', (
   assert.equal(result.action, 'updated');
   assert.ok(result.text.includes('-- Version     : 1.0.1'));
   assert.ok(result.text.includes('--   v1.0.0: Initial creation - 2020-01-02 Existing Author'));
-  assert.ok(result.text.includes('--   v1.0.1: <TODO> - 2026-06-09 Existing Author'));
+  assert.ok(result.text.includes('--   v1.0.1: <TODO> - 2026-06-09 Test Author'));
 });
 
 runTest('normalizes legacy headers and synchronizes invalid legacy version bumps in one pass', () => {
@@ -230,7 +230,7 @@ runTest('normalizes legacy headers and synchronizes invalid legacy version bumps
   assert.ok(result.text.includes('-- Version     : 1.1'));
   assert.ok(result.text.includes('-- Author      : Legacy Author'));
   assert.ok(result.text.includes('--   v1.0: initial creation'));
-  assert.ok(result.text.includes('--   v1.1: <TODO> - 2026-06-09 Legacy Author'));
+  assert.ok(result.text.includes('--   v1.1: <TODO> - 2026-06-09 Test Author'));
   assert.equal(result.text.includes('-- Version     : 1.5'), false);
 });
 
@@ -286,6 +286,33 @@ runTest('normalizes valid legacy date values while preserving unknown placeholde
   assert.ok(result.text.includes('-- Updated     : 2026-06-09'));
   assert.ok(result.text.includes('--   v1.0: erstellt am 2025-08-20'));
   assert.equal(result.text.includes('20.08.2025'), false);
+});
+
+runTest('migrates legacy updated-by aliases into the new metadata header', () => {
+  const input = [
+    'CREATE PROCEDURE dbo.legacy_updated_by_aliases()',
+    '/ -------------------------',
+    '/ description: Legacy updated-by aliases',
+    '/ version: 1.1',
+    '/ erstellt am: 01.02.2020      erstellt von: Creator User',
+    '/ geupdated am: 03.04.2020      geupdated von: Legacy Updater',
+    '/ history:',
+    '/ v1.0 - initial creation',
+    '/ -------------------------',
+    'BEGIN',
+    'SELECT 1;',
+    'END;'
+  ].join('\n');
+
+  const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
+
+  assert.equal(result.action, 'updated');
+  assert.ok(result.text.includes('-- Author      : Creator User'));
+  assert.ok(result.text.includes('-- Updated By  : Legacy Updater'));
+  assert.ok(result.text.includes('-- Created     : 2020-02-01'));
+  assert.ok(result.text.includes('-- Updated     : 2026-06-09'));
+  assert.ok(result.text.includes('--   v1.1: <TODO> - 2026-06-09 Legacy Updater'));
+  assert.equal(result.text.includes('geupdated von'), false);
 });
 
 runTest('reports missing metadata only for objects without a current or normalizable legacy header', () => {

@@ -29,6 +29,8 @@ runTest('inserts a metadata header for a Watcom procedure', () => {
   assert.ok(result.text.includes('-- Description : <TODO>'));
   assert.ok(result.text.includes('-- Version     : 1.0'));
   assert.ok(result.text.includes('-- Author      : Test Author'));
+  assert.ok(result.text.includes('-- Updated By  : Test Author'));
+  assert.ok(result.text.includes('-- Author      : Test Author\n-- Updated By  : Test Author'));
   assert.ok(result.text.includes('-- Created     : 2026-06-09'));
   assert.ok(result.text.includes('-- Updated     : 2026-06-09'));
   assert.ok(result.text.includes('-- History     :'));
@@ -74,6 +76,7 @@ runTest('updates an existing header while preserving created date and descriptio
   assert.ok(result.text.includes('-- Description : Existing description'));
   assert.ok(result.text.includes('-- Version     : 2.0'));
   assert.ok(result.text.includes('-- Author      : Existing Author'));
+  assert.ok(result.text.includes('-- Updated By  : Test Author'));
   assert.ok(result.text.includes('-- Created     : 2020-01-02'));
   assert.ok(result.text.includes('-- Updated     : 2026-06-09'));
   assert.ok(result.text.includes('--   v2.0: Existing history - 2020-01-02 Existing Author'));
@@ -108,6 +111,34 @@ runTest('updates metadata version when a newer valid history entry exists', () =
   assert.ok(result.text.includes('--   v1.1: Added validation - 2020-02-03 Existing Author'));
 });
 
+runTest('preserves an existing updated-by field when refreshing metadata', () => {
+  const input = [
+    'CREATE PROCEDURE dbo.updated_by_preserved()',
+    'BEGIN',
+    '  -- METADATA',
+    '  --',
+    '  -- Description : Existing description',
+    '  -- Version     : 1.0',
+    '  -- Author      : Original Author',
+    '  -- Updated By  : Existing Updater',
+    '  -- Created     : 2020-01-02',
+    '  -- Updated     : 2020-01-03',
+    '  --',
+    '  -- History     :',
+    '  --   v1.0: Initial creation - 2020-01-02 Original Author',
+    '  --',
+    '  -- METADATA END',
+    'END;'
+  ].join('\n');
+
+  const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
+
+  assert.equal(result.action, 'updated');
+  assert.ok(result.text.includes('-- Author      : Original Author'));
+  assert.ok(result.text.includes('-- Updated By  : Existing Updater'));
+  assert.ok(result.text.includes('-- Author      : Original Author\n-- Updated By  : Existing Updater'));
+});
+
 runTest('adds a history entry when the metadata version was bumped', () => {
   const input = [
     'CREATE PROCEDURE dbo.version_bumped()',
@@ -132,7 +163,7 @@ runTest('adds a history entry when the metadata version was bumped', () => {
   assert.equal(result.action, 'updated');
   assert.ok(result.text.includes('-- Version     : 2.0'));
   assert.ok(result.text.includes('--   v1.0: Initial creation - 2020-01-02 Existing Author'));
-  assert.ok(result.text.includes('--   v2.0: <TODO> - 2026-06-09 Existing Author'));
+  assert.ok(result.text.includes('--   v2.0: <TODO> - 2026-06-09 Test Author'));
 });
 
 runTest('corrects invalid metadata version bumps before adding history entries', () => {
@@ -158,7 +189,7 @@ runTest('corrects invalid metadata version bumps before adding history entries',
 
   assert.equal(result.action, 'updated');
   assert.ok(result.text.includes('-- Version     : 1.1'));
-  assert.ok(result.text.includes('--   v1.1: <TODO> - 2026-06-09 Existing Author'));
+  assert.ok(result.text.includes('--   v1.1: <TODO> - 2026-06-09 Test Author'));
   assert.equal(result.text.includes('-- Version     : 1.5'), false);
   assert.equal(result.text.includes('--   v1.5:'), false);
 });
@@ -395,6 +426,7 @@ runTest('normalizes a loose legacy Watcom metadata header before BEGIN', () => {
   assert.ok(result.text.includes('-- Description : <TODO>'));
   assert.ok(result.text.includes('-- Version     : 1.00'));
   assert.ok(result.text.includes('-- Author      : t.mayer'));
+  assert.ok(result.text.includes('-- Updated By  : Test Author'));
   assert.ok(result.text.includes('-- Created     : xx.xx.xxxx'));
   assert.ok(result.text.includes('-- Updated     : 2026-06-09'));
   assert.ok(result.text.includes('--   v1.00: erstellt'));
@@ -551,6 +583,7 @@ runTest('keeps existing metadata headers scoped to their own SQL objects', () =>
   assert.ok(result.text.includes('CREATE PROCEDURE dbo.first_proc()\n-- METADATA'));
   assert.ok(result.text.includes('-- Description : Existing second header'));
   assert.ok(result.text.includes('-- Author      : Existing Author'));
+  assert.ok(result.text.includes('-- Updated By  : Test Author'));
   assert.ok(result.text.includes('-- Created     : 2020-01-02'));
 });
 

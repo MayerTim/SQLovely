@@ -155,6 +155,7 @@ function parseLooseLegacyMetadataHeader(
   const fields = new Map<string, string>();
   const description = findLegacyDescription(commentContents, object);
   const author = findFirstLegacyFieldValue(commentContents, legacyAuthorPatterns());
+  const updatedBy = findFirstLegacyFieldValue(commentContents, legacyUpdatedByPatterns());
   const created = findFirstLegacyFieldValue(commentContents, legacyCreatedDatePatterns());
   const updated = findFirstLegacyFieldValue(commentContents, legacyUpdatedDatePatterns());
 
@@ -166,6 +167,10 @@ function parseLooseLegacyMetadataHeader(
 
   if (author) {
     fields.set('author', author);
+  }
+
+  if (updatedBy) {
+    fields.set('updated by', updatedBy);
   }
 
   if (created) {
@@ -194,6 +199,12 @@ function legacyAuthorPatterns(): readonly RegExp[] {
   ];
 }
 
+function legacyUpdatedByPatterns(): readonly RegExp[] {
+  return [
+    /(?:^|\b)(?:updated[ \t]+by|last[ \t]+updated[ \t]+by|modified[ \t]+by|geändert[ \t]+von|geaendert[ \t]+von|geupdated[ \t]+von|aktualisiert[ \t]+von)[ \t]*[:=][ \t]*(.+?)(?=[ \t]{2,}[\p{L}][\p{L} \t]*(?:[:=])|$)/iu
+  ];
+}
+
 function legacyCreatedDatePatterns(): readonly RegExp[] {
   return [
     /(?:^|\b)(?:created(?:[ \t]+(?:date|on|at))?|creation[ \t]+date|erstellt(?:[ \t]+(?:datum|am))?|erstellungsdatum|erstelldatum)[ \t]*[:=][ \t]*([^ \t]+)/iu
@@ -202,7 +213,7 @@ function legacyCreatedDatePatterns(): readonly RegExp[] {
 
 function legacyUpdatedDatePatterns(): readonly RegExp[] {
   return [
-    /(?:^|\b)(?:updated(?:[ \t]+(?:date|on|at))?|last[ \t]+updated|modified(?:[ \t]+(?:date|on|at))?|letzte[ \t]+(?:änderung|aenderung)|geändert(?:[ \t]+(?:am|datum))?|geaendert(?:[ \t]+(?:am|datum))?)[ \t]*[:=][ \t]*([^ \t]+)/iu
+    /(?:^|\b)(?:updated(?:[ \t]+(?:date|on|at))?|last[ \t]+updated|modified(?:[ \t]+(?:date|on|at))?|letzte[ \t]+(?:änderung|aenderung)|geändert(?:[ \t]+(?:am|datum))?|geaendert(?:[ \t]+(?:am|datum))?|geupdated(?:[ \t]+(?:am|datum))?|aktualisiert(?:[ \t]+am)?)[ \t]*[:=][ \t]*([^ \t]+)/iu
   ];
 }
 
@@ -232,7 +243,7 @@ function findFirstLegacyFieldValue(
 
 function trimTrailingInlineLabel(value: string): string {
   return value
-    .replace(/[ \t]+(?:author|created[ \t]+by|erstellt[ \t]+von|ersteller|angelegt[ \t]+von)[ \t]*[:=].*$/iu, '')
+    .replace(/[ \t]+(?:author|created[ \t]+by|erstellt[ \t]+von|ersteller|angelegt[ \t]+von|updated[ \t]+by|last[ \t]+updated[ \t]+by|modified[ \t]+by|geändert[ \t]+von|geaendert[ \t]+von|geupdated[ \t]+von|aktualisiert[ \t]+von|created(?:[ \t]+(?:date|on|at))?|creation[ \t]+date|erstellt(?:[ \t]+(?:datum|am))?|erstellungsdatum|erstelldatum|updated(?:[ \t]+(?:date|on|at))?|last[ \t]+updated|modified(?:[ \t]+(?:date|on|at))?|letzte[ \t]+(?:änderung|aenderung)|geändert(?:[ \t]+(?:am|datum))?|geaendert(?:[ \t]+(?:am|datum))?|geupdated(?:[ \t]+(?:am|datum))?|aktualisiert(?:[ \t]+am)?)[ \t]*[:=].*$/iu, '')
     .trim();
 }
 
@@ -322,7 +333,7 @@ function normalizeLooseHistoryEntry(value: string): string | undefined {
 }
 
 function isLegacyMetadataFieldLine(value: string): boolean {
-  return /^(?:description|beschreibung|version|vers\.?|ver\.?|author|created(?:[ \t]+(?:date|on|at))?|creation[ \t]+date|created[ \t]+by|updated(?:[ \t]+(?:date|on|at))?|last[ \t]+updated|modified(?:[ \t]+(?:date|on|at))?|erstellt(?:[ \t]+(?:datum|am|von))?|erstellungsdatum|erstelldatum|ersteller|angelegt[ \t]+von|letzte[ \t]+(?:änderung|aenderung)|geändert(?:[ \t]+(?:am|datum))?|geaendert(?:[ \t]+(?:am|datum))?)[ \t]*[:=]/iu.test(value);
+  return /^(?:description|beschreibung|version|vers\.?|ver\.?|author|created(?:[ \t]+(?:date|on|at|by))?|creation[ \t]+date|updated(?:[ \t]+(?:date|on|at|by))?|last[ \t]+updated(?:[ \t]+by)?|modified(?:[ \t]+(?:date|on|at|by))?|erstellt(?:[ \t]+(?:datum|am|von))?|erstellungsdatum|erstelldatum|ersteller|angelegt[ \t]+von|letzte[ \t]+(?:änderung|aenderung)|geändert(?:[ \t]+(?:am|datum|von))?|geaendert(?:[ \t]+(?:am|datum|von))?|geupdated(?:[ \t]+(?:am|datum|von))?|aktualisiert(?:[ \t]+(?:am|von))?)[ \t]*[:=]/iu.test(value);
 }
 
 function isLegacyHistoryHeader(value: string): boolean {

@@ -258,6 +258,8 @@ runTest('SQLovely grammar gives generated metadata headers semantic scopes', () 
     'constant.other.date.metadata.sqlovely.sql',
     'comment.line.todo.metadata.placeholder.sqlovely.sql',
     'meta.field.description.continuation.metadata.sqlovely.sql',
+    'meta.field.updated-by.metadata.sqlovely.sql',
+    'entity.name.other.updater.metadata.sqlovely.sql',
     'meta.history-entry.metadata.sqlovely.sql'
   ]) {
     assert.ok(grammarText.includes(fragment), `metadata grammar should include ${fragment}`);

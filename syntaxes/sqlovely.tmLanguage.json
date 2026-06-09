@@ -85,6 +85,9 @@
               "include": "#metadataHeaderAuthor"
             },
             {
+              "include": "#metadataHeaderUpdatedBy"
+            },
+            {
               "include": "#metadataHeaderDates"
             },
             {
@@ -127,6 +130,9 @@
             },
             {
               "include": "#metadataHeaderAuthor"
+            },
+            {
+              "include": "#metadataHeaderUpdatedBy"
             },
             {
               "include": "#metadataHeaderDates"
@@ -657,6 +663,32 @@
             },
             {
               "name": "string.unquoted.metadata.description.sqlovely.sql",
+              "match": "[^\\r\\n]+"
+            }
+          ]
+        }
+      ]
+    },
+    "metadataHeaderUpdatedBy": {
+      "patterns": [
+        {
+          "name": "meta.field.updated-by.metadata.sqlovely.sql",
+          "begin": "^(\\s*)(--)(\\s*)(Updated By)(\\s*)(:)(\\s*)",
+          "beginCaptures": {
+            "2": {
+              "name": "punctuation.definition.comment.sql.sqlovely"
+            },
+            "4": {
+              "name": "variable.other.property.metadata-field.sqlovely.sql"
+            },
+            "6": {
+              "name": "punctuation.separator.key-value.metadata.sqlovely.sql"
+            }
+          },
+          "end": "$",
+          "patterns": [
+            {
+              "name": "entity.name.other.updater.metadata.sqlovely.sql",
               "match": "[^\\r\\n]+"
             }
           ]

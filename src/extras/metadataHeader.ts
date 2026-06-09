@@ -387,6 +387,7 @@ function buildMetadataHeader(context: MetadataHeaderContext): string {
   const description = readExistingField(context.existingFields, 'Description') ?? MISSING_DESCRIPTION_PLACEHOLDER;
   const requestedVersion = readExistingField(context.existingFields, 'Version') ?? DEFAULT_VERSION;
   const author = readExistingField(context.existingFields, 'Author') ?? context.author;
+  const updatedBy = readExistingField(context.existingFields, 'Updated By') ?? context.author;
   const rawHistoryEntries = context.existingHistoryEntries && context.existingHistoryEntries.length > 0
     ? context.existingHistoryEntries
     : [`   v${requestedVersion}: Initial creation - ${createdDate} ${author}`];
@@ -394,7 +395,7 @@ function buildMetadataHeader(context: MetadataHeaderContext): string {
     version: requestedVersion,
     historyEntries: rawHistoryEntries,
     date: context.date,
-    author
+    author: updatedBy
   });
   const descriptionLines = formatMetadataDescriptionLines(description, {
     indentation: context.indentation,
@@ -406,6 +407,7 @@ function buildMetadataHeader(context: MetadataHeaderContext): string {
     ...descriptionLines,
     `-- Version     : ${synchronized.version}`,
     `-- Author      : ${author}`,
+    `-- Updated By  : ${updatedBy}`,
     `-- Created     : ${createdDate}`,
     `-- Updated     : ${context.date}`,
     '--',
@@ -686,7 +688,6 @@ function formatVersionSegment(value: number, requestedSegment: string): string {
 
 function parseMetadataFields(headerText: string): ReadonlyMap<string, string> {
   const fields = new Map<string, string>();
-  const supportedKeys = new Set(['description', 'version', 'author', 'created', 'updated']);
   let currentKey: string | undefined;
 
   for (const line of headerText.split(/\r\n|\r|\n/u)) {
@@ -707,10 +708,10 @@ function parseMetadataFields(headerText: string): ReadonlyMap<string, string> {
     }
 
     const rawKey = fieldMatch[1]?.trim() ?? '';
-    const key = rawKey.toLowerCase();
+    const key = normalizeMetadataFieldKey(rawKey);
     const value = fieldMatch[2]?.trim() ?? '';
 
-    if (supportedKeys.has(key)) {
+    if (key) {
       fields.set(key, value);
       currentKey = key;
       continue;
@@ -720,6 +721,39 @@ function parseMetadataFields(headerText: string): ReadonlyMap<string, string> {
   }
 
   return fields;
+}
+
+function normalizeMetadataFieldKey(rawKey: string): string | undefined {
+  const key = rawKey
+    .trim()
+    .replace(/\s+/gu, ' ')
+    .toLowerCase();
+
+  if (/^(?:description|beschreibung)$/iu.test(key)) {
+    return 'description';
+  }
+
+  if (/^(?:version|vers\.?|ver\.?)$/iu.test(key)) {
+    return 'version';
+  }
+
+  if (/^(?:author|created by|erstellt von|ersteller|angelegt von)$/iu.test(key)) {
+    return 'author';
+  }
+
+  if (/^(?:updated by|modified by|last updated by|geändert von|geaendert von|geupdated von|aktualisiert von)$/iu.test(key)) {
+    return 'updated by';
+  }
+
+  if (/^(?:created|created date|created on|created at|creation date|erstellt datum|erstellt am|erstellungsdatum|erstelldatum)$/iu.test(key)) {
+    return 'created';
+  }
+
+  if (/^(?:updated|updated date|updated on|updated at|last updated|modified|modified date|modified on|modified at|letzte änderung|letzte aenderung|geändert|geändert am|geändert datum|geaendert|geaendert am|geaendert datum|geupdated|geupdated am|geupdated datum|aktualisiert|aktualisiert am)$/iu.test(key)) {
+    return 'updated';
+  }
+
+  return undefined;
 }
 
 function parseDescriptionContinuationLine(line: string): string | undefined {
