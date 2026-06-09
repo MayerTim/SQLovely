@@ -53,6 +53,9 @@ Useful smoke tests:
 - run **SQLovely: Format SQL Files in Directory**
 - run **SQLovely: Insert or Update Metadata Header**
 - verify diagnostics and quick fixes
+- verify metadata headers in a script with multiple procedures, functions or triggers
+- verify loose legacy metadata headers are normalized only when they contain a recognizable version field
+- verify long metadata descriptions are wrapped without removing manual line breaks
 
 ## Settings during development
 
@@ -91,3 +94,15 @@ For MSSQL-oriented smoke tests:
 **SQLovely: Format SQL Files in Directory** uses the normal `sqlovely.format.*` settings.
 
 It intentionally does not apply SQLovely Extras. Keep this behavior conservative because the command can touch many files at once.
+
+## Metadata-header regression focus
+
+When changing metadata-header behavior, add or update regression tests for:
+
+- generated SQLovely headers
+- loose legacy header normalization
+- multi-object scripts
+- version/history synchronization
+- `Updated By` migration and preservation
+- date normalization
+- multiline description wrapping and manual line-break preservation

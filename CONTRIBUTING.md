@@ -20,6 +20,7 @@ npm run package:vsix
 - Keep `README.md` user-facing.
 - Put maintainer/developer details in `docs/`.
 - Update `CHANGELOG.md` for user-visible changes.
+- Update user-facing metadata examples when metadata-header layout or migration behavior changes.
 
 For development setup and implementation notes, see:
 

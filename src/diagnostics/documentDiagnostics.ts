@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import { getActiveDialect, getExtrasConfiguration, getDiagnosticsConfiguration } from '../config';
 import { SQL_LANGUAGE_ID } from '../constants';
 import {
-  findMissingMetadataHeaderIssue,
+  findMissingMetadataHeaderIssues,
   MISSING_METADATA_HEADER_DIAGNOSTIC_CODE,
   SQL_OVELY_DIAGNOSTIC_SOURCE
 } from './metadataHeaderDiagnostics';
@@ -77,9 +77,7 @@ export function updateSqlovelyDiagnosticsForDocument(
 
   if (shouldCheckMissingMetadataHeader) {
     const dialect = getActiveDialect(document.uri);
-    const issue = findMissingMetadataHeaderIssue(document.getText(), dialect);
-
-    if (issue) {
+    for (const issue of findMissingMetadataHeaderIssues(document.getText(), dialect)) {
       const diagnostic = new vscode.Diagnostic(
         new vscode.Range(document.positionAt(issue.startIndex), document.positionAt(issue.endIndex)),
         issue.message,

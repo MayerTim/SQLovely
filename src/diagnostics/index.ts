@@ -1,5 +1,6 @@
 export {
   findMissingMetadataHeaderIssue,
+  findMissingMetadataHeaderIssues,
   MISSING_METADATA_HEADER_DIAGNOSTIC_CODE,
   SQL_OVELY_DIAGNOSTIC_SOURCE,
   type MissingMetadataHeaderIssue

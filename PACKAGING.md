@@ -29,3 +29,4 @@ Before publishing or attaching a VSIX to a release:
 6. Run `npm run package:vsix`.
 7. Install the generated VSIX in VS Code and open a `.sql` file.
 8. Verify highlighting, the active dialect command, formatting, metadata-header quick fixes and the packaging output.
+9. Smoke-test metadata headers for multi-object scripts, legacy-header migration, description wrapping, date normalization and `Updated By` values.

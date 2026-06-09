@@ -76,10 +76,16 @@
               "include": "#metadataHeaderDescription"
             },
             {
+              "include": "#metadataHeaderDescriptionContinuation"
+            },
+            {
               "include": "#metadataHeaderVersion"
             },
             {
               "include": "#metadataHeaderAuthor"
+            },
+            {
+              "include": "#metadataHeaderUpdatedBy"
             },
             {
               "include": "#metadataHeaderDates"
@@ -117,10 +123,16 @@
               "include": "#metadataHeaderDescription"
             },
             {
+              "include": "#metadataHeaderDescriptionContinuation"
+            },
+            {
               "include": "#metadataHeaderVersion"
             },
             {
               "include": "#metadataHeaderAuthor"
+            },
+            {
+              "include": "#metadataHeaderUpdatedBy"
             },
             {
               "include": "#metadataHeaderDates"
@@ -627,6 +639,56 @@
           "patterns": [
             {
               "name": "string.unquoted.metadata.value.sqlovely.sql",
+              "match": "[^\\r\\n]+"
+            }
+          ]
+        }
+      ]
+    },
+    "metadataHeaderDescriptionContinuation": {
+      "patterns": [
+        {
+          "name": "meta.field.description.continuation.metadata.sqlovely.sql",
+          "begin": "^(\\s*)(--)(\\s{4,})",
+          "beginCaptures": {
+            "2": {
+              "name": "punctuation.definition.comment.sql.sqlovely"
+            }
+          },
+          "end": "$",
+          "patterns": [
+            {
+              "name": "comment.line.todo.metadata.placeholder.sqlovely.sql",
+              "match": "<TODO>"
+            },
+            {
+              "name": "string.unquoted.metadata.description.sqlovely.sql",
+              "match": "[^\\r\\n]+"
+            }
+          ]
+        }
+      ]
+    },
+    "metadataHeaderUpdatedBy": {
+      "patterns": [
+        {
+          "name": "meta.field.updated-by.metadata.sqlovely.sql",
+          "begin": "^(\\s*)(--)(\\s*)(Updated By)(\\s*)(:)(\\s*)",
+          "beginCaptures": {
+            "2": {
+              "name": "punctuation.definition.comment.sql.sqlovely"
+            },
+            "4": {
+              "name": "variable.other.property.metadata-field.sqlovely.sql"
+            },
+            "6": {
+              "name": "punctuation.separator.key-value.metadata.sqlovely.sql"
+            }
+          },
+          "end": "$",
+          "patterns": [
+            {
+              "name": "entity.name.other.updater.metadata.sqlovely.sql",
               "match": "[^\\r\\n]+"
             }
           ]

@@ -8,44 +8,53 @@ export interface DetectedSqlObject {
 }
 
 export function detectPrimarySqlObject(text: string, dialect: SqlDialect): DetectedSqlObject | undefined {
-  const maskedText = maskSqlCommentsAndStrings(text);
-  const candidates = [
-    detectObject(maskedText, dialect.objectPatterns.procedure, 'procedure'),
-    detectObject(maskedText, dialect.objectPatterns.function, 'function'),
-    detectObject(maskedText, dialect.objectPatterns.trigger, 'trigger')
-  ].filter(isDetectedSqlObject);
-
-  candidates.sort((left, right) => left.index - right.index);
-
-  return candidates[0];
+  return detectSqlObjects(text, dialect)[0];
 }
 
-function detectObject(
+export function detectSqlObjects(text: string, dialect: SqlDialect): readonly DetectedSqlObject[] {
+  const maskedText = maskSqlCommentsAndStrings(text);
+  const candidates = [
+    ...detectObjects(maskedText, dialect.objectPatterns.procedure, 'procedure'),
+    ...detectObjects(maskedText, dialect.objectPatterns.function, 'function'),
+    ...detectObjects(maskedText, dialect.objectPatterns.trigger, 'trigger')
+  ];
+
+  candidates.sort((left, right) => left.index - right.index || left.name.localeCompare(right.name));
+
+  return candidates;
+}
+
+function detectObjects(
   text: string,
   pattern: RegExp,
   type: SqlObjectType
-): DetectedSqlObject | undefined {
-  const match = ensureSearchablePattern(pattern).exec(text);
+): readonly DetectedSqlObject[] {
+  const objects: DetectedSqlObject[] = [];
+  const searchablePattern = ensureGlobalSearchablePattern(pattern);
+  let match: RegExpExecArray | null;
 
-  if (!match || match.index === undefined) {
-    return undefined;
+  while ((match = searchablePattern.exec(text)) !== null) {
+    const rawName = match[1]?.trim();
+
+    if (rawName) {
+      objects.push({
+        type,
+        name: normalizeObjectName(rawName),
+        index: match.index
+      });
+    }
+
+    if (match[0].length === 0) {
+      searchablePattern.lastIndex += 1;
+    }
   }
 
-  const rawName = match[1]?.trim();
-
-  if (!rawName) {
-    return undefined;
-  }
-
-  return {
-    type,
-    name: normalizeObjectName(rawName),
-    index: match.index
-  };
+  return objects;
 }
 
-function ensureSearchablePattern(pattern: RegExp): RegExp {
-  const flags = pattern.flags.replace('g', '');
+function ensureGlobalSearchablePattern(pattern: RegExp): RegExp {
+  const flagsWithoutGlobal = pattern.flags.replace('g', '');
+  const flags = flagsWithoutGlobal.includes('g') ? flagsWithoutGlobal : `${flagsWithoutGlobal}g`;
   return new RegExp(pattern.source, flags);
 }
 
@@ -67,8 +76,4 @@ function unwrapIdentifierPart(part: string): string {
   }
 
   return part;
-}
-
-function isDetectedSqlObject(value: DetectedSqlObject | undefined): value is DetectedSqlObject {
-  return value !== undefined;
 }

@@ -65,7 +65,15 @@ The grammar highlights useful lexical regions in `.sql` files.
 | Transactions and savepoints | yes | keyword casing | not object-relevant |
 | MSSQL batches with `GO` | yes | root-level keyword handling | not object-relevant |
 | MSSQL routines | yes | rudimentary formatting | procedure/function/trigger supported |
-| Metadata headers | section markers, field names, versions, dates, TODO placeholders and history entries | inserted/updated through extras | supported for one primary object per file |
+| Metadata headers | section markers, field names, versions, dates, TODO placeholders, update authors and history entries | inserted/updated through extras | supported for every detected procedure/function/trigger in a script |
+
+## Metadata-header behavior
+
+SQLovely metadata headers are managed per detected procedure, function and trigger. The metadata extra scans the full document, scopes each existing header to its nearest SQL object, and inserts or updates the header directly before that object's body where possible.
+
+Loose legacy metadata-style comments are normalized only when a recognizable version field is present. This keeps regular comments from being rewritten accidentally while still supporting common dashed, slash-style and simple block-comment legacy headers.
+
+Metadata updates normalize supported date formats to `YYYY-MM-DD`, preserve and wrap multiline descriptions, add the `Updated By` field, and synchronize the `Version` field with the latest history entry. Version bumps are constrained to a single logical step, such as `1.0` to `1.1`, `1.0` to `2.0`, or `1.0.0` to `1.0.1`.
 
 ## Design boundaries
 
@@ -75,6 +83,6 @@ SQLovely currently does not provide:
 - schema-aware analysis
 - IntelliSense
 - validation of nested SQL blocks
+- guaranteed parsing of every possible legacy metadata style
 - dialect-exclusive error reporting
 - automatic conversion between Watcom SQL and MSSQL
-- multi-object metadata-header management within one file

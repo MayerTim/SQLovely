@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- Added dedicated syntax scopes for generated metadata headers, including markers, fields, values, dates, TODO placeholders, update authors and history entries.
+- Added normalization of loose legacy metadata-style comment headers to the current SQLovely metadata format.
+- Added metadata-header processing for every detected procedure, function and trigger in multi-object SQL scripts.
+- Added version/history synchronization so `Version` matches the latest history entry and invalid version jumps are coerced to one-step bumps.
+- Added multiline metadata descriptions with automatic wrapping to the configured line-length limit while preserving manual line breaks.
+- Added `Updated By` metadata support, including migration from legacy updated-by aliases such as `geändert von` and `geupdated von`.
+- Normalized metadata date values and history dates to `YYYY-MM-DD`, including common day-first and year-first separators.
+- Expanded metadata regression coverage for legacy headers, multiline descriptions, date normalization, version synchronization and multi-object scripts.
+
 ## 0.1.7
 
 - Consolidated developer documentation into `docs/DEVELOPMENT.md` and `docs/SQL_IMPLEMENTATION.md`.

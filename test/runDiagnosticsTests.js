@@ -2,6 +2,7 @@ const { assert, runTest } = require('./helpers/runTest');
 
 const {
   findMissingMetadataHeaderIssue,
+  findMissingMetadataHeaderIssues,
   MISSING_METADATA_HEADER_DIAGNOSTIC_CODE
 } = require('../dist/diagnostics/metadataHeaderDiagnostics');
 const {
@@ -37,6 +38,23 @@ runTest('does not report a diagnostic when a SQLovely metadata header already ex
   assert.equal(findMissingMetadataHeaderIssue(withHeader, watcomDialect), undefined);
 });
 
+
+runTest('does not report missing metadata when a loose legacy header can be normalized', () => {
+  const input = [
+    'CREATE PROCEDURE dbo.legacy_header()',
+    '-- ================================',
+    '-- version: 1.2',
+    '-- history:',
+    '-- v1.2 - existing legacy entry',
+    '-- ================================',
+    'BEGIN',
+    'SELECT 1;',
+    'END;'
+  ].join('\n');
+
+  assert.equal(findMissingMetadataHeaderIssue(input, watcomDialect), undefined);
+});
+
 runTest('does not report a diagnostic for files without supported SQL objects', () => {
   const input = 'SELECT 1;\n';
   assert.equal(findMissingMetadataHeaderIssue(input, watcomDialect), undefined);
@@ -60,6 +78,53 @@ runTest('reports missing metadata headers for MSSQL CREATE OR ALTER procedures',
   assert.equal(issue.object.type, 'procedure');
   assert.equal(issue.object.name, 'dbo.needs_header');
   assert.ok(issue.message.includes('procedure dbo.needs_header'));
+});
+
+
+runTest('reports missing metadata headers for every supported object in a script', () => {
+  const input = [
+    'CREATE PROCEDURE dbo.first_missing()',
+    'BEGIN',
+    'END;',
+    '',
+    'CREATE FUNCTION dbo.second_missing() RETURNS integer',
+    'BEGIN',
+    'RETURN 1;',
+    'END;'
+  ].join('\n');
+  const issues = findMissingMetadataHeaderIssues(input, watcomDialect);
+
+  assert.equal(issues.length, 2);
+  assert.equal(issues[0].object.name, 'dbo.first_missing');
+  assert.equal(issues[1].object.name, 'dbo.second_missing');
+});
+
+runTest('does not use one existing metadata header for every object in a script', () => {
+  const input = [
+    'CREATE PROCEDURE dbo.has_header()',
+    '-- METADATA',
+    '--',
+    '-- Description : Existing description',
+    '-- Version     : 1.0',
+    '-- Author      : Existing Author',
+    '-- Created     : 2020-01-02',
+    '-- Updated     : 2020-01-03',
+    '--',
+    '-- History     :',
+    '--   v1.0: Existing history - 2020-01-02 Existing Author',
+    '--',
+    '-- METADATA END',
+    'BEGIN',
+    'END;',
+    '',
+    'CREATE PROCEDURE dbo.needs_header()',
+    'BEGIN',
+    'END;'
+  ].join('\n');
+  const issues = findMissingMetadataHeaderIssues(input, watcomDialect);
+
+  assert.equal(issues.length, 1);
+  assert.equal(issues[0].object.name, 'dbo.needs_header');
 });
 
 runTest('reports SQLovely max-line-length diagnostics', () => {

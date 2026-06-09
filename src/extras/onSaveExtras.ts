@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { getActiveDialect, getExtrasConfiguration } from '../config';
+import { getActiveDialect, getDiagnosticsConfiguration, getExtrasConfiguration } from '../config';
 import { SQL_LANGUAGE_ID } from '../constants';
 import { getDefaultAuthorName } from '../utils/defaultAuthor';
 import { applyExtras } from './applyExtras';
@@ -30,10 +30,12 @@ function createExtraSaveEdits(document: vscode.TextDocument): vscode.TextEdit[] 
     return [];
   }
 
+  const diagnosticsConfiguration = getDiagnosticsConfiguration(document.uri);
   const originalText = document.getText();
   const result = applyExtras(originalText, getActiveDialect(document.uri), {
     author: getDefaultAuthorName(),
-    metadataHeaderEnabled: extraConfiguration.metadataHeader.enabled
+    metadataHeaderEnabled: extraConfiguration.metadataHeader.enabled,
+    maxLineLength: diagnosticsConfiguration.maxLineLength.limit
   });
 
   if (!result.changed) {
