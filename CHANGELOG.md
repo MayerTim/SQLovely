@@ -1,7 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.1.7
 
+- Added **SQLovely: Format SQL Files in Directory** to recursively format `.sql` files in a selected directory.
+- Directory formatting runs without SQLovely Extras by default for safer batch formatting.
 - Documented directory SQL formatting command usage.
 
 ## 0.1.6

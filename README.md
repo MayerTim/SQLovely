@@ -1,5 +1,9 @@
 # SQLovely
 
+<p align="center">
+  <img src="images/logo.png" alt="SQLovely logo" width="128" />
+</p>
+
 SQLovely is a VS Code extension for `.sql` files. It provides SQL highlighting, conservative formatting, metadata-header extras, diagnostics and quick fixes.
 
 Watcom SQL is the default dialect. MSSQL support is available as a small secondary dialect surface, not as a complete T-SQL implementation.
