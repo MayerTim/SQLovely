@@ -450,6 +450,110 @@ runTest('leaves non-metadata comment blocks in place while inserting a new heade
   assert.equal(countOccurrences(result.text, METADATA_HEADER_START), 1);
 });
 
+
+runTest('inserts metadata headers for every supported SQL object in a script', () => {
+  const input = [
+    'CREATE PROCEDURE dbo.first_proc()',
+    'BEGIN',
+    'SELECT 1;',
+    'END;',
+    '',
+    'CREATE FUNCTION dbo.second_func() RETURNS integer',
+    'BEGIN',
+    'RETURN 2;',
+    'END;',
+    '',
+    'CREATE TRIGGER dbo.third_trigger',
+    'BEGIN',
+    'SELECT 3;',
+    'END;'
+  ].join('\n');
+
+  const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
+
+  assert.equal(result.action, 'inserted');
+  assert.equal(countOccurrences(result.text, METADATA_HEADER_START), 3);
+  assert.equal(countOccurrences(result.text, METADATA_HEADER_END), 3);
+  assert.ok(result.text.includes('CREATE PROCEDURE dbo.first_proc()\n-- METADATA'));
+  assert.ok(result.text.includes('CREATE FUNCTION dbo.second_func() RETURNS integer\n-- METADATA'));
+  assert.ok(result.text.includes('CREATE TRIGGER dbo.third_trigger\n-- METADATA'));
+});
+
+runTest('normalizes legacy metadata headers independently for multiple objects', () => {
+  const input = [
+    'CREATE PROCEDURE dbo.first_proc()',
+    '-- -------------------------',
+    '-- description: First legacy header',
+    '-- version: 1.0',
+    '-- author: First Author',
+    '-- history:',
+    '-- v1.0 - first created',
+    '-- -------------------------',
+    'BEGIN',
+    'SELECT 1;',
+    'END;',
+    '',
+    'CREATE FUNCTION dbo.second_func() RETURNS integer',
+    '// /////////////////////////',
+    '// description: Second legacy header',
+    '// version: 2.0',
+    '// author: Second Author',
+    '// history:',
+    '// v2.0 - second created',
+    '// /////////////////////////',
+    'BEGIN',
+    'RETURN 2;',
+    'END;'
+  ].join('\n');
+
+  const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
+
+  assert.equal(result.action, 'updated');
+  assert.equal(countOccurrences(result.text, METADATA_HEADER_START), 2);
+  assert.ok(result.text.includes('-- Description : First legacy header'));
+  assert.ok(result.text.includes('-- Author      : First Author'));
+  assert.ok(result.text.includes('--   v1.0: first created'));
+  assert.ok(result.text.includes('-- Description : Second legacy header'));
+  assert.ok(result.text.includes('-- Author      : Second Author'));
+  assert.ok(result.text.includes('--   v2.0: second created'));
+  assert.equal(result.text.includes('// version'), false);
+});
+
+runTest('keeps existing metadata headers scoped to their own SQL objects', () => {
+  const input = [
+    'CREATE PROCEDURE dbo.first_proc()',
+    'BEGIN',
+    'SELECT 1;',
+    'END;',
+    '',
+    'CREATE PROCEDURE dbo.second_proc()',
+    '-- METADATA',
+    '--',
+    '-- Description : Existing second header',
+    '-- Version     : 1.0',
+    '-- Author      : Existing Author',
+    '-- Created     : 2020-01-02',
+    '-- Updated     : 2020-01-03',
+    '--',
+    '-- History     :',
+    '--   v1.0: Existing second history - 2020-01-02 Existing Author',
+    '--',
+    '-- METADATA END',
+    'BEGIN',
+    'SELECT 2;',
+    'END;'
+  ].join('\n');
+
+  const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
+
+  assert.equal(result.action, 'inserted');
+  assert.equal(countOccurrences(result.text, METADATA_HEADER_START), 2);
+  assert.ok(result.text.includes('CREATE PROCEDURE dbo.first_proc()\n-- METADATA'));
+  assert.ok(result.text.includes('-- Description : Existing second header'));
+  assert.ok(result.text.includes('-- Author      : Existing Author'));
+  assert.ok(result.text.includes('-- Created     : 2020-01-02'));
+});
+
 function countOccurrences(text, needle) {
   return text.split(/\r?\n/).filter((line) => line.trim() === needle).length;
 }

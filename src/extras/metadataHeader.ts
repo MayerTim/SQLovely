@@ -1,5 +1,5 @@
 import type { SqlDialect } from '../dialects';
-import { detectPrimarySqlObject, type DetectedSqlObject } from './objectDetection';
+import { detectSqlObjects, type DetectedSqlObject } from './objectDetection';
 import { findLooseLegacyMetadataHeader } from './legacyMetadataHeader';
 import { maskSqlCommentsAndStrings } from './sqlTextMasking';
 
@@ -52,6 +52,11 @@ interface MetadataHeaderInsertionTarget {
   readonly blankLineAfter: boolean;
 }
 
+interface MetadataHeaderRemovalRange {
+  readonly startIndex: number;
+  readonly endIndex: number;
+}
+
 interface VersionAndHistorySynchronizationResult {
   readonly version: string;
   readonly historyEntries: readonly string[];
@@ -79,9 +84,32 @@ export function insertOrUpdateMetadataHeader(
   dialect: SqlDialect,
   options: MetadataHeaderOptions = {}
 ): MetadataHeaderResult {
-  const initialObject = detectPrimarySqlObject(text, dialect);
+  let nextText = text;
+  let action: MetadataHeaderAction = 'unchanged';
+  let firstObject: DetectedSqlObject | undefined;
+  let upperBound = nextText.length + 1;
 
-  if (!initialObject) {
+  while (true) {
+    const object = findLastUnprocessedObject(nextText, dialect, upperBound);
+
+    if (!object) {
+      break;
+    }
+
+    firstObject = object;
+
+    const nextObject = findNextObjectAfter(nextText, dialect, object.index);
+    const result = applyMetadataHeaderForObject(nextText, dialect, object, nextObject?.index ?? nextText.length, options);
+
+    if (result.text !== nextText) {
+      action = combineMetadataHeaderAction(action, result.action);
+      nextText = result.text;
+    }
+
+    upperBound = result.nextUpperBound;
+  }
+
+  if (!firstObject) {
     return {
       action: 'skipped',
       text,
@@ -89,15 +117,43 @@ export function insertOrUpdateMetadataHeader(
     };
   }
 
-  const existingHeader = findExistingMetadataHeader(text, initialObject);
+  return {
+    action: nextText === text ? 'unchanged' : action,
+    text: nextText,
+    object: firstObject
+  };
+}
+
+interface SingleObjectMetadataHeaderResult {
+  readonly action: MetadataHeaderAction;
+  readonly text: string;
+  readonly nextUpperBound: number;
+}
+
+function applyMetadataHeaderForObject(
+  text: string,
+  dialect: SqlDialect,
+  object: DetectedSqlObject,
+  nextObjectIndex: number,
+  options: MetadataHeaderOptions
+): SingleObjectMetadataHeaderResult {
+  const existingHeader = findExistingMetadataHeader(text, object, nextObjectIndex);
   const lineBreak = detectPreferredLineBreak(text);
-  const workingText = existingHeader
-    ? removeExistingHeader(text, existingHeader, lineBreak)
+  const removalRange = existingHeader ? getExistingHeaderRemovalRange(text, existingHeader) : undefined;
+  const workingText = removalRange
+    ? replaceRange(text, removalRange.startIndex, removalRange.endIndex, '')
     : text;
-  const object = detectPrimarySqlObject(workingText, dialect) ?? initialObject;
-  const insertionTarget = getMetadataHeaderInsertionTarget(workingText, object);
+  const objectIndexShift = removalRange && removalRange.startIndex < object.index
+    ? removalRange.endIndex - removalRange.startIndex
+    : 0;
+  const adjustedObject = {
+    ...object,
+    index: object.index - objectIndexShift
+  };
+  const adjustedNextObjectIndex = nextObjectIndex - calculateRemovedCharactersBeforeIndex(removalRange, nextObjectIndex);
+  const insertionTarget = getMetadataHeaderInsertionTarget(workingText, adjustedObject, adjustedNextObjectIndex);
   const newHeader = buildMetadataHeader({
-    object,
+    object: adjustedObject,
     dialect,
     date: formatDate(options.now ?? new Date()),
     author: options.author?.trim() || 'Unknown',
@@ -107,18 +163,71 @@ export function insertOrUpdateMetadataHeader(
     existingHistoryEntries: existingHeader?.historyEntries
   });
   const nextText = insertMetadataHeaderAt(workingText, insertionTarget.index, newHeader, lineBreak, insertionTarget.blankLineAfter);
+  const nextUpperBound = Math.min(existingHeader?.startIndex ?? object.index, object.index);
 
   return {
     action: existingHeader ? (nextText === text ? 'unchanged' : 'updated') : 'inserted',
     text: nextText,
-    object
+    nextUpperBound
   };
 }
 
-export function findExistingMetadataHeader(text: string, object?: DetectedSqlObject): ExistingMetadataHeader | undefined {
-  return findModernMetadataHeader(text)
-    ?? findLegacyMetadataHeader(text)
-    ?? (object ? findLooseLegacyExistingMetadataHeader(text, object) : undefined);
+function findLastUnprocessedObject(
+  text: string,
+  dialect: SqlDialect,
+  upperBound: number
+): DetectedSqlObject | undefined {
+  const objects = detectSqlObjects(text, dialect).filter((object) => object.index < upperBound);
+  return objects[objects.length - 1];
+}
+
+function findNextObjectAfter(
+  text: string,
+  dialect: SqlDialect,
+  objectIndex: number
+): DetectedSqlObject | undefined {
+  return detectSqlObjects(text, dialect).find((object) => object.index > objectIndex);
+}
+
+function combineMetadataHeaderAction(
+  currentAction: MetadataHeaderAction,
+  nextAction: MetadataHeaderAction
+): MetadataHeaderAction {
+  if (currentAction === 'inserted' || nextAction === 'inserted') {
+    return 'inserted';
+  }
+
+  if (currentAction === 'updated' || nextAction === 'updated') {
+    return 'updated';
+  }
+
+  return nextAction;
+}
+
+function calculateRemovedCharactersBeforeIndex(
+  removalRange: MetadataHeaderRemovalRange | undefined,
+  index: number
+): number {
+  if (!removalRange || removalRange.startIndex >= index) {
+    return 0;
+  }
+
+  return Math.min(removalRange.endIndex, index) - removalRange.startIndex;
+}
+
+export function findExistingMetadataHeader(
+  text: string,
+  object?: DetectedSqlObject,
+  nextObjectIndex = text.length
+): ExistingMetadataHeader | undefined {
+  if (!object) {
+    return findModernMetadataHeaderInRange(text, 0, text.length)
+      ?? findLegacyMetadataHeaderInRange(text, 0, text.length);
+  }
+
+  return findModernMetadataHeaderForObject(text, object, nextObjectIndex)
+    ?? findLegacyMetadataHeaderForObject(text, object, nextObjectIndex)
+    ?? findLooseLegacyExistingMetadataHeader(text, object);
 }
 
 function findLooseLegacyExistingMetadataHeader(text: string, object: DetectedSqlObject): ExistingMetadataHeader | undefined {
@@ -134,19 +243,39 @@ function findLooseLegacyExistingMetadataHeader(text: string, object: DetectedSql
   };
 }
 
-function findModernMetadataHeader(text: string): ExistingMetadataHeader | undefined {
-  const start = findMarkerLine(text, /^([ \t]*)--\s*METADATA\s*$/gmu, 0);
+function findModernMetadataHeaderForObject(
+  text: string,
+  object: DetectedSqlObject,
+  nextObjectIndex: number
+): ExistingMetadataHeader | undefined {
+  return findModernMetadataHeaderInRange(text, object.index, nextObjectIndex);
+}
 
-  if (!start) {
+function findModernMetadataHeaderInRange(
+  text: string,
+  startIndex: number,
+  endIndex: number
+): ExistingMetadataHeader | undefined {
+  const start = findMarkerLine(text, /^([ \t]*)--\s*METADATA\s*$/gmu, startIndex);
+
+  if (!start || start.startIndex >= endIndex) {
     return undefined;
   }
 
   const end = findMarkerLine(text, /^([ \t]*)--\s*METADATA END\s*$/gmu, start.endIndex);
 
-  if (!end) {
+  if (!end || end.startIndex >= endIndex) {
     return undefined;
   }
 
+  return createModernMetadataHeader(text, start, end);
+}
+
+function createModernMetadataHeader(
+  text: string,
+  start: MarkerLineMatch,
+  end: MarkerLineMatch
+): ExistingMetadataHeader {
   const endIndex = findLineEnd(text, end.startIndex);
   const headerText = text.slice(start.startIndex, endIndex);
 
@@ -160,20 +289,72 @@ function findModernMetadataHeader(text: string): ExistingMetadataHeader | undefi
   };
 }
 
-function findLegacyMetadataHeader(text: string): ExistingMetadataHeader | undefined {
-  const startIndex = text.indexOf(LEGACY_METADATA_HEADER_START);
+function findLegacyMetadataHeaderForObject(
+  text: string,
+  object: DetectedSqlObject,
+  nextObjectIndex: number
+): ExistingMetadataHeader | undefined {
+  return findLegacyMetadataHeaderInRange(text, object.index, nextObjectIndex)
+    ?? findLegacyMetadataHeaderBeforeObject(text, object);
+}
 
-  if (startIndex < 0) {
+function findLegacyMetadataHeaderInRange(
+  text: string,
+  startIndex: number,
+  endIndex: number
+): ExistingMetadataHeader | undefined {
+  const startIndexInRange = text.indexOf(LEGACY_METADATA_HEADER_START, startIndex);
+
+  if (startIndexInRange < 0 || startIndexInRange >= endIndex) {
     return undefined;
   }
 
-  const endMarkerIndex = text.indexOf(LEGACY_METADATA_HEADER_END, startIndex + LEGACY_METADATA_HEADER_START.length);
+  return createLegacyMetadataHeaderFromMarker(text, startIndexInRange, endIndex);
+}
 
-  if (endMarkerIndex < 0) {
+function findLegacyMetadataHeaderBeforeObject(
+  text: string,
+  object: DetectedSqlObject
+): ExistingMetadataHeader | undefined {
+  let searchStartIndex = 0;
+  let closestHeader: ExistingMetadataHeader | undefined;
+
+  while (searchStartIndex < object.index) {
+    const markerIndex = text.indexOf(LEGACY_METADATA_HEADER_START, searchStartIndex);
+
+    if (markerIndex < 0 || markerIndex >= object.index) {
+      break;
+    }
+
+    const header = createLegacyMetadataHeaderFromMarker(text, markerIndex, object.index);
+
+    if (!header) {
+      searchStartIndex = markerIndex + LEGACY_METADATA_HEADER_START.length;
+      continue;
+    }
+
+    if (isHeaderImmediatelyBeforeObject(text, header, object)) {
+      closestHeader = header;
+    }
+
+    searchStartIndex = Math.max(header.endIndex, markerIndex + LEGACY_METADATA_HEADER_START.length);
+  }
+
+  return closestHeader;
+}
+
+function createLegacyMetadataHeaderFromMarker(
+  text: string,
+  markerIndex: number,
+  searchEndIndex: number
+): ExistingMetadataHeader | undefined {
+  const endMarkerIndex = text.indexOf(LEGACY_METADATA_HEADER_END, markerIndex + LEGACY_METADATA_HEADER_START.length);
+
+  if (endMarkerIndex < 0 || endMarkerIndex >= searchEndIndex) {
     return undefined;
   }
 
-  const startLineIndex = findLineStart(text, startIndex);
+  const startLineIndex = findLineStart(text, markerIndex);
   const endIndex = findLineEnd(text, endMarkerIndex);
   const headerText = text.slice(startLineIndex, endIndex);
 
@@ -185,6 +366,15 @@ function findLegacyMetadataHeader(text: string): ExistingMetadataHeader | undefi
     indentation: readLineIndentation(text, startLineIndex),
     isLegacy: true
   };
+}
+
+function isHeaderImmediatelyBeforeObject(
+  text: string,
+  header: ExistingMetadataHeader,
+  object: DetectedSqlObject
+): boolean {
+  const betweenText = text.slice(header.endIndex, findLineStart(text, object.index));
+  return /^\s*$/u.test(betweenText);
 }
 
 function buildMetadataHeader(context: MetadataHeaderContext): string {
@@ -546,10 +736,11 @@ function readExistingField(fields: ReadonlyMap<string, string> | undefined, key:
 
 function getMetadataHeaderInsertionTarget(
   text: string,
-  object: DetectedSqlObject
+  object: DetectedSqlObject,
+  nextObjectIndex: number
 ): MetadataHeaderInsertionTarget {
   const maskedText = maskSqlCommentsAndStrings(text);
-  const beginMatch = findBeginTokenAfterObject(maskedText, object.index);
+  const beginMatch = findBeginTokenAfterObject(maskedText, object.index, nextObjectIndex);
 
   if (beginMatch) {
     const beginLineStart = findLineStart(text, beginMatch.index);
@@ -570,11 +761,20 @@ function getMetadataHeaderInsertionTarget(
   };
 }
 
-function findBeginTokenAfterObject(maskedText: string, objectIndex: number): RegExpExecArray | undefined {
+function findBeginTokenAfterObject(
+  maskedText: string,
+  objectIndex: number,
+  nextObjectIndex: number
+): RegExpExecArray | undefined {
   const pattern = /\bbegin\b/giu;
   pattern.lastIndex = objectIndex;
   const match = pattern.exec(maskedText);
-  return match ?? undefined;
+
+  if (!match || match.index >= nextObjectIndex) {
+    return undefined;
+  }
+
+  return match;
 }
 
 function insertMetadataHeaderAt(
@@ -593,15 +793,11 @@ function insertMetadataHeaderAt(
   return replaceRange(text, index, index, `${leadingLineBreak}${header}${trailingSeparator}`);
 }
 
-function removeExistingHeader(text: string, header: ExistingMetadataHeader, lineBreak: string): string {
-  const removalEndIndex = expandRemovalEndIndex(text, header.endIndex);
-  let nextText = replaceRange(text, header.startIndex, removalEndIndex, '');
-
-  if (header.startIndex === 0 && nextText.startsWith(lineBreak)) {
-    nextText = nextText.slice(lineBreak.length);
-  }
-
-  return nextText;
+function getExistingHeaderRemovalRange(text: string, header: ExistingMetadataHeader): MetadataHeaderRemovalRange {
+  return {
+    startIndex: header.startIndex,
+    endIndex: expandRemovalEndIndex(text, header.endIndex)
+  };
 }
 
 function expandRemovalEndIndex(text: string, endIndex: number): number {
