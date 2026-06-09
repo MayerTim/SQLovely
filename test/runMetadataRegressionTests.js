@@ -234,6 +234,60 @@ runTest('normalizes legacy headers and synchronizes invalid legacy version bumps
   assert.equal(result.text.includes('-- Version     : 1.5'), false);
 });
 
+runTest('normalizes metadata date fields to ISO format', () => {
+  const input = [
+    'CREATE PROCEDURE dbo.date_field_normalization()',
+    '-- METADATA',
+    '--',
+    '-- Description : Existing description',
+    '-- Version     : 1.0',
+    '-- Author      : Existing Author',
+    '-- Created     : 20.08.2025',
+    '-- Updated     : 21.08.2025',
+    '--',
+    '-- History     :',
+    '--   v1.0: Initial creation - 20.08.2025 Existing Author',
+    '--',
+    '-- METADATA END',
+    'BEGIN',
+    'SELECT 1;',
+    'END;'
+  ].join('\n');
+
+  const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
+
+  assert.equal(result.action, 'updated');
+  assert.ok(result.text.includes('-- Created     : 2025-08-20'));
+  assert.ok(result.text.includes('-- Updated     : 2026-06-09'));
+  assert.ok(result.text.includes('--   v1.0: Initial creation - 2025-08-20 Existing Author'));
+  assert.equal(result.text.includes('20.08.2025'), false);
+});
+
+runTest('normalizes valid legacy date values while preserving unknown placeholders', () => {
+  const input = [
+    'CREATE PROCEDURE dbo.legacy_date_normalization()',
+    '/ -------------------------',
+    '/ description: Legacy date normalization',
+    '/ version: 1.0',
+    '/ erstellt Datum: 20.08.2025      erstellt von: Legacy Author',
+    '/ letzte Änderung: xx.xx.xxxx',
+    '/ history:',
+    '/ v1.0 - erstellt am 20.08.2025',
+    '/ -------------------------',
+    'BEGIN',
+    'SELECT 1;',
+    'END;'
+  ].join('\n');
+
+  const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
+
+  assert.equal(result.action, 'updated');
+  assert.ok(result.text.includes('-- Created     : 2025-08-20'));
+  assert.ok(result.text.includes('-- Updated     : 2026-06-09'));
+  assert.ok(result.text.includes('--   v1.0: erstellt am 2025-08-20'));
+  assert.equal(result.text.includes('20.08.2025'), false);
+});
+
 runTest('reports missing metadata only for objects without a current or normalizable legacy header', () => {
   const input = [
     'CREATE PROCEDURE dbo.legacy_header()',

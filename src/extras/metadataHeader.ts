@@ -2,6 +2,7 @@ import type { SqlDialect } from '../dialects';
 import { detectSqlObjects, type DetectedSqlObject } from './objectDetection';
 import { findLooseLegacyMetadataHeader } from './legacyMetadataHeader';
 import { maskSqlCommentsAndStrings } from './sqlTextMasking';
+import { normalizeMetadataDateLiterals, normalizeMetadataDateValue } from './metadataDate';
 import { formatMetadataDescriptionLines, normalizeMetadataHeaderMaxLineLength } from './metadataDescription';
 
 export const METADATA_HEADER_START = '-- METADATA';
@@ -382,7 +383,7 @@ function isHeaderImmediatelyBeforeObject(
 }
 
 function buildMetadataHeader(context: MetadataHeaderContext): string {
-  const createdDate = readExistingField(context.existingFields, 'Created') ?? context.date;
+  const createdDate = normalizeMetadataDateValue(readExistingField(context.existingFields, 'Created') ?? context.date);
   const description = readExistingField(context.existingFields, 'Description') ?? MISSING_DESCRIPTION_PLACEHOLDER;
   const requestedVersion = readExistingField(context.existingFields, 'Version') ?? DEFAULT_VERSION;
   const author = readExistingField(context.existingFields, 'Author') ?? context.author;
@@ -475,10 +476,12 @@ function normalizeHistoryVersions(historyEntries: readonly string[]): HistoryVer
   let changed = false;
 
   for (const entry of historyEntries) {
-    const parsedEntry = parseHistoryEntryVersion(entry);
+    const dateNormalizedEntry = normalizeMetadataDateLiterals(entry);
+    const parsedEntry = parseHistoryEntryVersion(dateNormalizedEntry);
 
     if (!parsedEntry) {
-      normalizedEntries.push(entry);
+      normalizedEntries.push(dateNormalizedEntry);
+      changed ||= dateNormalizedEntry !== entry;
       continue;
     }
 
@@ -488,8 +491,8 @@ function normalizeHistoryVersions(historyEntries: readonly string[]): HistoryVer
       ? coerceNextVersion(previousVersion, originalVersion)
       : originalVersion;
     const normalizedEntry = normalizedVersion === originalVersion
-      ? entry
-      : replaceHistoryEntryVersion(entry, normalizedVersion);
+      ? dateNormalizedEntry
+      : replaceHistoryEntryVersion(dateNormalizedEntry, normalizedVersion);
 
     normalizedEntries.push(normalizedEntry);
     previousVersion = normalizedVersion;
