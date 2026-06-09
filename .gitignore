@@ -1,0 +1,15 @@
+# Dependencies and build output
+node_modules/
+out/
+dist/
+*.vsix
+*.zip
+*.tsbuildinfo
+
+# VS Code test state
+.vscode-test/
+.history/
+
+# OS files
+.DS_Store
+Thumbs.db

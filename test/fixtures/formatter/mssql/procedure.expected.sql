@@ -1,0 +1,5 @@
+CREATE OR ALTER PROC dbo.fixture_proc
+AS
+BEGIN
+  SELECT GETDATE();
+END;

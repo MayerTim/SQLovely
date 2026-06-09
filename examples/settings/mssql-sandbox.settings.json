@@ -1,0 +1,13 @@
+{
+  "sqlovely.dialect": "mssql",
+  "sqlovely.format.enabled": true,
+  "sqlovely.format.keywordCase": "upper",
+  "sqlovely.extras.applyWithFormatting": true,
+  "sqlovely.extras.applyOnSave": false,
+  "sqlovely.diagnostics.enabled": true,
+  "[sql]": {
+    "editor.defaultFormatter": "tim-mayer.sqlovely"
+  },
+  "sqlovely.format.indentSize": 2,
+  "sqlovely.format.insertSpaces": true
+}

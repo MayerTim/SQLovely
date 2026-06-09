@@ -1,0 +1,238 @@
+{
+  "name": "sqlovely",
+  "displayName": "SQLovely",
+  "description": "SQL language support for .sql files, with Watcom SQL as the default dialect and a conservative formatter.",
+  "version": "0.1.6",
+  "publisher": "tim-mayer",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MayerTim/SQLovely.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MayerTim/SQLovely/issues"
+  },
+  "homepage": "https://github.com/MayerTim/SQLovely#readme",
+  "icon": "./images/logo.png",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onLanguage:sql",
+    "onCommand:sqlovely.showActiveDialect",
+    "onCommand:sqlovely.switchDialect",
+    "onCommand:sqlovely.formatCurrentFile",
+    "onCommand:sqlovely.insertOrUpdateMetadataHeader",
+    "onCommand:sqlovely.applyExtras"
+  ],
+  "categories": [
+    "Programming Languages",
+    "Formatters"
+  ],
+  "keywords": [
+    "sql",
+    "watcom",
+    "watcom-sql",
+    "sql-anywhere",
+    "syntax-highlighting",
+    "sqlovely",
+    "formatter",
+    "formatting",
+    "mssql",
+    "sql-server",
+    "t-sql",
+    "tsql"
+  ],
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "check": "tsc -p ./ --noEmit",
+    "test": "npm run compile && node ./test/runAllTests.js",
+    "test:metadata": "npm run compile && node ./test/runMetadataHeaderTests.js",
+    "test:formatter": "npm run compile && node ./test/runFormatterTests.js",
+    "test:project": "npm run compile && node ./test/runProjectValidationTests.js",
+    "test:diagnostics": "npm run compile && node ./test/runDiagnosticsTests.js",
+    "validate": "npm run check && npm test",
+    "package:vsix": "npm run validate && node ./scripts/packageVsix.js"
+  },
+  "devDependencies": {
+    "@types/node": "^16.18.0",
+    "@types/vscode": "1.75.0",
+    "@vscode/vsce": "^3.9.2",
+    "typescript": "^5.8.3"
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "sql",
+        "aliases": [
+          "SQLovely SQL",
+          "SQLovely",
+          "Watcom SQL"
+        ],
+        "extensions": [
+          ".sql"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "sql",
+        "scopeName": "source.sql.sqlovely",
+        "path": "./syntaxes/sqlovely.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "sqlovely.showActiveDialect",
+        "title": "Show Active Dialect",
+        "category": "SQLovely"
+      },
+      {
+        "command": "sqlovely.switchDialect",
+        "title": "Switch Dialect",
+        "category": "SQLovely"
+      },
+      {
+        "command": "sqlovely.formatCurrentFile",
+        "title": "Format Current SQL File",
+        "category": "SQLovely",
+        "enablement": "editorLangId == sql"
+      },
+      {
+        "command": "sqlovely.insertOrUpdateMetadataHeader",
+        "title": "Insert or Update Metadata Header",
+        "category": "SQLovely",
+        "enablement": "editorLangId == sql"
+      },
+      {
+        "command": "sqlovely.applyExtras",
+        "title": "Apply SQLovely Extras",
+        "category": "SQLovely",
+        "enablement": "editorLangId == sql"
+      }
+    ],
+    "configuration": {
+      "title": "SQLovely",
+      "properties": {
+        "sqlovely.dialect": {
+          "type": "string",
+          "enum": [
+            "watcom",
+            "mssql"
+          ],
+          "enumDescriptions": [
+            "Watcom SQL, the default SQLovely dialect.",
+            "Microsoft SQL Server, available as a rudimentary secondary dialect surface."
+          ],
+          "default": "watcom",
+          "scope": "resource",
+          "markdownDescription": "Controls which SQL dialect SQLovely uses for dialect-aware features. Watcom SQL is the default; MSSQL support is intentionally rudimentary."
+        },
+        "sqlovely.format.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "markdownDescription": "Enables or disables SQLovely document formatting for `.sql` files."
+        },
+        "sqlovely.format.keywordCase": {
+          "type": "string",
+          "enum": [
+            "upper",
+            "lower",
+            "preserve"
+          ],
+          "enumDescriptions": [
+            "Format known SQL keywords and built-in functions in upper case.",
+            "Format known SQL keywords and built-in functions in lower case.",
+            "Keep the existing keyword casing."
+          ],
+          "default": "upper",
+          "scope": "resource",
+          "markdownDescription": "Controls how SQLovely formats known SQL keywords and built-in functions. String literals, quoted identifiers and comments are not changed."
+        },
+        "sqlovely.format.indentSize": {
+          "type": "number",
+          "default": 2,
+          "minimum": 1,
+          "maximum": 16,
+          "scope": "resource",
+          "markdownDescription": "Controls the indentation width SQLovely uses while formatting `.sql` files. The default is 2 spaces."
+        },
+        "sqlovely.format.insertSpaces": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "markdownDescription": "Controls whether SQLovely uses spaces for indentation while formatting `.sql` files. The default is enabled."
+        },
+        "sqlovely.format.maxConsecutiveBlankLines": {
+          "type": "number",
+          "default": 1,
+          "minimum": 0,
+          "maximum": 10,
+          "scope": "resource",
+          "markdownDescription": "Maximum number of consecutive blank lines SQLovely keeps while formatting."
+        },
+        "sqlovely.format.ensureFinalNewline": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "markdownDescription": "Ensures formatted SQL files end with a final newline."
+        },
+        "sqlovely.extras.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "markdownDescription": "Enables or disables SQLovely Extras for `.sql` files. Extras are optional features that can update files beyond pure formatting."
+        },
+        "sqlovely.extras.applyOnSave": {
+          "type": "boolean",
+          "default": false,
+          "scope": "resource",
+          "markdownDescription": "Applies enabled SQLovely Extras before saving `.sql` files. This is disabled by default because extras can change file content beyond pure formatting."
+        },
+        "sqlovely.extras.applyWithFormatting": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "markdownDescription": "Applies enabled SQLovely Extras whenever SQLovely formats a `.sql` file. Disable this to keep formatting limited to whitespace, indentation and keyword casing."
+        },
+        "sqlovely.extras.metadataHeader.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "markdownDescription": "Enables or disables the SQLovely metadata-header extra for procedures, functions and triggers."
+        },
+        "sqlovely.diagnostics.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "markdownDescription": "Enables or disables SQLovely diagnostics for `.sql` files. Diagnostics are informational checks and do not modify files."
+        },
+        "sqlovely.diagnostics.missingMetadataHeader.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "markdownDescription": "Shows a warning when a procedure, function or trigger does not have a SQLovely metadata header. The quick fix can insert the missing header."
+        },
+        "sqlovely.diagnostics.maxLineLength.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "markdownDescription": "Shows an informational diagnostic for SQL lines that exceed the configured SQLovely line-length limit."
+        },
+        "sqlovely.diagnostics.maxLineLength.limit": {
+          "type": "number",
+          "default": 120,
+          "minimum": 40,
+          "maximum": 300,
+          "scope": "resource",
+          "markdownDescription": "Maximum SQL line length used by SQLovely style diagnostics. The default is 120 characters."
+        }
+      }
+    }
+  }
+}

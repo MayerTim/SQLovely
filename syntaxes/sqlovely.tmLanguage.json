@@ -1,0 +1,378 @@
+{
+  "name": "SQLovely SQL",
+  "scopeName": "source.sql.sqlovely",
+  "fileTypes": [
+    "sql"
+  ],
+  "patterns": [
+    {
+      "include": "#metadataHeader"
+    },
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#delimitedIdentifiers"
+    },
+    {
+      "include": "#variables"
+    },
+    {
+      "include": "#objectDeclarations"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#dataTypes"
+    },
+    {
+      "include": "#functions"
+    },
+    {
+      "include": "#constants"
+    },
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#operators"
+    },
+    {
+      "include": "#punctuation"
+    }
+  ],
+  "repository": {
+    "metadataHeader": {
+      "patterns": [
+        {
+          "name": "meta.header.sqlovely.sql",
+          "match": "^\\s*--\\s*(SQLovely-Metadata-(?:Start|End))\\b.*$",
+          "captures": {
+            "1": {
+              "name": "entity.name.tag.metadata.sqlovely.sql"
+            }
+          }
+        },
+        {
+          "name": "meta.header.field.sqlovely.sql",
+          "match": "^\\s*--\\s*(Object Type|Object Name|Dialect|Author|Created|Updated|Description)\\s*:",
+          "captures": {
+            "1": {
+              "name": "variable.other.metadata-field.sqlovely.sql"
+            }
+          }
+        }
+      ]
+    },
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.block.sql.sqlovely",
+          "begin": "/\\*",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.begin.sql.sqlovely"
+            }
+          },
+          "end": "\\*/",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.end.sql.sqlovely"
+            }
+          }
+        },
+        {
+          "name": "comment.line.double-dash.sql.sqlovely",
+          "match": "--.*$"
+        },
+        {
+          "name": "comment.line.double-slash.sql.sqlovely",
+          "match": "//.*$"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.single.sql.sqlovely",
+          "begin": "[Nn]?'",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.begin.sql.sqlovely"
+            }
+          },
+          "end": "'",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.string.end.sql.sqlovely"
+            }
+          },
+          "patterns": [
+            {
+              "name": "constant.character.escape.apostrophe.sql.sqlovely",
+              "match": "''"
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.binary.hex.sql.sqlovely",
+          "match": "(?i)\\b(?:0x[0-9a-f]+|X'[0-9a-f]*')\\b"
+        }
+      ]
+    },
+    "delimitedIdentifiers": {
+      "patterns": [
+        {
+          "name": "entity.name.identifier.bracketed.sql.sqlovely",
+          "match": "\\[(?:\\]\\]|[^\\]\\r\\n])*\\]"
+        },
+        {
+          "name": "entity.name.identifier.quoted.double.sql.sqlovely",
+          "begin": "\"",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.identifier.begin.sql.sqlovely"
+            }
+          },
+          "end": "\"",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.identifier.end.sql.sqlovely"
+            }
+          },
+          "patterns": [
+            {
+              "name": "constant.character.escape.double-quote.sql.sqlovely",
+              "match": "\"\""
+            }
+          ]
+        },
+        {
+          "name": "entity.name.identifier.backtick.sql.sqlovely",
+          "begin": "`",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.identifier.begin.sql.sqlovely"
+            }
+          },
+          "end": "`",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.identifier.end.sql.sqlovely"
+            }
+          }
+        }
+      ]
+    },
+    "variables": {
+      "patterns": [
+        {
+          "name": "variable.language.global.sql.sqlovely",
+          "match": "@@[A-Za-z_][A-Za-z0-9_]*"
+        },
+        {
+          "name": "variable.other.local.sql.sqlovely",
+          "match": "@[A-Za-z_][A-Za-z0-9_]*"
+        },
+        {
+          "name": "variable.parameter.host.sql.sqlovely",
+          "match": ":[A-Za-z_][A-Za-z0-9_]*"
+        },
+        {
+          "name": "variable.parameter.positional.sql.sqlovely",
+          "match": "\\?"
+        },
+        {
+          "name": "variable.parameter.numbered.sql.sqlovely",
+          "match": "\\$\\d+\\b"
+        }
+      ]
+    },
+    "objectDeclarations": {
+      "patterns": [
+        {
+          "name": "meta.declaration.routine.sql.sqlovely",
+          "match": "(?i)\\b(create|alter)\\s+(?:(or\\s+replace|or\\s+alter|temporary|local\\s+temporary|global\\s+temporary)\\s+)*(procedure|proc|function|trigger)\\s+((?:\\[(?:\\]\\]|[^\\]\\r\\n])*\\]|\"(?:\"\"|[^\"\\r\\n])*\"|[#@]?[A-Za-z_][A-Za-z0-9_$#@]*)(?:\\s*\\.\\s*(?:\\[(?:\\]\\]|[^\\]\\r\\n])*\\]|\"(?:\"\"|[^\"\\r\\n])*\"|[#@]?[A-Za-z_][A-Za-z0-9_$#@]*)){0,3})",
+          "captures": {
+            "1": {
+              "name": "keyword.other.ddl.sql.sqlovely"
+            },
+            "2": {
+              "name": "storage.modifier.sql.sqlovely"
+            },
+            "3": {
+              "name": "entity.name.type.object.sql.sqlovely"
+            },
+            "4": {
+              "name": "entity.name.function.sql.sqlovely"
+            }
+          }
+        },
+        {
+          "name": "meta.declaration.drop-routine.sql.sqlovely",
+          "match": "(?i)\\b(drop)\\s+(procedure|proc|function|trigger)\\s+((?:\\[(?:\\]\\]|[^\\]\\r\\n])*\\]|\"(?:\"\"|[^\"\\r\\n])*\"|[#@]?[A-Za-z_][A-Za-z0-9_$#@]*)(?:\\s*\\.\\s*(?:\\[(?:\\]\\]|[^\\]\\r\\n])*\\]|\"(?:\"\"|[^\"\\r\\n])*\"|[#@]?[A-Za-z_][A-Za-z0-9_$#@]*)){0,3})",
+          "captures": {
+            "1": {
+              "name": "keyword.other.ddl.sql.sqlovely"
+            },
+            "2": {
+              "name": "entity.name.type.object.sql.sqlovely"
+            },
+            "3": {
+              "name": "entity.name.function.sql.sqlovely"
+            }
+          }
+        },
+        {
+          "name": "meta.declaration.schema-object.sql.sqlovely",
+          "match": "(?i)\\b(?:create\\s+synchronization\\s+profile|create\\s+materialized\\s+view|create\\s+remote\\s+server|create\\s+login\\s+policy|create\\s+unique\\s+index|create\\s+subscription|create\\s+certificate|create\\s+publication|create\\s+assembly|create\\s+database|create\\s+sequence|create\\s+variable|alter\\s+database|create\\s+dbspace|create\\s+service|create\\s+synonym|create\\s+domain|create\\s+schema|create\\s+server|drop\\s+database|create\\s+event|create\\s+index|create\\s+table|alter\\s+table|create\\s+role|create\\s+type|create\\s+user|create\\s+view|alter\\s+role|alter\\s+user|alter\\s+view|drop\\s+index|drop\\s+table|drop\\s+role|drop\\s+user|drop\\s+view)\\b",
+          "captures": {
+            "0": {
+              "name": "keyword.other.ddl.sql.sqlovely"
+            }
+          }
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.hex.sql.sqlovely",
+          "match": "\\b0x[0-9A-Fa-f]+\\b"
+        },
+        {
+          "name": "constant.numeric.money.sql.sqlovely",
+          "match": "(?<![\\w.])[$]\\s*\\d+(?:\\.\\d+)?(?![\\w.])"
+        },
+        {
+          "name": "constant.numeric.decimal.sql.sqlovely",
+          "match": "(?<![\\w.])(?:\\d+\\.\\d*|\\.\\d+|\\d+)(?:[eE][+-]?\\d+)?(?![\\w.])"
+        }
+      ]
+    },
+    "dataTypes": {
+      "patterns": [
+        {
+          "name": "storage.type.sql.sqlovely",
+          "match": "(?i)\\b(?:national\\s+character|character\\s+varying|unsigned\\s+smallint|double\\s+precision|national\\s+varchar|unsigned\\s+integer|unsigned\\s+bigint|binary\\s+varying|uniqueidentifier|long\\s+nvarchar|national\\s+char|datetimeoffset|long\\s+varchar|unsigned\\s+int|long\\s+binary|smalldatetime|st_linestring|sql_variant|st_geometry|rowversion|smallmoney|st_polygon|character|datetime2|timestamp|varbinary|datetime|nvarchar|smallint|st_point|boolean|decimal|integer|numeric|tinyint|varchar|bigint|binary|double|varbit|float|image|money|nchar|ntext|blob|char|clob|date|real|text|time|uuid|bit|dec|int|xml)\\b"
+        }
+      ]
+    },
+    "functions": {
+      "patterns": [
+        {
+          "name": "support.function.builtin.sql.sqlovely",
+          "match": "(?i)\\b(?:connection_property|current\\s+timestamp|character_length|session_property|current\\s+date|current\\s+time|scope_identity|datefromparts|xmlserialize|char_length|first_value|html_encode|suser_sname|sysdatetime|try_convert|dateformat|dense_rank|difference|getutcdate|last_value|row_number|string_agg|xmlelement|isnumeric|monthname|object_id|quotename|replicate|substring|timestamp|user_name|xmlconcat|coalesce|datediff|datename|datepart|hextoint|inttohex|patindex|property|try_cast|variance|xmlparse|xmlquery|ceiling|convert|dateadd|dayname|db_name|degrees|eomonth|getdate|greater|replace|reverse|similar|soundex|concat|ifnull|isdate|isjson|isnull|length|lesser|locate|minute|nullif|repeat|second|stddev|string|substr|ascii|atan2|count|floor|log10|lower|ltrim|month|newid|ntile|power|right|round|rtrim|space|stuff|today|upper|acos|asin|atan|cast|ceil|char|date|days|hour|lead|left|list|rand|rank|sign|sqrt|trim|year|abs|avg|cos|cot|day|exp|iif|lag|len|log|max|min|mod|now|sin|str|sum|tan)\\b(?=\\s*\\()"
+        },
+        {
+          "name": "support.function.system.sql.sqlovely",
+          "match": "(?i)(?:@@error|@@identity|@@rowcount|@@trancount|@@servername|@@version)\\b"
+        }
+      ]
+    },
+    "constants": {
+      "patterns": [
+        {
+          "name": "constant.language.sql.sqlovely",
+          "match": "(?i)\\b(?:current\\s+timestamp|current\\s+date|current\\s+time|current\\s+user|session\\s+user|sqlstate|sqlcode|unknown|false|null|true|user)\\b"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.sql.sqlovely",
+          "match": "(?i)\\b(?:on\\s+exception\\s+resume|execute\\s+immediate|begin\\s+atomic|begin\\s+catch|begin\\s+try|end\\s+catch|end\\s+loop|end\\s+try|exception|raiserror|continue|end\\s+if|resignal|declare|execute|handler|iterate|message|returns|waitfor|cursor|elseif|repeat|return|signal|begin|break|catch|close|endif|fetch|leave|print|throw|until|while|call|case|else|exec|exit|goto|loop|open|then|when|end|for|try|do|if)\\b"
+        },
+        {
+          "name": "keyword.other.dml.sql.sqlovely",
+          "match": "(?i)\\b(?:refresh\\s+materialized\\s+view|unbounded\\s+following|unbounded\\s+preceding|right\\s+outer\\s+join|full\\s+outer\\s+join|left\\s+outer\\s+join|truncate\\s+table|intersect\\s+all|natural\\s+join|partition\\s+by|cross\\s+apply|current\\s+row|outer\\s+apply|select\\s+into|cross\\s+join|except\\s+all|inner\\s+join|load\\s+table|right\\s+join|full\\s+join|left\\s+join|union\\s+all|for\\s+json|group\\s+by|openrowset|order\\s+by|following|for\\s+xml|intersect|openquery|preceding|recursive|writetext|distinct|readtext|analyze|lateral|openxml|restore|unpivot|backup|delete|except|exists|having|insert|offset|output|select|unload|update|upsert|values|apply|fetch|first|limit|merge|minus|pivot|range|union|using|value|where|from|into|join|next|only|over|rows|some|with|all|any|set|top|on)\\b"
+        },
+        {
+          "name": "keyword.other.ddl.sql.sqlovely",
+          "match": "(?i)\\b(?:synchronization\\s+profile|xml\\s+schema\\s+collection|dynamic\\s+result\\s+sets|for\\s+each\\s+statement|create\\s+or\\s+replace|create\\s+or\\s+alter|materialized\\s+view|not\\s+deterministic|global\\s+temporary|local\\s+temporary|no\\s+result\\s+set|with\\s+encryption|for\\s+each\\s+row|fulltext\\s+index|with\\s+recompile|external\\s+name|remote\\s+server|login\\s+policy|sql\\s+security|unique\\s+index|authorization|deterministic|foreign\\s+key|primary\\s+key|schemabinding|comment\\s+on|execute\\s+as|instead\\s+of|nonclustered|or\\s+replace|set\\s+hidden|subscription|text\\s+index|certificate|publication|referencing|constraint|credential|invalidate|not\\s+null|or\\s+alter|references|statistics|clustered|encrypted|filegroup|partition|procedure|temporary|assembly|computed|database|endpoint|function|identity|inserted|language|sequence|validate|variable|collate|dbspace|default|definer|deleted|disable|invoker|replace|rowtype|service|synonym|trigger|before|column|create|domain|enable|modify|remote|rename|result|revoke|schema|server|after|alter|check|event|grant|index|owner|table|deny|drop|proc|role|type|user|view|add|new|old)\\b"
+        },
+        {
+          "name": "keyword.other.transaction.sql.sqlovely",
+          "match": "(?i)\\b(?:rollback\\s+to\\s+savepoint|rollback\\s+transaction|begin\\s+transaction|release\\s+savepoint|start\\s+transaction|readuncommitted|rollback\\s+tran|rollback\\s+work|repeatableread|commit\\s+work|readcommitted|begin\\s+tran|begin\\s+work|serializable|transaction|xact_abort|isolation|savepoint|holdlock|rollback|snapshot|commit|nolock|unlock|lock|tran)\\b"
+        },
+        {
+          "name": "keyword.operator.logical.sql.sqlovely",
+          "match": "(?i)\\b(?:is\\s+not\\s+distinct\\s+from|is\\s+distinct\\s+from|is\\s+not\\s+null|not\\s+between|not\\s+like|is\\s+null|is\\s+not|not\\s+in|between|unknown|escape|like|null|and|not|in|is|or)\\b"
+        },
+        {
+          "name": "keyword.other.sql.sqlovely",
+          "match": "(?i)\\b(?:set\\s+temporary\\s+option|with\\s+check\\s+option|case\\s+insensitive|case\\s+sensitive|at\\s+isolation|at\\s+location|nulls\\s+first|nulls\\s+last|set\\s+option|passthrough|synchronize|checkpoint|deallocate|disconnect|excluding|including|no\\s+wait|recompile|allocate|describe|connect|explain|prepare|setuser|option|debug|start|dbcc|desc|plan|stop|wait|asc|use)\\b"
+        },
+        {
+          "name": "keyword.other.batch-separator.sql.sqlovely",
+          "match": "(?i)^\\s*GO\\s*(?:\\d+\\s*)?(?:--.*)?$"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.comparison.sql.sqlovely",
+          "match": "<>|!=|!<|!>|\\^=|<=|>=|=|<|>"
+        },
+        {
+          "name": "keyword.operator.assignment.sql.sqlovely",
+          "match": ":=|\\+="
+        },
+        {
+          "name": "keyword.operator.arithmetic.sql.sqlovely",
+          "match": "\\+|-|\\*|/|%"
+        },
+        {
+          "name": "keyword.operator.concatenation.sql.sqlovely",
+          "match": "\\|\\|"
+        },
+        {
+          "name": "keyword.operator.bitwise.sql.sqlovely",
+          "match": "&|\\||\\^|~"
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.terminator.statement.sql.sqlovely",
+          "match": ";"
+        },
+        {
+          "name": "punctuation.separator.comma.sql.sqlovely",
+          "match": ","
+        },
+        {
+          "name": "punctuation.separator.colon.sql.sqlovely",
+          "match": ":"
+        },
+        {
+          "name": "punctuation.section.group.begin.sql.sqlovely",
+          "match": "\\("
+        },
+        {
+          "name": "punctuation.section.group.end.sql.sqlovely",
+          "match": "\\)"
+        },
+        {
+          "name": "punctuation.section.block.begin.sql.sqlovely",
+          "match": "\\{"
+        },
+        {
+          "name": "punctuation.section.block.end.sql.sqlovely",
+          "match": "\\}"
+        },
+        {
+          "name": "punctuation.accessor.dot.sql.sqlovely",
+          "match": "\\."
+        }
+      ]
+    }
+  }
+}

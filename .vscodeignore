@@ -1,0 +1,28 @@
+.git/**
+.github/**
+.vscode/**
+.vscode-test/**
+node_modules/**
+src/**
+test/**
+tests/**
+scripts/**
+out/**
+coverage/**
+
+# Development-only files
+PACKAGING.md
+dist/**/*.map
+.gitattributes
+.gitignore
+tsconfig.json
+package-lock.json
+*.tsbuildinfo
+
+# Local packages and archives
+*.vsix
+*.zip
+
+# OS files
+.DS_Store
+Thumbs.db
