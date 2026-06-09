@@ -80,6 +80,125 @@ runTest('updates an existing header while preserving created date and descriptio
   assert.equal(countOccurrences(result.text, METADATA_HEADER_START), 1);
 });
 
+runTest('updates metadata version when a newer valid history entry exists', () => {
+  const input = [
+    'CREATE PROCEDURE dbo.history_added()',
+    'BEGIN',
+    '  -- METADATA',
+    '  --',
+    '  -- Description : Existing description',
+    '  -- Version     : 1.0',
+    '  -- Author      : Existing Author',
+    '  -- Created     : 2020-01-02',
+    '  -- Updated     : 2020-01-03',
+    '  --',
+    '  -- History     :',
+    '  --   v1.0: Initial creation - 2020-01-02 Existing Author',
+    '  --   v1.1: Added validation - 2020-02-03 Existing Author',
+    '  --',
+    '  -- METADATA END',
+    'END;'
+  ].join('\n');
+
+  const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
+
+  assert.equal(result.action, 'updated');
+  assert.ok(result.text.includes('-- Version     : 1.1'));
+  assert.ok(result.text.includes('--   v1.0: Initial creation - 2020-01-02 Existing Author'));
+  assert.ok(result.text.includes('--   v1.1: Added validation - 2020-02-03 Existing Author'));
+});
+
+runTest('adds a history entry when the metadata version was bumped', () => {
+  const input = [
+    'CREATE PROCEDURE dbo.version_bumped()',
+    'BEGIN',
+    '  -- METADATA',
+    '  --',
+    '  -- Description : Existing description',
+    '  -- Version     : 2.0',
+    '  -- Author      : Existing Author',
+    '  -- Created     : 2020-01-02',
+    '  -- Updated     : 2020-01-03',
+    '  --',
+    '  -- History     :',
+    '  --   v1.0: Initial creation - 2020-01-02 Existing Author',
+    '  --',
+    '  -- METADATA END',
+    'END;'
+  ].join('\n');
+
+  const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
+
+  assert.equal(result.action, 'updated');
+  assert.ok(result.text.includes('-- Version     : 2.0'));
+  assert.ok(result.text.includes('--   v1.0: Initial creation - 2020-01-02 Existing Author'));
+  assert.ok(result.text.includes('--   v2.0: <TODO> - 2026-06-09 Existing Author'));
+});
+
+runTest('corrects invalid metadata version bumps before adding history entries', () => {
+  const input = [
+    'CREATE PROCEDURE dbo.invalid_version_bump()',
+    'BEGIN',
+    '  -- METADATA',
+    '  --',
+    '  -- Description : Existing description',
+    '  -- Version     : 1.5',
+    '  -- Author      : Existing Author',
+    '  -- Created     : 2020-01-02',
+    '  -- Updated     : 2020-01-03',
+    '  --',
+    '  -- History     :',
+    '  --   v1.0: Initial creation - 2020-01-02 Existing Author',
+    '  --',
+    '  -- METADATA END',
+    'END;'
+  ].join('\n');
+
+  const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
+
+  assert.equal(result.action, 'updated');
+  assert.ok(result.text.includes('-- Version     : 1.1'));
+  assert.ok(result.text.includes('--   v1.1: <TODO> - 2026-06-09 Existing Author'));
+  assert.equal(result.text.includes('-- Version     : 1.5'), false);
+  assert.equal(result.text.includes('--   v1.5:'), false);
+});
+
+runTest('corrects invalid history version jumps to one-step increments', () => {
+  const cases = [
+    { requestedVersion: '3.0', expectedVersion: '2.0' },
+    { requestedVersion: '1.5', expectedVersion: '1.1' },
+    { requestedVersion: '1.0.3', expectedVersion: '1.0.1' }
+  ];
+
+  for (const testCase of cases) {
+    const input = [
+      'CREATE PROCEDURE dbo.invalid_history()',
+      'BEGIN',
+      '  -- METADATA',
+      '  --',
+      '  -- Description : Existing description',
+      `  -- Version     : ${testCase.requestedVersion}`,
+      '  -- Author      : Existing Author',
+      '  -- Created     : 2020-01-02',
+      '  -- Updated     : 2020-01-03',
+      '  --',
+      '  -- History     :',
+      '  --   v1.0: Initial creation - 2020-01-02 Existing Author',
+      `  --   v${testCase.requestedVersion}: Changed implementation - 2020-02-03 Existing Author`,
+      '  --',
+      '  -- METADATA END',
+      'END;'
+    ].join('\n');
+
+    const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
+
+    assert.equal(result.action, 'updated');
+    assert.ok(result.text.includes(`-- Version     : ${testCase.expectedVersion}`));
+    assert.ok(result.text.includes(`--   v${testCase.expectedVersion}: Changed implementation - 2020-02-03 Existing Author`));
+    assert.equal(result.text.includes(`--   v${testCase.requestedVersion}: Changed implementation`), false);
+  }
+});
+
 runTest('ignores object declarations inside comments and string literals', () => {
   const input = [
     '-- CREATE PROCEDURE fake_proc()',
