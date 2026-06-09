@@ -65,7 +65,7 @@ The grammar highlights useful lexical regions in `.sql` files.
 | Transactions and savepoints | yes | keyword casing | not object-relevant |
 | MSSQL batches with `GO` | yes | root-level keyword handling | not object-relevant |
 | MSSQL routines | yes | rudimentary formatting | procedure/function/trigger supported |
-| Metadata headers | comments highlighted | inserted/updated through extras | supported for one primary object per file |
+| Metadata headers | section markers, field names, versions, dates, TODO placeholders and history entries | inserted/updated through extras | supported for one primary object per file |
 
 ## Design boundaries
 

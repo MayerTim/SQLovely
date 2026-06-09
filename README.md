@@ -76,7 +76,7 @@ Directory formatting intentionally applies formatting only. SQLovely Extras are 
 
 SQLovely Extras are optional file-updating features beyond pure formatting.
 
-The current extra inserts or updates a metadata header for procedures, functions and triggers:
+The current extra inserts or updates a metadata header for procedures, functions and triggers. Generated metadata headers also receive dedicated syntax scopes so themes can distinguish the markers, field names, versions, dates, TODO placeholders and history entries:
 
 ```sql
 CREATE PROCEDURE dbo.my_proc()

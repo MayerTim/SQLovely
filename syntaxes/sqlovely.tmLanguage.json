@@ -49,22 +49,89 @@
     "metadataHeader": {
       "patterns": [
         {
-          "name": "meta.header.sqlovely.sql",
-          "match": "^\\s*--\\s*(SQLovely-Metadata-(?:Start|End))\\b.*$",
-          "captures": {
-            "1": {
-              "name": "entity.name.tag.metadata.sqlovely.sql"
+          "name": "comment.block.metadata.sqlovely.sql",
+          "begin": "^(\\s*)(--)(\\s*)(METADATA)\\s*$",
+          "beginCaptures": {
+            "2": {
+              "name": "punctuation.definition.comment.sql.sqlovely"
+            },
+            "4": {
+              "name": "entity.name.section.metadata.begin.sqlovely.sql"
             }
-          }
+          },
+          "end": "^(\\s*)(--)(\\s*)(METADATA END)\\s*$",
+          "endCaptures": {
+            "2": {
+              "name": "punctuation.definition.comment.sql.sqlovely"
+            },
+            "4": {
+              "name": "entity.name.section.metadata.end.sqlovely.sql"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#metadataHeaderSeparators"
+            },
+            {
+              "include": "#metadataHeaderDescription"
+            },
+            {
+              "include": "#metadataHeaderVersion"
+            },
+            {
+              "include": "#metadataHeaderAuthor"
+            },
+            {
+              "include": "#metadataHeaderDates"
+            },
+            {
+              "include": "#metadataHeaderHistory"
+            },
+            {
+              "include": "#metadataHeaderGenericFields"
+            }
+          ]
         },
         {
-          "name": "meta.header.field.sqlovely.sql",
-          "match": "^\\s*--\\s*(Object Type|Object Name|Dialect|Author|Created|Updated|Description)\\s*:",
-          "captures": {
-            "1": {
-              "name": "variable.other.metadata-field.sqlovely.sql"
+          "name": "comment.block.metadata.legacy.sqlovely.sql",
+          "begin": "^(\\s*)(--)(\\s*)(SQLovely-Metadata-Start)\\b.*$",
+          "beginCaptures": {
+            "2": {
+              "name": "punctuation.definition.comment.sql.sqlovely"
+            },
+            "4": {
+              "name": "entity.name.section.metadata.begin.sqlovely.sql"
             }
-          }
+          },
+          "end": "^(\\s*)(--)(\\s*)(SQLovely-Metadata-End)\\b.*$",
+          "endCaptures": {
+            "2": {
+              "name": "punctuation.definition.comment.sql.sqlovely"
+            },
+            "4": {
+              "name": "entity.name.section.metadata.end.sqlovely.sql"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#metadataHeaderDescription"
+            },
+            {
+              "include": "#metadataHeaderVersion"
+            },
+            {
+              "include": "#metadataHeaderAuthor"
+            },
+            {
+              "include": "#metadataHeaderDates"
+            },
+            {
+              "include": "#metadataHeaderHistory"
+            },
+            {
+              "include": "#metadataHeaderGenericFields"
+            }
+          ]
         }
       ]
     },
@@ -371,6 +438,198 @@
         {
           "name": "punctuation.accessor.dot.sql.sqlovely",
           "match": "\\."
+        }
+      ]
+    },
+    "metadataHeaderSeparators": {
+      "patterns": [
+        {
+          "name": "meta.separator.metadata.sqlovely.sql",
+          "match": "^(\\s*)(--)(\\s*)$",
+          "captures": {
+            "2": {
+              "name": "punctuation.definition.comment.sql.sqlovely"
+            }
+          }
+        }
+      ]
+    },
+    "metadataHeaderDescription": {
+      "patterns": [
+        {
+          "name": "meta.field.description.metadata.sqlovely.sql",
+          "begin": "^(\\s*)(--)(\\s*)(Description)(\\s*)(:)(\\s*)",
+          "beginCaptures": {
+            "2": {
+              "name": "punctuation.definition.comment.sql.sqlovely"
+            },
+            "4": {
+              "name": "variable.other.property.metadata-field.sqlovely.sql"
+            },
+            "6": {
+              "name": "punctuation.separator.key-value.metadata.sqlovely.sql"
+            }
+          },
+          "end": "$",
+          "patterns": [
+            {
+              "name": "comment.line.todo.metadata.placeholder.sqlovely.sql",
+              "match": "<TODO>"
+            },
+            {
+              "name": "string.unquoted.metadata.description.sqlovely.sql",
+              "match": "[^\\r\\n]+"
+            }
+          ]
+        }
+      ]
+    },
+    "metadataHeaderVersion": {
+      "patterns": [
+        {
+          "name": "meta.field.version.metadata.sqlovely.sql",
+          "begin": "^(\\s*)(--)(\\s*)(Version)(\\s*)(:)(\\s*)",
+          "beginCaptures": {
+            "2": {
+              "name": "punctuation.definition.comment.sql.sqlovely"
+            },
+            "4": {
+              "name": "variable.other.property.metadata-field.sqlovely.sql"
+            },
+            "6": {
+              "name": "punctuation.separator.key-value.metadata.sqlovely.sql"
+            }
+          },
+          "end": "$",
+          "patterns": [
+            {
+              "name": "constant.numeric.version.metadata.sqlovely.sql",
+              "match": "\\bv?\\d+(?:\\.\\d+)*(?:[-+][A-Za-z0-9.-]+)?\\b"
+            }
+          ]
+        }
+      ]
+    },
+    "metadataHeaderAuthor": {
+      "patterns": [
+        {
+          "name": "meta.field.author.metadata.sqlovely.sql",
+          "begin": "^(\\s*)(--)(\\s*)(Author)(\\s*)(:)(\\s*)",
+          "beginCaptures": {
+            "2": {
+              "name": "punctuation.definition.comment.sql.sqlovely"
+            },
+            "4": {
+              "name": "variable.other.property.metadata-field.sqlovely.sql"
+            },
+            "6": {
+              "name": "punctuation.separator.key-value.metadata.sqlovely.sql"
+            }
+          },
+          "end": "$",
+          "patterns": [
+            {
+              "name": "entity.name.other.author.metadata.sqlovely.sql",
+              "match": "[^\\r\\n]+"
+            }
+          ]
+        }
+      ]
+    },
+    "metadataHeaderDates": {
+      "patterns": [
+        {
+          "name": "meta.field.date.metadata.sqlovely.sql",
+          "begin": "^(\\s*)(--)(\\s*)(Created|Updated)(\\s*)(:)(\\s*)",
+          "beginCaptures": {
+            "2": {
+              "name": "punctuation.definition.comment.sql.sqlovely"
+            },
+            "4": {
+              "name": "variable.other.property.metadata-field.sqlovely.sql"
+            },
+            "6": {
+              "name": "punctuation.separator.key-value.metadata.sqlovely.sql"
+            }
+          },
+          "end": "$",
+          "patterns": [
+            {
+              "name": "constant.other.date.metadata.sqlovely.sql",
+              "match": "\\b\\d{4}-\\d{2}-\\d{2}\\b"
+            }
+          ]
+        }
+      ]
+    },
+    "metadataHeaderHistory": {
+      "patterns": [
+        {
+          "name": "meta.field.history.metadata.sqlovely.sql",
+          "match": "^(\\s*)(--)(\\s*)(History)(\\s*)(:)(\\s*)$",
+          "captures": {
+            "2": {
+              "name": "punctuation.definition.comment.sql.sqlovely"
+            },
+            "4": {
+              "name": "variable.other.property.metadata-field.sqlovely.sql"
+            },
+            "6": {
+              "name": "punctuation.separator.key-value.metadata.sqlovely.sql"
+            }
+          }
+        },
+        {
+          "name": "meta.history-entry.metadata.sqlovely.sql",
+          "begin": "^(\\s*)(--)(\\s*)(v\\d+(?:\\.\\d+)*)(\\s*)(:)(\\s*)",
+          "beginCaptures": {
+            "2": {
+              "name": "punctuation.definition.comment.sql.sqlovely"
+            },
+            "4": {
+              "name": "constant.numeric.version.metadata.sqlovely.sql"
+            },
+            "6": {
+              "name": "punctuation.separator.key-value.metadata.sqlovely.sql"
+            }
+          },
+          "end": "$",
+          "patterns": [
+            {
+              "name": "constant.other.date.metadata.sqlovely.sql",
+              "match": "\\b\\d{4}-\\d{2}-\\d{2}\\b"
+            },
+            {
+              "name": "entity.name.other.author.metadata.sqlovely.sql",
+              "match": "(?<=\\d{4}-\\d{2}-\\d{2}\\s)[^\\r\\n]+$"
+            }
+          ]
+        }
+      ]
+    },
+    "metadataHeaderGenericFields": {
+      "patterns": [
+        {
+          "name": "meta.field.generic.metadata.sqlovely.sql",
+          "begin": "^(\\s*)(--)(\\s*)(Object Type|Object Name|Dialect)(\\s*)(:)(\\s*)",
+          "beginCaptures": {
+            "2": {
+              "name": "punctuation.definition.comment.sql.sqlovely"
+            },
+            "4": {
+              "name": "variable.other.property.metadata-field.sqlovely.sql"
+            },
+            "6": {
+              "name": "punctuation.separator.key-value.metadata.sqlovely.sql"
+            }
+          },
+          "end": "$",
+          "patterns": [
+            {
+              "name": "string.unquoted.metadata.value.sqlovely.sql",
+              "match": "[^\\r\\n]+"
+            }
+          ]
         }
       ]
     }

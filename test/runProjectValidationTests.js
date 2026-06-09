@@ -244,6 +244,25 @@ runTest('SQLovely grammar exposes the expected repository sections', () => {
   assert.ok(repositories.includes('operators'));
 });
 
+
+runTest('SQLovely grammar gives generated metadata headers semantic scopes', () => {
+  const grammarText = fs.readFileSync(path.join(root, 'syntaxes/sqlovely.tmLanguage.json'), 'utf8');
+
+  for (const fragment of [
+    'comment.block.metadata.sqlovely.sql',
+    'entity.name.section.metadata.begin.sqlovely.sql',
+    'entity.name.section.metadata.end.sqlovely.sql',
+    'variable.other.property.metadata-field.sqlovely.sql',
+    'punctuation.separator.key-value.metadata.sqlovely.sql',
+    'constant.numeric.version.metadata.sqlovely.sql',
+    'constant.other.date.metadata.sqlovely.sql',
+    'comment.line.todo.metadata.placeholder.sqlovely.sql',
+    'meta.history-entry.metadata.sqlovely.sql'
+  ]) {
+    assert.ok(grammarText.includes(fragment), `metadata grammar should include ${fragment}`);
+  }
+});
+
 runTest('SQLovely grammar includes audited SQL lexical categories', () => {
   const grammarText = fs.readFileSync(path.join(root, 'syntaxes/sqlovely.tmLanguage.json'), 'utf8').toLowerCase();
 
