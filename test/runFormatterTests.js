@@ -121,7 +121,13 @@ runTest('compresses blank lines, removes trailing whitespace and keeps one final
 
 runTest('supports lower-case keyword formatting', () => {
   const input = 'SELECT COALESCE(value, 0) FROM table_name';
-  const expected = 'select coalesce(value, 0) from table_name\n';
+  const expected = [
+    'select coalesce(',
+    '  value,',
+    '  0',
+    ') from table_name',
+    ''
+  ].join('\n');
 
   const result = formatSql(input, watcomDialect, {
     ...defaultOptions,
@@ -299,7 +305,9 @@ runTest('splits compact Watcom IF statements before applying indentation', () =>
     '  THEN',
     '    RETURN 0',
     '  END IF;',
-    '  SET "vLaenge" = "char_length"("iZiffernfolge");',
+    '  SET "vLaenge" = "char_length"(',
+    '    "iZiffernfolge"',
+    '  );',
     'END;',
     ''
   ].join('\n');
@@ -339,6 +347,58 @@ runTest('does not let compact Watcom IF statements leak indentation into followi
     'BEGIN',
     '  RETURN 1',
     'END;',
+    ''
+  ].join('\n');
+
+  const result = formatSql(input, watcomDialect, defaultOptions);
+
+  assert.equal(result.text, expected);
+});
+
+
+runTest('splits Watcom parenthesized parameter lists across indented lines', () => {
+  const input = [
+    'CREATE OR REPLACE FUNCTION "FCT"."OP_GTIN_VorherIstGrenze"(',
+    'IN "iText" long varchar,IN "iIndexPosition" integer )',
+    'RETURNS integer',
+    'BEGIN',
+    'END;'
+  ].join('\n');
+
+  const expected = [
+    'CREATE OR REPLACE FUNCTION "FCT"."OP_GTIN_VorherIstGrenze"(',
+    '  IN "iText" long varchar,',
+    '  IN "iIndexPosition" integer',
+    ')',
+    'RETURNS integer',
+    'BEGIN',
+    'END;',
+    ''
+  ].join('\n');
+
+  const result = formatSql(input, watcomDialect, defaultOptions);
+
+  assert.equal(result.text, expected);
+});
+
+runTest('splits nested Watcom function-call parentheses without touching string literals or type lengths', () => {
+  const input = [
+    'select my_func(isnull(test), test);',
+    "select '(' || my_func(value) || ')' as value;",
+    'returns varchar(14)'
+  ].join('\n');
+
+  const expected = [
+    'SELECT my_func(',
+    '  ISNULL(',
+    '    test',
+    '  ),',
+    '  test',
+    ');',
+    "SELECT '(' || my_func(",
+    '  VALUE',
+    ") || ')' AS VALUE;",
+    'RETURNS varchar(14)',
     ''
   ].join('\n');
 
