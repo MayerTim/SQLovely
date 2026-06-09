@@ -1,5 +1,6 @@
 import type { SqlDialect } from '../dialects';
 import { detectPrimarySqlObject, type DetectedSqlObject } from './objectDetection';
+import { findLooseLegacyMetadataHeader } from './legacyMetadataHeader';
 import { maskSqlCommentsAndStrings } from './sqlTextMasking';
 
 export const METADATA_HEADER_START = '-- METADATA';
@@ -65,7 +66,7 @@ export function insertOrUpdateMetadataHeader(
     };
   }
 
-  const existingHeader = findExistingMetadataHeader(text);
+  const existingHeader = findExistingMetadataHeader(text, initialObject);
   const lineBreak = detectPreferredLineBreak(text);
   const workingText = existingHeader
     ? removeExistingHeader(text, existingHeader, lineBreak)
@@ -91,8 +92,23 @@ export function insertOrUpdateMetadataHeader(
   };
 }
 
-export function findExistingMetadataHeader(text: string): ExistingMetadataHeader | undefined {
-  return findModernMetadataHeader(text) ?? findLegacyMetadataHeader(text);
+export function findExistingMetadataHeader(text: string, object?: DetectedSqlObject): ExistingMetadataHeader | undefined {
+  return findModernMetadataHeader(text)
+    ?? findLegacyMetadataHeader(text)
+    ?? (object ? findLooseLegacyExistingMetadataHeader(text, object) : undefined);
+}
+
+function findLooseLegacyExistingMetadataHeader(text: string, object: DetectedSqlObject): ExistingMetadataHeader | undefined {
+  const looseHeader = findLooseLegacyMetadataHeader(text, object);
+
+  if (!looseHeader) {
+    return undefined;
+  }
+
+  return {
+    ...looseHeader,
+    isLegacy: true
+  };
 }
 
 function findModernMetadataHeader(text: string): ExistingMetadataHeader | undefined {

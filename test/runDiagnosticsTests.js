@@ -37,6 +37,23 @@ runTest('does not report a diagnostic when a SQLovely metadata header already ex
   assert.equal(findMissingMetadataHeaderIssue(withHeader, watcomDialect), undefined);
 });
 
+
+runTest('does not report missing metadata when a loose legacy header can be normalized', () => {
+  const input = [
+    'CREATE PROCEDURE dbo.legacy_header()',
+    '-- ================================',
+    '-- version: 1.2',
+    '-- history:',
+    '-- v1.2 - existing legacy entry',
+    '-- ================================',
+    'BEGIN',
+    'SELECT 1;',
+    'END;'
+  ].join('\n');
+
+  assert.equal(findMissingMetadataHeaderIssue(input, watcomDialect), undefined);
+});
+
 runTest('does not report a diagnostic for files without supported SQL objects', () => {
   const input = 'SELECT 1;\n';
   assert.equal(findMissingMetadataHeaderIssue(input, watcomDialect), undefined);

@@ -99,6 +99,8 @@ END;
 
 The header is inserted directly before the first `BEGIN` line of the detected object. Repeated runs update the existing SQLovely block instead of duplicating it.
 
+When SQLovely finds a loose legacy metadata-style comment block for the detected object, it normalizes the block to the generated SQLovely format instead of adding a second header. Legacy detection is conservative and requires a recognizable version field so regular explanatory comments are left in place.
+
 Extras are applied during normal SQLovely formatting by default:
 
 ```json

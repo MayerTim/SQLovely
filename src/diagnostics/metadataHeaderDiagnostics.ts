@@ -17,13 +17,13 @@ export function findMissingMetadataHeaderIssue(
   text: string,
   dialect: SqlDialect
 ): MissingMetadataHeaderIssue | undefined {
-  if (findExistingMetadataHeader(text)) {
-    return undefined;
-  }
-
   const object = detectPrimarySqlObject(text, dialect);
 
   if (!object) {
+    return undefined;
+  }
+
+  if (findExistingMetadataHeader(text, object)) {
     return undefined;
   }
 

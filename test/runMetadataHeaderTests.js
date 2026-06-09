@@ -245,6 +245,92 @@ runTest('migrates legacy top-level metadata headers before the SQL object BEGIN'
   assert.ok(!result.text.includes('SQLovely-Metadata-Start'));
 });
 
+
+runTest('normalizes a loose legacy Watcom metadata header before BEGIN', () => {
+  const input = [
+    'create or replace procedure "fct"."procedurename"',
+    '( in "parameter1" integer,in "parameter2" integer )',
+    '-- ---------------------------------------------------------------------------',
+    '--                     procedurename',
+    '-- ---------------------------------------------------------------------------',
+    '--',
+    '-- beschreibung',
+    '--',
+    '-- version:             1.00',
+    '-- erstellt Datum:      xx.xx.xxxx      erstellt von: t.mayer',
+    '-- letzte Änderung:',
+    '--',
+    '-- ---------------------------------------------------------------------------',
+    '-- history:',
+    '-- v1.00 - erstellt',
+    '-- ---------------------------------------------------------------------------',
+    'begin',
+    '  -- do something',
+    'end;'
+  ].join('\n');
+
+  const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
+
+  assert.equal(result.action, 'updated');
+  assert.ok(result.text.includes('create or replace procedure "fct"."procedurename"\n( in "parameter1" integer,in "parameter2" integer )\n-- METADATA'));
+  assert.ok(result.text.includes('-- Description : <TODO>'));
+  assert.ok(result.text.includes('-- Version     : 1.00'));
+  assert.ok(result.text.includes('-- Author      : t.mayer'));
+  assert.ok(result.text.includes('-- Created     : xx.xx.xxxx'));
+  assert.ok(result.text.includes('-- Updated     : 2026-06-09'));
+  assert.ok(result.text.includes('--   v1.00: erstellt'));
+  assert.ok(result.text.includes(`${METADATA_HEADER_END}\nbegin`));
+  assert.equal(countOccurrences(result.text, METADATA_HEADER_START), 1);
+  assert.equal(result.text.includes('-- version:'), false);
+  assert.equal(result.text.includes('-- history:'), false);
+});
+
+runTest('normalizes slash-style legacy metadata headers with labelled descriptions', () => {
+  const input = [
+    'CREATE FUNCTION dbo.slash_header() RETURNS integer',
+    '// ////////////////////////////////////////',
+    '// Description: Calculates the demo value',
+    '// Version = v2.4',
+    '// Created: 2021-03-04',
+    '// Author: Legacy Author',
+    '// History:',
+    '// v2.4 - migrated from old template',
+    '// ////////////////////////////////////////',
+    'BEGIN',
+    'RETURN 1;',
+    'END;'
+  ].join('\n');
+
+  const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
+
+  assert.equal(result.action, 'updated');
+  assert.ok(result.text.includes('-- Description : Calculates the demo value'));
+  assert.ok(result.text.includes('-- Version     : 2.4'));
+  assert.ok(result.text.includes('-- Author      : Legacy Author'));
+  assert.ok(result.text.includes('-- Created     : 2021-03-04'));
+  assert.ok(result.text.includes('--   v2.4: migrated from old template'));
+  assert.ok(!result.text.includes('// Version'));
+  assert.equal(countOccurrences(result.text, METADATA_HEADER_START), 1);
+});
+
+runTest('leaves non-metadata comment blocks in place while inserting a new header', () => {
+  const input = [
+    'CREATE PROCEDURE dbo.comment_only()',
+    '-- This comment explains the procedure body.',
+    '-- It is not a legacy metadata header.',
+    'BEGIN',
+    'SELECT 1;',
+    'END;'
+  ].join('\n');
+
+  const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
+
+  assert.equal(result.action, 'inserted');
+  assert.ok(result.text.includes('-- This comment explains the procedure body.'));
+  assert.ok(result.text.includes('-- Version     : 1.0'));
+  assert.equal(countOccurrences(result.text, METADATA_HEADER_START), 1);
+});
+
 function countOccurrences(text, needle) {
   return text.split(/\r?\n/).filter((line) => line.trim() === needle).length;
 }
