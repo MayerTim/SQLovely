@@ -1,6 +1,10 @@
 # Contributing
 
-Use the standard validation commands before opening a pull request:
+Thank you for considering a contribution to SQLovely.
+
+## Before opening a pull request
+
+Run the standard validation commands:
 
 ```bash
 npm ci
@@ -9,4 +13,16 @@ npm test
 npm run package:vsix
 ```
 
-Keep formatter behavior conservative and add regression tests for every behavior change.
+## Guidelines
+
+- Keep formatter behavior conservative.
+- Add regression tests for behavior changes.
+- Keep `README.md` user-facing.
+- Put maintainer/developer details in `docs/`.
+- Update `CHANGELOG.md` for user-visible changes.
+
+For development setup and implementation notes, see:
+
+- `docs/DEVELOPMENT.md`
+- `docs/SQL_IMPLEMENTATION.md`
+- `PACKAGING.md`

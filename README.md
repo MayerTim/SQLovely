@@ -1,29 +1,23 @@
 # SQLovely
 
-<p align="center">
-  <img src="images/logo.png" alt="SQLovely logo" width="128" />
-</p>
+SQLovely adds practical SQL language support for `.sql` files in VS Code.
 
-SQLovely is a VS Code extension for `.sql` files. It provides SQL highlighting, conservative formatting, metadata-header extras, diagnostics and quick fixes.
+It is focused on Watcom SQL by default and also includes a small MSSQL-oriented dialect surface for projects that need basic SQL Server-style support.
 
-Watcom SQL is the default dialect. MSSQL support is available as a small secondary dialect surface, not as a complete T-SQL implementation.
+## Features
 
-## Install locally
+- SQL syntax highlighting for regular `.sql` files
+- Conservative SQL formatting
+- Optional metadata-header extras for procedures, functions and triggers
+- Diagnostics and quick fixes for supported SQLovely rules
+- Watcom SQL as the default dialect
+- Basic MSSQL support for common T-SQL-style files
 
-Build the package:
+## Quick start
 
-```bash
-npm install
-npm run package:vsix
-```
+Open a `.sql` file and run commands from the VS Code Command Palette.
 
-Install the resulting VSIX:
-
-```bash
-code --install-extension out/sqlovely-*.vsix
-```
-
-## Recommended workspace settings
+Recommended workspace setting:
 
 ```json
 {
@@ -34,7 +28,7 @@ code --install-extension out/sqlovely-*.vsix
 }
 ```
 
-To let VS Code format SQL files automatically on save, enable format-on-save for the SQL language:
+To format SQL files automatically when saving:
 
 ```json
 {
@@ -42,22 +36,6 @@ To let VS Code format SQL files automatically on save, enable format-on-save for
     "editor.defaultFormatter": "tim-mayer.sqlovely",
     "editor.formatOnSave": true
   }
-}
-```
-
-SQLovely Extras are applied during SQLovely formatting by default. This lets **Format Document** and VS Code format-on-save also keep supported metadata headers up to date. Disable it if formatting should only touch whitespace, indentation and keyword casing:
-
-```json
-{
-  "sqlovely.extras.applyWithFormatting": true
-}
-```
-
-Extras can also run as a separate save participant. This is disabled by default because it can update files even when formatting is not requested:
-
-```json
-{
-  "sqlovely.extras.applyOnSave": false
 }
 ```
 
@@ -70,83 +48,35 @@ Extras can also run as a separate save participant. This is disabled by default 
 - **SQLovely: Insert or Update Metadata Header**
 - **SQLovely: Apply SQLovely Extras**
 
-## Dialects
+## Formatting
 
-The active dialect is configured with:
+SQLovely formats conservatively. It keeps SQL structure intact and focuses on readable, predictable cleanup:
 
-```json
-{
-  "sqlovely.dialect": "watcom"
-}
-```
-
-Supported values:
-
-- `watcom`: default dialect
-- `mssql`: small secondary dialect surface
-
-The TextMate grammar is a broad SQLovely grammar for `.sql` files. Dialect-specific behavior lives in the formatter, object detection, SQLovely Extras, diagnostics and quick fixes.
-
-## Syntax highlighting
-
-The grammar covers the SQL structures SQLovely needs for regular SQL work:
-
-- `--`, `//` and `/* ... */` comments
-- single-quoted strings with doubled apostrophe escaping
-- binary/hex literals
-- bracketed, double-quoted and backtick identifiers
-- host variables, local variables, system variables and positional parameters
-- numeric literals
-- common SQL, Watcom SQL and SQL Server data types
-- common built-in scalar, aggregate, date/time, XML and window functions
-- DDL, DML, transaction and control-flow keywords
-- procedure, function and trigger declarations
-- common schema-object declarations
-- `GO` batch separators for MSSQL-oriented files
-
-The grammar is designed for highlighting. It is not a full SQL parser.
-
-See `docs/SYNTAX_GRAMMAR.md` and `docs/SQL_COVERAGE.md` for the detailed coverage matrix.
-
-## Formatter
-
-The formatter is conservative and line-oriented. Its defaults follow a compact SQL style: upper-case keywords/functions, spaces for indentation, 2-space indentation, trimmed trailing whitespace and a final newline. It supports:
-
-- keyword/function casing
-- basic Watcom block indentation
-- simple `BEGIN` / `END`, `IF` / `ELSE` / `ENDIF`, `CASE` and MSSQL `TRY` / `CATCH` indentation
+- keyword and function casing
+- basic block indentation
 - trailing whitespace removal
 - limiting consecutive blank lines
-- optional final newline enforcement
+- final newline handling
 
-It does not rewrite query structure, split statements, align JOINs or convert between dialects.
+The formatter does not rewrite queries, split statements, align joins or migrate SQL between dialects.
 
-Formatter settings:
+### Format one file
 
-```json
-{
-  "sqlovely.format.enabled": true,
-  "sqlovely.format.keywordCase": "upper",
-  "sqlovely.format.indentSize": 2,
-  "sqlovely.format.insertSpaces": true,
-  "sqlovely.format.maxConsecutiveBlankLines": 1,
-  "sqlovely.format.ensureFinalNewline": true
-}
-```
+Use **SQLovely: Format Current SQL File** or VS Code's built-in **Format Document** command.
 
-### Format all SQL files in a directory
+### Format a directory
 
-Use **SQLovely: Format SQL Files in Directory** to format multiple `.sql` files at once.
+Use **SQLovely: Format SQL Files in Directory** to format every `.sql` file inside a selected folder.
 
-After running the command, select the directory that should be processed. SQLovely searches for `.sql` files recursively, asks for confirmation, and then applies the normal SQL formatter to each file.
+The command opens a folder picker, searches recursively for `.sql` files, asks for confirmation and then formats each file. It skips common local/build folders such as `.git`, `node_modules`, `out` and `dist`.
 
-This command intentionally formats only. SQLovely Extras are not applied by the directory formatter, even when `sqlovely.extras.applyWithFormatting` is enabled. This makes the command safer for larger batch formatting runs.
-
-The command skips common local/build folders such as `.git`, `node_modules`, `out` and `dist`. Open files with unsaved changes are skipped so their editor state is not overwritten.
+Directory formatting intentionally applies formatting only. SQLovely Extras are not applied during this command.
 
 ## SQLovely Extras
 
-SQLovely Extras are optional features that can update SQL files beyond pure formatting. The current extra inserts or updates a metadata header for procedures, functions and triggers.
+SQLovely Extras are optional file-updating features beyond pure formatting.
+
+The current extra inserts or updates a metadata header for procedures, functions and triggers:
 
 ```sql
 CREATE PROCEDURE dbo.my_proc()
@@ -167,52 +97,70 @@ BEGIN
 END;
 ```
 
-The header is inserted directly before the first `BEGIN` line of the detected procedure, function or trigger. Existing older SQLovely headers are moved to this layout when they are updated.
+The header is inserted directly before the first `BEGIN` line of the detected object. Repeated runs update the existing SQLovely block instead of duplicating it.
 
-Repeated runs update the existing SQLovely block instead of duplicating it. Object detection ignores declarations inside comments and single-quoted strings.
-
-Extra settings:
+Extras are applied during normal SQLovely formatting by default:
 
 ```json
 {
-  "sqlovely.extras.enabled": true,
-  "sqlovely.extras.applyWithFormatting": true,
-  "sqlovely.extras.applyOnSave": false,
-  "sqlovely.extras.metadataHeader.enabled": true
+  "sqlovely.extras.applyWithFormatting": true
 }
 ```
 
-## Diagnostics and quick fixes
-
-SQLovely warns when a supported procedure, function or trigger has no SQLovely metadata header. The quick fix inserts the same idempotent header used by the command.
-
-Diagnostics do not change files by themselves. In addition to missing metadata headers, SQLovely can show informational diagnostics for lines longer than the configured style limit.
+Disable this if formatting should only touch whitespace, indentation and keyword casing:
 
 ```json
 {
-  "sqlovely.diagnostics.maxLineLength.enabled": true,
+  "sqlovely.extras.applyWithFormatting": false
+}
+```
+
+Extras can also run as a separate save participant. This is disabled by default:
+
+```json
+{
+  "sqlovely.extras.applyOnSave": false
+}
+```
+
+## Dialects
+
+The active dialect is configured with:
+
+```json
+{
+  "sqlovely.dialect": "watcom"
+}
+```
+
+Supported values:
+
+- `watcom`: default dialect
+- `mssql`: small secondary dialect surface
+
+The syntax grammar is intentionally broad. Dialect-specific behavior is handled by formatting, object detection, extras, diagnostics and quick fixes.
+
+## Diagnostics
+
+SQLovely can show diagnostics for supported rules, such as:
+
+- missing metadata headers for procedures, functions and triggers
+- SQL lines longer than the configured line-length limit
+
+Diagnostics do not modify files by themselves. Quick fixes can apply supported changes when selected.
+
+```json
+{
+  "sqlovely.diagnostics.enabled": true,
   "sqlovely.diagnostics.maxLineLength.limit": 120
 }
 ```
 
 ## Documentation
 
-- `docs/GETTING_STARTED.md`
-- `docs/WORKSPACE_SETTINGS.md`
-- `docs/SYNTAX_GRAMMAR.md`
-- `docs/SQL_COVERAGE.md`
+- `docs/DEVELOPMENT.md`
+- `docs/SQL_IMPLEMENTATION.md`
 - `PACKAGING.md`
-
-## Development
-
-```bash
-npm install
-npm run check
-npm test
-npm run package:vsix
-```
-
-Run in an Extension Development Host with `F5` from VS Code.
 
 ## Current limits
 

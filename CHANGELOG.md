@@ -2,6 +2,7 @@
 
 ## 0.1.7
 
+- Consolidated developer documentation into `docs/DEVELOPMENT.md` and `docs/SQL_IMPLEMENTATION.md`.
 - Added **SQLovely: Format SQL Files in Directory** to recursively format `.sql` files in a selected directory.
 - Directory formatting runs without SQLovely Extras by default for safer batch formatting.
 - Documented directory SQL formatting command usage.
