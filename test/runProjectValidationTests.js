@@ -191,20 +191,26 @@ runTest('example settings and SQL smoke-test files are valid project assets', ()
   assert.ok(/\bgo\b/i.test(mssqlExample));
 });
 
-runTest('project package hygiene rules exclude local-only files', () => {
-  const files = walk();
+runTest('project package hygiene rules exclude local-only files from distributable output', () => {
   const vscodeIgnore = fs.readFileSync(path.join(root, '.vscodeignore'), 'utf8');
-
-  assert.ok(!fs.existsSync(path.join(root, '.git')));
-  assert.ok(!files.some((file) => file.startsWith('.git/')));
-  assert.ok(!files.some((file) => file.endsWith('.zip')));
-  assert.ok(!files.some((file) => file.endsWith('.vsix')));
+  const gitIgnore = fs.readFileSync(path.join(root, '.gitignore'), 'utf8');
 
   assert.ok(vscodeIgnore.includes('node_modules/**'));
   assert.ok(vscodeIgnore.includes('src/**'));
   assert.ok(vscodeIgnore.includes('test/**'));
-  assert.ok(!vscodeIgnore.split('\\n').includes('dist/**'));
+  assert.ok(vscodeIgnore.includes('scripts/**'));
+  assert.ok(vscodeIgnore.includes('out/**'));
+  assert.ok(vscodeIgnore.includes('*.vsix'));
+  assert.ok(vscodeIgnore.includes('*.zip'));
+  assert.ok(!vscodeIgnore.split('\n').includes('dist/**'));
+
+  assert.ok(gitIgnore.includes('node_modules/'));
+  assert.ok(gitIgnore.includes('dist/'));
+  assert.ok(gitIgnore.includes('out/'));
+  assert.ok(gitIgnore.includes('*.vsix'));
+  assert.ok(gitIgnore.includes('*.zip'));
 });
+
 
 runTest('SQLovely grammar exposes the expected repository sections', () => {
   const grammar = readJson('syntaxes/sqlovely.tmLanguage.json');
