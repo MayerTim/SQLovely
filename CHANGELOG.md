@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added SQL formatter normalization that keeps `UNION ALL` on its own physical line.
 - Fixed Watcom formatter indentation after compact inline `IF ... THEN ... END IF` statements by expanding them into stable block form.
 - Added Watcom parenthesis formatting for parameters and nested calls outside strings/comments, with indentation for multiline argument lists.
 - Added dedicated syntax scopes for generated metadata headers, including markers, fields, values, dates, TODO placeholders, update authors and history entries.
