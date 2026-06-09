@@ -5,7 +5,7 @@
   "sqlovely.extras.applyWithFormatting": true,
   "sqlovely.extras.applyOnSave": false,
   "[sql]": {
-    "editor.defaultFormatter": "tim-mayer.sqlovely",
+    "editor.defaultFormatter": "MayerTim.sqlovely",
     "editor.formatOnSave": true
   },
   "sqlovely.format.indentSize": 2,

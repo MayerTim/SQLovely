@@ -9,7 +9,7 @@
   "sqlovely.diagnostics.enabled": true,
   "sqlovely.diagnostics.missingMetadataHeader.enabled": true,
   "[sql]": {
-    "editor.defaultFormatter": "tim-mayer.sqlovely"
+    "editor.defaultFormatter": "MayerTim.sqlovely"
   },
   "sqlovely.format.indentSize": 2,
   "sqlovely.format.insertSpaces": true

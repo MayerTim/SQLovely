@@ -23,7 +23,7 @@ Recommended workspace setting:
 {
   "sqlovely.dialect": "watcom",
   "[sql]": {
-    "editor.defaultFormatter": "tim-mayer.sqlovely"
+    "editor.defaultFormatter": "MayerTim.sqlovely"
   }
 }
 ```
@@ -33,7 +33,7 @@ To format SQL files automatically when saving:
 ```json
 {
   "[sql]": {
-    "editor.defaultFormatter": "tim-mayer.sqlovely",
+    "editor.defaultFormatter": "MayerTim.sqlovely",
     "editor.formatOnSave": true
   }
 }
