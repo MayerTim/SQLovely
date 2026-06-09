@@ -96,6 +96,7 @@ runTest('all contributed commands have activation events and compiled handlers',
     ['sqlovely.showActiveDialect', 'dist/commands/showActiveDialect.js'],
     ['sqlovely.switchDialect', 'dist/commands/switchDialect.js'],
     ['sqlovely.formatCurrentFile', 'dist/commands/formatCurrentFile.js'],
+    ['sqlovely.formatSqlFilesInDirectory', 'dist/commands/formatSqlFilesInDirectory.js'],
     ['sqlovely.insertOrUpdateMetadataHeader', 'dist/commands/insertOrUpdateMetadataHeader.js'],
     ['sqlovely.applyExtras', 'dist/commands/applyExtras.js']
   ]);

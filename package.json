@@ -2,7 +2,7 @@
   "name": "sqlovely",
   "displayName": "SQLovely",
   "description": "SQL language support for .sql files, with Watcom SQL as the default dialect and a conservative formatter.",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "publisher": "tim-mayer",
   "license": "MIT",
   "repository": {
@@ -23,6 +23,7 @@
     "onCommand:sqlovely.showActiveDialect",
     "onCommand:sqlovely.switchDialect",
     "onCommand:sqlovely.formatCurrentFile",
+    "onCommand:sqlovely.formatSqlFilesInDirectory",
     "onCommand:sqlovely.insertOrUpdateMetadataHeader",
     "onCommand:sqlovely.applyExtras"
   ],
@@ -101,6 +102,11 @@
         "title": "Format Current SQL File",
         "category": "SQLovely",
         "enablement": "editorLangId == sql"
+      },
+      {
+        "command": "sqlovely.formatSqlFilesInDirectory",
+        "title": "Format SQL Files in Directory",
+        "category": "SQLovely"
       },
       {
         "command": "sqlovely.insertOrUpdateMetadataHeader",
