@@ -96,6 +96,7 @@ runTest('all contributed commands have activation events and compiled handlers',
     ['sqlovely.showActiveDialect', 'dist/commands/showActiveDialect.js'],
     ['sqlovely.switchDialect', 'dist/commands/switchDialect.js'],
     ['sqlovely.formatCurrentFile', 'dist/commands/formatCurrentFile.js'],
+    ['sqlovely.formatSqlFilesInDirectory', 'dist/commands/formatSqlFilesInDirectory.js'],
     ['sqlovely.insertOrUpdateMetadataHeader', 'dist/commands/insertOrUpdateMetadataHeader.js'],
     ['sqlovely.applyExtras', 'dist/commands/applyExtras.js']
   ]);
@@ -149,10 +150,8 @@ runTest('VSIX packaging scripts are available and keep package output isolated',
 
 runTest('documentation and onboarding examples are present', () => {
   const requiredDocs = [
-    'docs/GETTING_STARTED.md',
-    'docs/WORKSPACE_SETTINGS.md',
-    'docs/SYNTAX_GRAMMAR.md',
-    'docs/SQL_COVERAGE.md',
+    'docs/DEVELOPMENT.md',
+    'docs/SQL_IMPLEMENTATION.md',
     'PACKAGING.md'
   ];
 
@@ -165,6 +164,21 @@ runTest('documentation and onboarding examples are present', () => {
     assert.ok(readme.includes(doc), `README should link to ${doc}`);
   }
   assert.ok(readme.includes('MIT'));
+
+  const oldDocs = [
+    'docs/GETTING_STARTED.md',
+    'docs/WORKSPACE_SETTINGS.md',
+    'docs/SYNTAX_GRAMMAR.md',
+    'docs/SQL_COVERAGE.md'
+  ];
+
+  for (const doc of oldDocs) {
+    assert.ok(!exists(doc), `${doc} should be consolidated`);
+  }
+
+  const contributing = fs.readFileSync(path.join(root, 'CONTRIBUTING.md'), 'utf8');
+  assert.ok(contributing.includes('docs/DEVELOPMENT.md'));
+  assert.ok(contributing.includes('docs/SQL_IMPLEMENTATION.md'));
 });
 
 runTest('example settings and SQL smoke-test files are valid project assets', () => {

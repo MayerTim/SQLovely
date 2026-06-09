@@ -7,6 +7,7 @@ export const COMMANDS = {
   showActiveDialect: 'sqlovely.showActiveDialect',
   switchDialect: 'sqlovely.switchDialect',
   formatCurrentFile: 'sqlovely.formatCurrentFile',
+  formatSqlFilesInDirectory: 'sqlovely.formatSqlFilesInDirectory',
   insertOrUpdateMetadataHeader: 'sqlovely.insertOrUpdateMetadataHeader',
   applyExtras: 'sqlovely.applyExtras'
 } as const;
