@@ -8,6 +8,7 @@ export interface FormatSqlDocumentOptions extends Partial<FormatSqlOptions> {
   readonly applyExtrasWithFormatting?: boolean;
   readonly metadataHeaderEnabled?: boolean;
   readonly author?: string;
+  readonly maxLineLength?: number;
 }
 
 export interface FormatSqlDocumentResult {
@@ -34,7 +35,8 @@ export function formatSqlDocument(
 
   const extras = applyExtras(formatting.text, dialect, {
     author: options.author ?? getDefaultAuthorName(),
-    metadataHeaderEnabled: options.metadataHeaderEnabled
+    metadataHeaderEnabled: options.metadataHeaderEnabled,
+    maxLineLength: options.maxLineLength
   });
 
   return {

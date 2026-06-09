@@ -554,6 +554,86 @@ runTest('keeps existing metadata headers scoped to their own SQL objects', () =>
   assert.ok(result.text.includes('-- Created     : 2020-01-02'));
 });
 
+
+runTest('wraps metadata description lines to the configured max length', () => {
+  const input = [
+    'CREATE PROCEDURE dbo.long_description()',
+    '-- METADATA',
+    '--',
+    '-- Description : This description explains a very important procedure with enough words to exceed the configured limit and require wrapping.',
+    '-- Version     : 1.0',
+    '-- Author      : Existing Author',
+    '-- Created     : 2020-01-02',
+    '-- Updated     : 2020-01-03',
+    '--',
+    '-- History     :',
+    '--   v1.0: Initial creation - 2020-01-02 Existing Author',
+    '--',
+    '-- METADATA END',
+    'BEGIN',
+    'SELECT 1;',
+    'END;'
+  ].join('\n');
+
+  const result = insertOrUpdateMetadataHeader(input, watcomDialect, {
+    ...options,
+    maxLineLength: 72
+  });
+  const metadataLines = getMetadataHeaderLines(result.text);
+  const descriptionLines = metadataLines.filter((line) => /^--(?: Description :| {15})/.test(line));
+
+  assert.equal(result.action, 'updated');
+  assert.ok(descriptionLines.length > 1);
+  assert.ok(descriptionLines[0].startsWith('-- Description : This description'));
+  assert.ok(descriptionLines.slice(1).every((line) => line.startsWith('--               ')));
+  assert.ok(metadataLines.every((line) => line.length <= 72), 'metadata lines should respect the configured limit');
+});
+
+runTest('preserves manual line breaks in multiline metadata descriptions', () => {
+  const input = [
+    'CREATE PROCEDURE dbo.manual_description_breaks()',
+    '-- METADATA',
+    '--',
+    '-- Description : First manually written sentence.',
+    '--               Second manual line contains a colon: keep it separate.',
+    '--               Third manual line stays separate too.',
+    '-- Version     : 1.0',
+    '-- Author      : Existing Author',
+    '-- Created     : 2020-01-02',
+    '-- Updated     : 2020-01-03',
+    '--',
+    '-- History     :',
+    '--   v1.0: Initial creation - 2020-01-02 Existing Author',
+    '--',
+    '-- METADATA END',
+    'BEGIN',
+    'SELECT 1;',
+    'END;'
+  ].join('\n');
+
+  const result = insertOrUpdateMetadataHeader(input, watcomDialect, {
+    ...options,
+    maxLineLength: 120
+  });
+
+  assert.equal(result.action, 'updated');
+  assert.ok(result.text.includes('-- Description : First manually written sentence.'));
+  assert.ok(result.text.includes('--               Second manual line contains a colon: keep it separate.'));
+  assert.ok(result.text.includes('--               Third manual line stays separate too.'));
+  assert.equal(result.text.includes('First manually written sentence. Second manual line'), false);
+});
+
+
+function getMetadataHeaderLines(text) {
+  const lines = text.split(/\r?\n/);
+  const startIndex = lines.findIndex((line) => line.trim() === METADATA_HEADER_START);
+  const endIndex = lines.findIndex((line, index) => index > startIndex && line.trim() === METADATA_HEADER_END);
+
+  return startIndex >= 0 && endIndex >= startIndex
+    ? lines.slice(startIndex, endIndex + 1)
+    : [];
+}
+
 function countOccurrences(text, needle) {
   return text.split(/\r?\n/).filter((line) => line.trim() === needle).length;
 }

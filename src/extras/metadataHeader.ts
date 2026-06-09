@@ -2,6 +2,7 @@ import type { SqlDialect } from '../dialects';
 import { detectSqlObjects, type DetectedSqlObject } from './objectDetection';
 import { findLooseLegacyMetadataHeader } from './legacyMetadataHeader';
 import { maskSqlCommentsAndStrings } from './sqlTextMasking';
+import { formatMetadataDescriptionLines, normalizeMetadataHeaderMaxLineLength } from './metadataDescription';
 
 export const METADATA_HEADER_START = '-- METADATA';
 export const METADATA_HEADER_END = '-- METADATA END';
@@ -17,6 +18,7 @@ export type MetadataHeaderAction = 'inserted' | 'updated' | 'unchanged' | 'skipp
 export interface MetadataHeaderOptions {
   readonly now?: Date;
   readonly author?: string;
+  readonly maxLineLength?: number;
 }
 
 export interface MetadataHeaderResult {
@@ -44,6 +46,7 @@ interface MetadataHeaderContext {
   readonly indentation: string;
   readonly existingFields?: ReadonlyMap<string, string>;
   readonly existingHistoryEntries?: readonly string[];
+  readonly maxLineLength: number;
 }
 
 interface MetadataHeaderInsertionTarget {
@@ -160,7 +163,8 @@ function applyMetadataHeaderForObject(
     lineBreak,
     indentation: insertionTarget.indentation,
     existingFields: existingHeader?.fields,
-    existingHistoryEntries: existingHeader?.historyEntries
+    existingHistoryEntries: existingHeader?.historyEntries,
+    maxLineLength: normalizeMetadataHeaderMaxLineLength(options.maxLineLength)
   });
   const nextText = insertMetadataHeaderAt(workingText, insertionTarget.index, newHeader, lineBreak, insertionTarget.blankLineAfter);
   const nextUpperBound = Math.min(existingHeader?.startIndex ?? object.index, object.index);
@@ -391,10 +395,14 @@ function buildMetadataHeader(context: MetadataHeaderContext): string {
     date: context.date,
     author
   });
+  const descriptionLines = formatMetadataDescriptionLines(description, {
+    indentation: context.indentation,
+    maxLineLength: context.maxLineLength
+  });
   const lines = [
     METADATA_HEADER_START,
     '--',
-    `-- Description : ${description}`,
+    ...descriptionLines,
     `-- Version     : ${synchronized.version}`,
     `-- Author      : ${author}`,
     `-- Created     : ${createdDate}`,
@@ -676,22 +684,49 @@ function formatVersionSegment(value: number, requestedSegment: string): string {
 function parseMetadataFields(headerText: string): ReadonlyMap<string, string> {
   const fields = new Map<string, string>();
   const supportedKeys = new Set(['description', 'version', 'author', 'created', 'updated']);
-  const fieldPattern = /^[ \t]*--[ \t]*([^:\r\n]+?)[ \t]*:[ \t]*(.*)$/gmu;
-  let match = fieldPattern.exec(headerText);
+  let currentKey: string | undefined;
 
-  while (match) {
-    const rawKey = match[1]?.trim() ?? '';
+  for (const line of headerText.split(/\r\n|\r|\n/u)) {
+    const descriptionContinuation = currentKey === 'description'
+      ? parseDescriptionContinuationLine(line)
+      : undefined;
+
+    if (descriptionContinuation !== undefined) {
+      fields.set('description', `${fields.get('description') ?? ''}\n${descriptionContinuation}`);
+      continue;
+    }
+
+    const fieldMatch = /^[ \t]*--[ \t]*([^:\r\n]+?)[ \t]*:[ \t]*(.*)$/u.exec(line);
+
+    if (!fieldMatch) {
+      currentKey = undefined;
+      continue;
+    }
+
+    const rawKey = fieldMatch[1]?.trim() ?? '';
     const key = rawKey.toLowerCase();
-    const value = match[2]?.trim() ?? '';
+    const value = fieldMatch[2]?.trim() ?? '';
 
     if (supportedKeys.has(key)) {
       fields.set(key, value);
+      currentKey = key;
+      continue;
     }
 
-    match = fieldPattern.exec(headerText);
+    currentKey = undefined;
   }
 
   return fields;
+}
+
+function parseDescriptionContinuationLine(line: string): string | undefined {
+  const match = /^[ \t]*--[ \t]{4,}(.*)$/u.exec(line);
+
+  if (!match) {
+    return undefined;
+  }
+
+  return (match[1] ?? '').trim();
 }
 
 function parseHistoryEntries(headerText: string): readonly string[] {

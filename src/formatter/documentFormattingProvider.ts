@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 
-import { getActiveDialect, getExtrasConfiguration, getFormatConfiguration } from '../config';
+import { getActiveDialect, getDiagnosticsConfiguration, getExtrasConfiguration, getFormatConfiguration } from '../config';
 import { SQL_LANGUAGE_ID } from '../constants';
 import { formatSqlDocument } from './formatSqlDocument';
 
@@ -14,6 +14,7 @@ export function registerSqlovelyDocumentFormattingProvider(): vscode.Disposable 
       }
 
       const extrasConfiguration = getExtrasConfiguration(document.uri);
+      const diagnosticsConfiguration = getDiagnosticsConfiguration(document.uri);
       const originalText = document.getText();
       const result = formatSqlDocument(originalText, getActiveDialect(document.uri), {
         keywordCase: formatConfiguration.keywordCase,
@@ -22,7 +23,8 @@ export function registerSqlovelyDocumentFormattingProvider(): vscode.Disposable 
         maxConsecutiveBlankLines: formatConfiguration.maxConsecutiveBlankLines,
         ensureFinalNewline: formatConfiguration.ensureFinalNewline,
         applyExtrasWithFormatting: extrasConfiguration.enabled && extrasConfiguration.applyWithFormatting,
-        metadataHeaderEnabled: extrasConfiguration.metadataHeader.enabled
+        metadataHeaderEnabled: extrasConfiguration.metadataHeader.enabled,
+        maxLineLength: diagnosticsConfiguration.maxLineLength.limit
       });
 
       if (!result.changed) {

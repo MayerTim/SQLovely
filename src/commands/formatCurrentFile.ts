@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import { COMMANDS } from '../constants';
-import { getActiveDialect, getExtrasConfiguration, getFormatConfiguration } from '../config';
+import { getActiveDialect, getDiagnosticsConfiguration, getExtrasConfiguration, getFormatConfiguration } from '../config';
 import { requireActiveSqlEditorContext } from '../editor/activeSqlEditor';
 import { replaceDocumentText } from '../editor/replaceDocumentText';
 import { formatSqlDocument } from '../formatter';
@@ -22,6 +22,7 @@ export function registerFormatCurrentFileCommand(): vscode.Disposable {
     }
 
     const extrasConfiguration = getExtrasConfiguration(activeContext.resource);
+    const diagnosticsConfiguration = getDiagnosticsConfiguration(activeContext.resource);
     const originalText = activeContext.editor.document.getText();
     const result = formatSqlDocument(originalText, getActiveDialect(activeContext.resource), {
       keywordCase: formatConfiguration.keywordCase,
@@ -30,7 +31,8 @@ export function registerFormatCurrentFileCommand(): vscode.Disposable {
       maxConsecutiveBlankLines: formatConfiguration.maxConsecutiveBlankLines,
       ensureFinalNewline: formatConfiguration.ensureFinalNewline,
       applyExtrasWithFormatting: extrasConfiguration.enabled && extrasConfiguration.applyWithFormatting,
-      metadataHeaderEnabled: extrasConfiguration.metadataHeader.enabled
+      metadataHeaderEnabled: extrasConfiguration.metadataHeader.enabled,
+      maxLineLength: diagnosticsConfiguration.maxLineLength.limit
     });
 
     if (!result.changed) {

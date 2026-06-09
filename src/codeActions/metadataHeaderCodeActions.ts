@@ -41,6 +41,7 @@ class SqlovelyMetadataHeaderCodeActionProvider implements vscode.CodeActionProvi
     }
 
     const dialect = getActiveDialect(document.uri);
+    const diagnosticsConfiguration = getDiagnosticsConfiguration(document.uri);
     const issue = findMissingMetadataHeaderIssue(document.getText(), dialect);
 
     if (!issue) {
@@ -53,7 +54,8 @@ class SqlovelyMetadataHeaderCodeActionProvider implements vscode.CodeActionProvi
     );
 
     const result = insertOrUpdateMetadataHeader(document.getText(), dialect, {
-      author: getDefaultAuthorName()
+      author: getDefaultAuthorName(),
+      maxLineLength: diagnosticsConfiguration.maxLineLength.limit
     });
 
     if (result.text === document.getText()) {

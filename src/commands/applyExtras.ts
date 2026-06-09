@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import { COMMANDS } from '../constants';
-import { getActiveDialect, getExtrasConfiguration } from '../config';
+import { getActiveDialect, getDiagnosticsConfiguration, getExtrasConfiguration } from '../config';
 import { applyExtras } from '../extras';
 import { requireActiveSqlEditorContext } from '../editor/activeSqlEditor';
 import { replaceDocumentText } from '../editor/replaceDocumentText';
@@ -28,10 +28,12 @@ export function registerApplySqlovelyExtrasCommand(): vscode.Disposable {
     }
 
     const dialect = getActiveDialect(activeContext.resource);
+    const diagnosticsConfiguration = getDiagnosticsConfiguration(activeContext.resource);
     const originalText = activeContext.document.getText();
     const result = applyExtras(originalText, dialect, {
       author: getDefaultAuthorName(),
-      metadataHeaderEnabled: extraConfiguration.metadataHeader.enabled
+      metadataHeaderEnabled: extraConfiguration.metadataHeader.enabled,
+      maxLineLength: diagnosticsConfiguration.maxLineLength.limit
     });
 
     if (!result.changed) {

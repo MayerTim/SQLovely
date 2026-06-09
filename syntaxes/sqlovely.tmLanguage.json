@@ -76,6 +76,9 @@
               "include": "#metadataHeaderDescription"
             },
             {
+              "include": "#metadataHeaderDescriptionContinuation"
+            },
+            {
               "include": "#metadataHeaderVersion"
             },
             {
@@ -115,6 +118,9 @@
           "patterns": [
             {
               "include": "#metadataHeaderDescription"
+            },
+            {
+              "include": "#metadataHeaderDescriptionContinuation"
             },
             {
               "include": "#metadataHeaderVersion"
@@ -627,6 +633,30 @@
           "patterns": [
             {
               "name": "string.unquoted.metadata.value.sqlovely.sql",
+              "match": "[^\\r\\n]+"
+            }
+          ]
+        }
+      ]
+    },
+    "metadataHeaderDescriptionContinuation": {
+      "patterns": [
+        {
+          "name": "meta.field.description.continuation.metadata.sqlovely.sql",
+          "begin": "^(\\s*)(--)(\\s{4,})",
+          "beginCaptures": {
+            "2": {
+              "name": "punctuation.definition.comment.sql.sqlovely"
+            }
+          },
+          "end": "$",
+          "patterns": [
+            {
+              "name": "comment.line.todo.metadata.placeholder.sqlovely.sql",
+              "match": "<TODO>"
+            },
+            {
+              "name": "string.unquoted.metadata.description.sqlovely.sql",
               "match": "[^\\r\\n]+"
             }
           ]

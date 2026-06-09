@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import { COMMANDS } from '../constants';
-import { getActiveDialect, getExtrasConfiguration } from '../config';
+import { getActiveDialect, getDiagnosticsConfiguration, getExtrasConfiguration } from '../config';
 import { insertOrUpdateMetadataHeader } from '../extras';
 import { requireActiveSqlEditorContext } from '../editor/activeSqlEditor';
 import { replaceDocumentText } from '../editor/replaceDocumentText';
@@ -28,9 +28,11 @@ export function registerInsertOrUpdateMetadataHeaderCommand(): vscode.Disposable
     }
 
     const dialect = getActiveDialect(activeContext.resource);
+    const diagnosticsConfiguration = getDiagnosticsConfiguration(activeContext.resource);
     const originalText = activeContext.document.getText();
     const result = insertOrUpdateMetadataHeader(originalText, dialect, {
-      author: getDefaultAuthorName()
+      author: getDefaultAuthorName(),
+      maxLineLength: diagnosticsConfiguration.maxLineLength.limit
     });
 
     if (result.action === 'skipped') {
