@@ -22,6 +22,7 @@ import {
   expandParenthesesInLine
 } from './parenthesisFormatting';
 import { createInitialSqlLineScanState, cloneSqlLineScanState, scanSqlLineOutsideLiteralsAndComments } from './sqlLineScanner';
+import { cleanupWatcomStatementContinuations } from './statementContinuationCleanup';
 
 export interface FormatSqlResult {
   readonly text: string;
@@ -329,7 +330,10 @@ export function formatSql(
   const separatorNormalizedLines = dialect.id === 'watcom'
     ? restoreOrderByIfExpressionSeparators(formattedLines)
     : formattedLines;
-  let nextText = separatorNormalizedLines.join(split.eol);
+  const statementCleanedLines = dialect.id === 'watcom'
+    ? cleanupWatcomStatementContinuations(separatorNormalizedLines, indentString)
+    : separatorNormalizedLines;
+  let nextText = statementCleanedLines.join(split.eol);
 
   if (resolvedOptions.ensureFinalNewline || split.hadFinalNewline) {
     nextText += split.eol;

@@ -58,7 +58,7 @@ SQLovely formats conservatively. It keeps SQL structure intact and focuses on re
 - compact Watcom `IF ... THEN ... END IF` control-flow normalization
 - Watcom `IF ... THEN ... ELSE ... ENDIF` expression preservation, including split expression normalization and `ORDER BY` separator recovery
 - `UNION ALL` normalization to its own physical line
-- top-level Watcom query-clause line breaks for `SELECT`, `FROM`, `WHERE`, `JOIN`, `ON`, `GROUP BY`, `HAVING` and `ORDER BY`, including continuation indentation for multiline lists and predicate function calls
+- top-level Watcom query-clause line breaks for `SELECT`, `FROM`, `WHERE`, `JOIN`, `ON`, `GROUP BY`, `HAVING` and `ORDER BY`, including continuation indentation for multiline lists, predicate function calls and `UPDATE ... SET` assignments
 - Watcom cursor `FOR ... CURSOR FOR ... DO ... END FOR` indentation
 - Watcom `CASE WHEN THEN ELSE END` expression line breaks and indentation
 - Watcom `EXCEPTION` / `WHEN ... THEN` handler line breaks and indentation
@@ -67,7 +67,7 @@ SQLovely formats conservatively. It keeps SQL structure intact and focuses on re
 - final newline handling
 - performance safety guards that skip expensive Watcom rewrite passes for very large documents or very long lines
 
-Apart from normalizing compact Watcom `IF ... THEN ... END IF` control-flow statements, preserving and normalizing expression-style `IF ... THEN ... ELSE ... ENDIF` constructs, keeping `UNION ALL` on its own line, splitting Watcom parenthesized argument/parameter lists across indented lines, placing top-level Watcom query clauses on stable physical lines with continuation indentation, recovering separators after split `ORDER BY IF ... ENDIF` expression continuations, indenting cursor `FOR ... DO` loops, formatting Watcom `CASE` expressions and aligning Watcom exception handlers, splitting/counting stacked Watcom block endings before indentation, and treating `ELSEIF` as a branch keyword instead of a nested block opener, the formatter does not perform schema-aware rewrites or migrate SQL between dialects.
+Apart from normalizing compact Watcom `IF ... THEN ... END IF` control-flow statements, preserving and normalizing expression-style `IF ... THEN ... ELSE ... ENDIF` constructs, keeping `UNION ALL` on its own line, splitting Watcom parenthesized argument/parameter lists across indented lines, placing top-level Watcom query clauses on stable physical lines with continuation indentation, cleaning multiline `UPDATE ... SET` assignments plus compact comma/operator spacing, recovering separators after split `ORDER BY IF ... ENDIF` expression continuations, indenting cursor `FOR ... DO` loops, formatting Watcom `CASE` expressions and aligning Watcom exception handlers, splitting/counting stacked Watcom block endings before indentation, and treating `ELSEIF` as a branch keyword instead of a nested block opener, the formatter does not perform schema-aware rewrites or migrate SQL between dialects.
 
 
 ### Formatter safety guards
