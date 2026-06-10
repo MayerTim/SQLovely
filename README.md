@@ -67,7 +67,7 @@ SQLovely formats conservatively. It keeps SQL structure intact and focuses on re
 - final newline handling
 - performance safety guards that skip expensive Watcom rewrite passes for very large documents or very long lines
 
-Apart from normalizing compact Watcom `IF ... THEN ... END IF` control-flow statements, preserving expression-style `IF ... THEN ... ELSE ... ENDIF` constructs, keeping `UNION ALL` on its own line, splitting Watcom parenthesized argument/parameter lists across indented lines, placing top-level Watcom query clauses on stable physical lines, indenting cursor `FOR ... DO` loops, formatting Watcom `CASE` expressions and aligning Watcom exception handlers, the formatter does not perform schema-aware rewrites or migrate SQL between dialects.
+Apart from normalizing compact Watcom `IF ... THEN ... END IF` control-flow statements, preserving expression-style `IF ... THEN ... ELSE ... ENDIF` constructs, keeping `UNION ALL` on its own line, splitting Watcom parenthesized argument/parameter lists across indented lines, placing top-level Watcom query clauses on stable physical lines, indenting cursor `FOR ... DO` loops, formatting Watcom `CASE` expressions and aligning Watcom exception handlers, and splitting stacked Watcom block endings before indentation, the formatter does not perform schema-aware rewrites or migrate SQL between dialects.
 
 
 ### Formatter safety guards

@@ -14,6 +14,7 @@ import { createInitialCursorForFormattingState, expandWatcomCursorForLine } from
 import { createInitialQueryClauseFormattingState, expandWatcomQueryClauseLine } from './queryClauseFormatting';
 import { createInitialCaseExpressionFormattingState, expandWatcomCaseExpressionLine } from './caseExpressionFormatting';
 import { createInitialExceptionFormattingState, expandWatcomExceptionLine } from './exceptionFormatting';
+import { createInitialBlockEndFormattingState, expandWatcomBlockEndLine } from './blockEndFormatting';
 import {
   analyzeParenthesesForIndent,
   createInitialParenthesisFormattingState,
@@ -74,6 +75,7 @@ export function formatSql(
   let queryClauseFormattingState = createInitialQueryClauseFormattingState();
   let exceptionFormattingState = createInitialExceptionFormattingState();
   let caseExpressionFormattingState = createInitialCaseExpressionFormattingState();
+  let blockEndFormattingState = createInitialBlockEndFormattingState();
   let parenthesisExpansionState = createInitialParenthesisFormattingState();
   let parenthesisIndentLevel = 0;
   let caseExpressionIndentLevel = 0;
@@ -140,13 +142,24 @@ export function formatSql(
               caseExpressionFormattingState = caseExpressionResult.nextState;
 
               for (const caseExpressionExpandedLine of caseExpressionResult.lines) {
-                const canRunParenthesisFormatting = canRunCaseExpressionFormatting && shouldRunExpensiveLineFormatting(caseExpressionExpandedLine, safety);
-                const parenthesisResult = dialect.id === 'watcom' && canRunParenthesisFormatting
-                  ? expandParenthesesInLine(caseExpressionExpandedLine, parenthesisExpansionState)
-                  : { lines: [caseExpressionExpandedLine], nextState: parenthesisExpansionState };
-                parenthesisExpansionState = parenthesisResult.nextState;
+                const canRunBlockEndFormatting = canRunCaseExpressionFormatting && shouldRunExpensiveLineFormatting(caseExpressionExpandedLine, safety);
+                const blockEndResult = canRunBlockEndFormatting
+                  ? expandWatcomBlockEndLine(
+                    caseExpressionExpandedLine,
+                    dialect,
+                    blockEndFormattingState
+                  )
+                  : { lines: [caseExpressionExpandedLine], nextState: blockEndFormattingState };
+                blockEndFormattingState = blockEndResult.nextState;
 
-                for (const originalLine of parenthesisResult.lines) {
+                for (const blockEndExpandedLine of blockEndResult.lines) {
+                  const canRunParenthesisFormatting = canRunBlockEndFormatting && shouldRunExpensiveLineFormatting(blockEndExpandedLine, safety);
+                  const parenthesisResult = dialect.id === 'watcom' && canRunParenthesisFormatting
+                    ? expandParenthesesInLine(blockEndExpandedLine, parenthesisExpansionState)
+                    : { lines: [blockEndExpandedLine], nextState: parenthesisExpansionState };
+                  parenthesisExpansionState = parenthesisResult.nextState;
+
+                  for (const originalLine of parenthesisResult.lines) {
                   const withoutTrailingWhitespace = originalLine.replace(/[ \t]+$/u, '');
                   const trimmedLine = withoutTrailingWhitespace.trim();
 
@@ -250,6 +263,7 @@ export function formatSql(
                 }
               }
             }
+          }
           }
         }
       }

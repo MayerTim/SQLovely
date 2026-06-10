@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed Watcom formatter indentation after stacked block endings such as `END IF END IF;` and `END IF END IF END FOR;`.
 - Added formatter safety guards for very large Watcom SQL documents and very long physical lines, with cancellation checks and output-channel notes when expensive rewrite passes are skipped.
 - Added Watcom `EXCEPTION` / `WHEN ... THEN` handler formatting with stable indentation while preserving `ON EXCEPTION RESUME` and exception declarations.
 - Added syntax highlighting for quoted Watcom built-in function calls such as `"isnull"(...)`, `"string"(...)`, `"date"(...)`, `"substr"(...)` and `"xmlelement"(...)`.
