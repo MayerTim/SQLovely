@@ -188,6 +188,36 @@
           "scope": "resource",
           "markdownDescription": "Ensures formatted SQL files end with a final newline."
         },
+        "sqlovely.format.safety.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "markdownDescription": "Enables SQLovely formatter safety guards. When enabled, expensive Watcom formatting passes are skipped for very large documents to keep VS Code responsive."
+        },
+        "sqlovely.format.safety.maxComplexDocumentLength": {
+          "type": "number",
+          "default": 1000000,
+          "minimum": 10000,
+          "maximum": 10000000,
+          "scope": "resource",
+          "markdownDescription": "Maximum document length in characters for expensive Watcom formatting passes. Larger documents still receive safe whitespace, indentation and keyword formatting."
+        },
+        "sqlovely.format.safety.maxComplexDocumentLines": {
+          "type": "number",
+          "default": 5000,
+          "minimum": 100,
+          "maximum": 100000,
+          "scope": "resource",
+          "markdownDescription": "Maximum line count for expensive Watcom formatting passes. Larger documents still receive safe whitespace, indentation and keyword formatting."
+        },
+        "sqlovely.format.safety.maxComplexLineLength": {
+          "type": "number",
+          "default": 5000,
+          "minimum": 250,
+          "maximum": 100000,
+          "scope": "resource",
+          "markdownDescription": "Maximum single-line length for expensive Watcom formatting passes such as parenthesis, query-clause, CASE and IF-expression splitting."
+        },
         "sqlovely.extras.enabled": {
           "type": "boolean",
           "default": true,

@@ -737,11 +737,11 @@ function normalizeMetadataFieldKey(rawKey: string): string | undefined {
     return 'version';
   }
 
-  if (/^(?:author|created by|erstellt von|ersteller|angelegt von)$/iu.test(key)) {
+  if (/^(?:author|created by|erstellt von|erstellt durch|ersteller|angelegt von|angelegt durch)$/iu.test(key)) {
     return 'author';
   }
 
-  if (/^(?:updated by|modified by|last updated by|geändert von|geaendert von|geupdated von|aktualisiert von)$/iu.test(key)) {
+  if (/^(?:updated by|modified by|last updated by|geändert von|geändert durch|geaendert von|geaendert durch|geupdated von|geupdated durch|aktualisiert von|aktualisiert durch)$/iu.test(key)) {
     return 'updated by';
   }
 

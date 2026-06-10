@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { COMMANDS } from '../constants';
 import { getActiveDialect, getFormatConfiguration } from '../config';
 import { formatSqlDocument } from '../formatter';
+import { logFormattingSafetySummary } from '../logging';
 
 interface DirectoryFormatStats {
   readonly total: number;
@@ -108,7 +109,7 @@ async function formatSqlFiles(
     });
 
     try {
-      const result = await formatSingleSqlFile(uri);
+      const result = await formatSingleSqlFile(uri, token);
 
       if (result === 'formatted') {
         stats.formatted += 1;
@@ -127,7 +128,7 @@ async function formatSqlFiles(
 
 type SingleFileFormatResult = 'formatted' | 'unchanged' | 'skipped';
 
-async function formatSingleSqlFile(uri: vscode.Uri): Promise<SingleFileFormatResult> {
+async function formatSingleSqlFile(uri: vscode.Uri, token: vscode.CancellationToken): Promise<SingleFileFormatResult> {
   const openDocument = vscode.workspace.textDocuments.find((document) => document.uri.toString() === uri.toString());
 
   if (openDocument?.isDirty) {
@@ -148,9 +149,17 @@ async function formatSingleSqlFile(uri: vscode.Uri): Promise<SingleFileFormatRes
     insertSpaces: formatConfiguration.insertSpaces,
     maxConsecutiveBlankLines: formatConfiguration.maxConsecutiveBlankLines,
     ensureFinalNewline: formatConfiguration.ensureFinalNewline,
+    safetyLimits: formatConfiguration.safetyLimits,
     applyExtrasWithFormatting: false,
-    metadataHeaderEnabled: false
+    metadataHeaderEnabled: false,
+    isCancellationRequested: () => token.isCancellationRequested
   });
+
+  logFormattingSafetySummary(result.formatting.safetySummary, vscode.workspace.asRelativePath(uri, false));
+
+  if (token.isCancellationRequested) {
+    return 'skipped';
+  }
 
   if (!result.changed) {
     return 'unchanged';

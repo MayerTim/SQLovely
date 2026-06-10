@@ -6,7 +6,7 @@ It is focused on Watcom SQL by default and also includes a small MSSQL-oriented 
 
 ## Features
 
-- SQL syntax highlighting for regular `.sql` files
+- SQL syntax highlighting for regular `.sql` files, including quoted Watcom built-in calls
 - Conservative SQL formatting
 - Optional metadata-header extras for every detected procedure, function and trigger in a script
 - Diagnostics and quick fixes for supported SQLovely rules
@@ -55,11 +55,37 @@ SQLovely formats conservatively. It keeps SQL structure intact and focuses on re
 
 - keyword and function casing
 - basic block indentation
+- compact Watcom `IF ... THEN ... END IF` control-flow normalization
+- Watcom `IF ... THEN ... ELSE ... ENDIF` expression preservation, including split expression normalization and `ORDER BY` separator recovery
+- `UNION ALL` normalization to its own physical line
+- top-level Watcom query-clause line breaks for `SELECT`, `FROM`, `WHERE`, `JOIN`, `ON`, `GROUP BY`, `HAVING` and `ORDER BY`, including continuation indentation for multiline lists, predicate function calls, `UPDATE ... SET` assignments and DDL/list closing parentheses
+- Watcom cursor `FOR ... CURSOR FOR ... DO ... END FOR` indentation
+- Watcom `CASE WHEN THEN ELSE END` expression line breaks and indentation
+- Watcom `EXCEPTION` / `WHEN ... THEN` handler line breaks and indentation
 - trailing whitespace removal
 - limiting consecutive blank lines
 - final newline handling
+- performance safety guards that skip expensive Watcom rewrite passes for very large documents or very long lines
 
-The formatter does not rewrite queries, split statements, align joins or migrate SQL between dialects.
+Apart from normalizing compact Watcom `IF ... THEN ... END IF` control-flow statements, preserving and normalizing expression-style `IF ... THEN ... ELSE ... ENDIF` constructs, keeping `UNION ALL` on its own line, splitting Watcom parenthesized argument/parameter lists across indented lines, placing top-level Watcom query clauses on stable physical lines with continuation indentation, cleaning multiline `UPDATE ... SET` assignments plus compact comma/operator spacing and DDL/list closing parentheses, recovering separators after split `ORDER BY IF ... ENDIF` expression continuations, indenting cursor `FOR ... DO` loops, formatting Watcom `CASE` expressions and aligning Watcom exception handlers, splitting/counting stacked Watcom block endings before indentation, and treating `ELSEIF` as a branch keyword instead of a nested block opener, the formatter does not perform schema-aware rewrites or migrate SQL between dialects.
+
+
+### Formatter safety guards
+
+SQLovely includes safety guards for very large generated SQL files. When a document exceeds the configured safety limits, expensive Watcom rewrite passes such as query-clause splitting, parenthesis splitting, cursor-loop splitting, CASE formatting and compact IF expansion are skipped. Lightweight cleanup such as keyword casing, whitespace cleanup and indentation still runs.
+
+Default limits:
+
+```json
+{
+  "sqlovely.format.safety.enabled": true,
+  "sqlovely.format.safety.maxComplexDocumentLength": 1000000,
+  "sqlovely.format.safety.maxComplexDocumentLines": 5000,
+  "sqlovely.format.safety.maxComplexLineLength": 5000
+}
+```
+
+When a guard triggers, SQLovely writes a short note to the SQLovely output channel.
 
 ### Format one file
 
@@ -103,9 +129,9 @@ END;
 
 Headers are inserted directly before each detected object's first `BEGIN` line. Repeated runs update existing SQLovely blocks instead of duplicating them.
 
-When SQLovely finds a loose legacy metadata-style comment block for a detected object, it normalizes the block to the generated SQLovely format instead of adding a second header. Legacy detection supports common `--`, `//`, `/` and simple block-comment styles, but stays conservative and requires a recognizable version field so regular explanatory comments are left in place.
+When SQLovely finds a loose legacy metadata-style comment block for a detected object, it normalizes the block to the generated SQLovely format instead of adding a second header. Legacy detection supports common `--`, `//`, `/`, `//*` and simple block-comment styles, but stays conservative and requires a recognizable version field so regular explanatory comments are left in place. German legacy aliases such as `erstellt durch` and `geändert durch` are migrated into `Author` and `Updated By`.
 
-Metadata updates also normalize date values to `YYYY-MM-DD`, preserve multiline descriptions, wrap long description lines to `sqlovely.diagnostics.maxLineLength.limit`, and keep manual description line breaks. `Version` is synchronized with the latest history entry: newer valid history entries update the field, version bumps add missing history entries, and invalid jumps are coerced to a one-step bump.
+Metadata updates also normalize date values to `YYYY-MM-DD`, including common two-digit legacy years using `00`-`49` as `2000`-`2049` and `50`-`99` as `1950`-`1999`. They preserve multiline descriptions, wrap long description lines to `sqlovely.diagnostics.maxLineLength.limit`, and keep manual description line breaks. `Version` is synchronized with the latest history entry: newer valid history entries update the field, version bumps add missing history entries, and invalid jumps are coerced to a one-step bump.
 
 Extras are applied during normal SQLovely formatting by default:
 
@@ -146,7 +172,7 @@ Supported values:
 - `watcom`: default dialect
 - `mssql`: small secondary dialect surface
 
-The syntax grammar is intentionally broad. Dialect-specific behavior is handled by formatting, object detection, extras, diagnostics and quick fixes.
+The syntax grammar is intentionally broad. It highlights regular built-in function calls and common quoted Watcom built-in calls such as `"isnull"(...)`, `"string"(...)`, `"date"(...)`, `"substr"(...)` and `"xmlelement"(...)` while still treating other double-quoted names as identifiers. Dialect-specific behavior is handled by formatting, object detection, extras, diagnostics and quick fixes.
 
 ## Diagnostics
 

@@ -9,6 +9,9 @@ export function normalizeMetadataDateLiterals(value: string): string {
     })
     .replace(/\b(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})\b/gu, (match, day, month, year) => {
       return formatParsedMetadataDate(year, month, day) ?? match;
+    })
+    .replace(/\b(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2})\b/gu, (match, day, month, year) => {
+      return formatParsedMetadataDate(year, month, day) ?? match;
     });
 }
 
@@ -29,6 +32,16 @@ function parseMetadataDate(value: string): ParsedMetadataDate | undefined {
     return createParsedMetadataDate(dayFirstMatch[3] ?? '', dayFirstMatch[2] ?? '', dayFirstMatch[1] ?? '');
   }
 
+  const dayFirstShortYearMatch = /^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2})$/u.exec(value);
+
+  if (dayFirstShortYearMatch) {
+    return createParsedMetadataDate(
+      dayFirstShortYearMatch[3] ?? '',
+      dayFirstShortYearMatch[2] ?? '',
+      dayFirstShortYearMatch[1] ?? ''
+    );
+  }
+
   return undefined;
 }
 
@@ -38,7 +51,7 @@ function createParsedMetadataDate(yearText: string, monthText: string, dayText: 
 }
 
 function formatParsedMetadataDate(yearText: string, monthText: string, dayText: string): string | undefined {
-  const year = Number.parseInt(yearText, 10);
+  const year = resolveMetadataYear(yearText);
   const month = Number.parseInt(monthText, 10);
   const day = Number.parseInt(dayText, 10);
 
@@ -51,6 +64,16 @@ function formatParsedMetadataDate(yearText: string, monthText: string, dayText: 
     String(month).padStart(2, '0'),
     String(day).padStart(2, '0')
   ].join('-');
+}
+
+function resolveMetadataYear(yearText: string): number {
+  const year = Number.parseInt(yearText, 10);
+
+  if (yearText.length !== 2) {
+    return year;
+  }
+
+  return year <= 49 ? 2000 + year : 1900 + year;
 }
 
 function isValidMetadataDate(year: number, month: number, day: number): boolean {

@@ -340,6 +340,70 @@ runTest('reports missing metadata only for objects without a current or normaliz
   assert.equal(issues[0].object.name, 'dbo.missing_header');
 });
 
+
+runTest('migrates legacy created-through and changed-through aliases with two-digit dates', () => {
+  const input = [
+    'CREATE PROCEDURE dbo.legacy_durch_aliases()',
+    '//* ---------------------------------------------------------------------------',
+    '//* Description: Durch alias header',
+    '//* Version: 1.00',
+    '//* Erstelldatum:    26.06.18     erstellt durch: Creator Person',
+    '//* Letzte Änderung: 29.06.18     geändert durch: Updater Person',
+    '//* History:',
+    '//* v1.00 - erstellt am 26.06.18',
+    '//* ---------------------------------------------------------------------------',
+    'BEGIN',
+    'SELECT 1;',
+    'END;'
+  ].join('\n');
+
+  const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
+
+  assert.equal(result.action, 'updated');
+  assert.ok(result.text.includes('-- Description : Durch alias header'));
+  assert.ok(result.text.includes('-- Version     : 1.00'));
+  assert.ok(result.text.includes('-- Author      : Creator Person'));
+  assert.ok(result.text.includes('-- Updated By  : Updater Person'));
+  assert.ok(result.text.includes('-- Created     : 2018-06-26'));
+  assert.ok(result.text.includes('-- Updated     : 2026-06-09'));
+  assert.ok(result.text.includes('--   v1.00: erstellt am 2018-06-26'));
+  assert.equal(result.text.includes('26.06.18'), false);
+  assert.equal(result.text.includes('geändert durch'), false);
+});
+
+runTest('normalizes two-digit metadata dates with a stable pivot year', () => {
+  const input = [
+    'CREATE PROCEDURE dbo.two_digit_metadata_dates()',
+    '-- METADATA',
+    '--',
+    '-- Description : Existing description',
+    '-- Version     : 1.1',
+    '-- Author      : Existing Author',
+    '-- Updated By  : Existing Updater',
+    '-- Created     : 1.4.98',
+    '-- Updated     : 14.11.23',
+    '--',
+    '-- History     :',
+    '--   v1.0: Initial creation - 1.4.98 Existing Author',
+    '--   v1.1: Updated behavior - 14.11.23 Existing Updater',
+    '--',
+    '-- METADATA END',
+    'BEGIN',
+    'SELECT 1;',
+    'END;'
+  ].join('\n');
+
+  const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
+
+  assert.equal(result.action, 'updated');
+  assert.ok(result.text.includes('-- Created     : 1998-04-01'));
+  assert.ok(result.text.includes('-- Updated     : 2026-06-09'));
+  assert.ok(result.text.includes('--   v1.0: Initial creation - 1998-04-01 Existing Author'));
+  assert.ok(result.text.includes('--   v1.1: Updated behavior - 2023-11-14 Existing Updater'));
+  assert.equal(result.text.includes('1.4.98'), false);
+  assert.equal(result.text.includes('14.11.23'), false);
+});
+
 function countOccurrences(text, needle) {
   return text.split(/\r?\n/).filter((line) => line.trim() === needle).length;
 }

@@ -30,3 +30,4 @@ Before publishing or attaching a VSIX to a release:
 7. Install the generated VSIX in VS Code and open a `.sql` file.
 8. Verify highlighting, the active dialect command, formatting, metadata-header quick fixes and the packaging output.
 9. Smoke-test metadata headers for multi-object scripts, legacy-header migration, description wrapping, date normalization and `Updated By` values.
+10. Smoke-test formatter safety guards with a generated/large SQL file and confirm the SQLovely output channel records skipped expensive passes instead of freezing VS Code.

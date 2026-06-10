@@ -288,3 +288,25 @@ runTest('SQLovely grammar includes audited SQL lexical categories', () => {
     assert.ok(grammarText.includes(fragment), `grammar should include ${fragment}`);
   }
 });
+
+runTest('SQLovely grammar scopes quoted built-in function calls before generic quoted identifiers', () => {
+  const grammar = readJson('syntaxes/sqlovely.tmLanguage.json');
+  const topLevelIncludes = grammar.patterns.map((pattern) => pattern.include).filter(Boolean);
+  const quotedFunctionIndex = topLevelIncludes.indexOf('#quotedBuiltinFunctions');
+  const delimitedIdentifierIndex = topLevelIncludes.indexOf('#delimitedIdentifiers');
+  const pattern = grammar.repository.quotedBuiltinFunctions.patterns[0];
+
+  assert.ok(quotedFunctionIndex >= 0, 'quoted built-in function matcher should be included');
+  assert.ok(delimitedIdentifierIndex >= 0, 'generic quoted identifier matcher should be included');
+  assert.ok(
+    quotedFunctionIndex < delimitedIdentifierIndex,
+    'quoted built-in function matcher must run before generic quoted identifiers'
+  );
+  assert.equal(pattern.name, 'support.function.builtin.quoted.sql.sqlovely');
+
+  for (const builtin of ['isnull', 'string', 'date', 'substr', 'xmlelement', 'xmlserialize', 'row_number']) {
+    assert.ok(pattern.match.toLowerCase().includes(builtin), `quoted function matcher should include ${builtin}`);
+  }
+
+  assert.equal(pattern.captures['2'].name, 'support.function.builtin.sql.sqlovely');
+});

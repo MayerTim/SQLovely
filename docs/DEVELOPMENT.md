@@ -51,11 +51,18 @@ Useful smoke tests:
 - run **SQLovely: Show Active Dialect**
 - run **SQLovely: Format Current SQL File**
 - run **SQLovely: Format SQL Files in Directory**
+- verify compact Watcom inline `IF ... THEN ... END IF` statements expand without leaking indentation
+- verify Watcom parenthesized parameter lists and nested calls split without touching strings, comments or type lengths
+- verify multiline `SELECT` / `INTO` / `ORDER BY` lists and predicate function arguments keep continuation indentation
+- verify split `ORDER BY IF ... ENDIF` expression continuations keep the comma before the next sort key
 - run **SQLovely: Insert or Update Metadata Header**
 - verify diagnostics and quick fixes
 - verify metadata headers in a script with multiple procedures, functions or triggers
 - verify loose legacy metadata headers are normalized only when they contain a recognizable version field
 - verify long metadata descriptions are wrapped without removing manual line breaks
+- verify formatter safety guards skip expensive rewrites for generated/large SQL while keeping lightweight cleanup
+- verify formatter smoke samples cover multiline `UPDATE ... SET` continuations, compact comma/operator spacing and temporary-table DDL parenthesis alignment
+- verify multiline Watcom `ELSEIF` conditions align with the matching `IF` and do not leak indentation into following objects
 
 ## Settings during development
 
@@ -68,6 +75,7 @@ A practical development workspace setup is:
   "sqlovely.format.keywordCase": "upper",
   "sqlovely.format.indentSize": 2,
   "sqlovely.format.insertSpaces": true,
+  "sqlovely.format.safety.enabled": true,
   "sqlovely.extras.applyWithFormatting": true,
   "sqlovely.extras.applyOnSave": false,
   "[sql]": {
@@ -93,7 +101,7 @@ For MSSQL-oriented smoke tests:
 
 **SQLovely: Format SQL Files in Directory** uses the normal `sqlovely.format.*` settings.
 
-It intentionally does not apply SQLovely Extras. Keep this behavior conservative because the command can touch many files at once.
+It intentionally does not apply SQLovely Extras. Keep this behavior conservative because the command can touch many files at once. Directory formatting forwards VS Code cancellation requests into the formatter and uses the same safety guards as normal document formatting.
 
 ## Metadata-header regression focus
 
@@ -103,6 +111,16 @@ When changing metadata-header behavior, add or update regression tests for:
 - loose legacy header normalization
 - multi-object scripts
 - version/history synchronization
-- `Updated By` migration and preservation
-- date normalization
+- `Updated By` migration and preservation, including legacy `durch` aliases
+- date normalization, including two-digit legacy years
 - multiline description wrapping and manual line-break preservation
+
+
+## Formatter performance regression focus
+
+When adding formatter passes, keep them lexical and linear where possible. Add or update tests for:
+
+- large documents that exceed `sqlovely.format.safety.maxComplexDocumentLines`
+- very long physical lines that exceed `sqlovely.format.safety.maxComplexLineLength`
+- cancellation before formatting applies edits
+- normal-sized files that should still receive the full Watcom formatting pipeline

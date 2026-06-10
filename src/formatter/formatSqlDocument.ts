@@ -25,7 +25,7 @@ export function formatSqlDocument(
 ): FormatSqlDocumentResult {
   const formatting = formatSql(text, dialect, options);
 
-  if (!options.applyExtrasWithFormatting) {
+  if (options.isCancellationRequested?.() || !options.applyExtrasWithFormatting) {
     return {
       text: formatting.text,
       changed: formatting.changed,

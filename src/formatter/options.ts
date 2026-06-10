@@ -1,3 +1,5 @@
+import { DEFAULT_FORMATTING_SAFETY_LIMITS, type FormattingSafetyLimits } from './performanceGuards';
+
 export type KeywordCase = 'upper' | 'lower' | 'preserve';
 
 export interface FormatSqlOptions {
@@ -6,6 +8,8 @@ export interface FormatSqlOptions {
   readonly insertSpaces: boolean;
   readonly maxConsecutiveBlankLines: number;
   readonly ensureFinalNewline: boolean;
+  readonly safetyLimits: FormattingSafetyLimits;
+  readonly isCancellationRequested?: () => boolean;
 }
 
 export const DEFAULT_FORMAT_SQL_OPTIONS: FormatSqlOptions = {
@@ -13,7 +17,8 @@ export const DEFAULT_FORMAT_SQL_OPTIONS: FormatSqlOptions = {
   indentSize: 2,
   insertSpaces: true,
   maxConsecutiveBlankLines: 1,
-  ensureFinalNewline: true
+  ensureFinalNewline: true,
+  safetyLimits: DEFAULT_FORMATTING_SAFETY_LIMITS
 };
 
 export function normalizeKeywordCase(value: unknown): KeywordCase {
