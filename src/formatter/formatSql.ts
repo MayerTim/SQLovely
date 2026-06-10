@@ -13,6 +13,7 @@ import { expandUnionAllLine } from './unionAllFormatting';
 import { createInitialCursorForFormattingState, expandWatcomCursorForLine } from './cursorForFormatting';
 import { createInitialQueryClauseFormattingState, expandWatcomQueryClauseLine } from './queryClauseFormatting';
 import { createInitialCaseExpressionFormattingState, expandWatcomCaseExpressionLine } from './caseExpressionFormatting';
+import { createInitialIfExpressionFormattingState, expandWatcomIfExpressionLine } from './ifExpressionFormatting';
 import { createInitialExceptionFormattingState, expandWatcomExceptionLine } from './exceptionFormatting';
 import { createInitialBlockEndFormattingState, expandWatcomBlockEndLine } from './blockEndFormatting';
 import {
@@ -72,6 +73,7 @@ export function formatSql(
   let cursorForScanState = createInitialCursorForFormattingState();
   let queryClauseFormattingState = createInitialQueryClauseFormattingState();
   let exceptionFormattingState = createInitialExceptionFormattingState();
+  let ifExpressionFormattingState = createInitialIfExpressionFormattingState();
   let caseExpressionFormattingState = createInitialCaseExpressionFormattingState();
   let blockEndFormattingState = createInitialBlockEndFormattingState();
   let parenthesisExpansionState = createInitialParenthesisFormattingState();
@@ -129,14 +131,25 @@ export function formatSql(
             exceptionFormattingState = exceptionResult.nextState;
 
             for (const exceptionExpandedLine of exceptionResult.lines) {
-              const canRunCaseExpressionFormatting = canRunExceptionFormatting && shouldRunExpensiveLineFormatting(exceptionExpandedLine, safety);
+              const canRunIfExpressionFormatting = canRunExceptionFormatting && shouldRunExpensiveLineFormatting(exceptionExpandedLine, safety);
+              const ifExpressionResult = canRunIfExpressionFormatting
+                ? expandWatcomIfExpressionLine(
+                  exceptionExpandedLine,
+                  dialect,
+                  ifExpressionFormattingState
+                )
+                : { lines: [exceptionExpandedLine], nextState: ifExpressionFormattingState };
+              ifExpressionFormattingState = ifExpressionResult.nextState;
+
+              for (const ifExpressionExpandedLine of ifExpressionResult.lines) {
+              const canRunCaseExpressionFormatting = canRunIfExpressionFormatting && shouldRunExpensiveLineFormatting(ifExpressionExpandedLine, safety);
               const caseExpressionResult = canRunCaseExpressionFormatting
                 ? expandWatcomCaseExpressionLine(
-                  exceptionExpandedLine,
+                  ifExpressionExpandedLine,
                   dialect,
                   caseExpressionFormattingState
                 )
-                : { lines: [exceptionExpandedLine], nextState: caseExpressionFormattingState };
+                : { lines: [ifExpressionExpandedLine], nextState: caseExpressionFormattingState };
               caseExpressionFormattingState = caseExpressionResult.nextState;
 
               for (const caseExpressionExpandedLine of caseExpressionResult.lines) {
@@ -267,6 +280,7 @@ export function formatSql(
                     indentLevel += 1;
                   }
                 }
+              }
               }
             }
           }

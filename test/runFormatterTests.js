@@ -457,6 +457,47 @@ runTest('keeps Watcom IF expressions inline instead of rewriting them as control
 });
 
 
+runTest('normalizes split Watcom IF expressions without treating them as procedural blocks', () => {
+  const input = [
+    'begin',
+    'order by',
+    "if \"pr\".\"Role\" = 'Instrumenteur1'",
+    'then',
+    '1 else 2',
+    'end if,',
+    '"pr"."Reihenfolge",',
+    '"pr"."lfd";',
+    'if a = 1',
+    'then',
+    'set b = 1',
+    'else',
+    'set b = 2',
+    'end if;',
+    'end;'
+  ].join('\n');
+
+  const expected = [
+    'BEGIN',
+    '  ORDER BY',
+    "  IF \"pr\".\"Role\" = 'Instrumenteur1' THEN 1 ELSE 2 ENDIF,",
+    '  "pr"."Reihenfolge",',
+    '  "pr"."lfd";',
+    '  IF a = 1',
+    '  THEN',
+    '    SET b = 1',
+    '  ELSE',
+    '    SET b = 2',
+    '  END IF;',
+    'END;',
+    ''
+  ].join('\n');
+
+  const result = formatSql(input, watcomDialect, defaultOptions);
+
+  assert.equal(result.text, expected);
+});
+
+
 runTest('splits Watcom parenthesized parameter lists across indented lines', () => {
   const input = [
     'CREATE OR REPLACE FUNCTION "FCT"."OP_GTIN_VorherIstGrenze"(',

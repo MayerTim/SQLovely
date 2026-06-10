@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed split Watcom `IF ... THEN ... ELSE ... ENDIF` expressions so formatter output keeps them expression-style instead of treating `THEN` / `END IF` as procedural block indentation.
 - Fixed Watcom formatter indentation state when one physical line contains multiple block openings or endings, so same-line `BEGIN ... END` and compact nested `IF ... END IF` statements do not leak indentation.
 - Fixed Watcom formatter indentation after stacked block endings such as `END IF END IF;` and `END IF END IF END FOR;`.
 - Added formatter safety guards for very large Watcom SQL documents and very long physical lines, with cancellation checks and output-channel notes when expensive rewrite passes are skipped.
