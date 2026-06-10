@@ -28,9 +28,6 @@ eslint.config.js
 *.vsix
 *.zip
 
-# Local planning and handoff files
-sqlovely_private_companion_pack*/**
-
 # OS files
 .DS_Store
 Thumbs.db
