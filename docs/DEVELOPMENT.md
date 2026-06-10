@@ -154,6 +154,45 @@ Keep `src/extras/metadataHeader.ts` as the public orchestration entry point. New
 
 Formatter regression coverage is grouped by topic under `test/formatter/`. Keep `test/runFormatterTests.js` as the stable entry point for `npm run test:formatter`, and add new formatter regressions to the closest topic suite instead of expanding the runner directly. Use `test/formatter/helpers.js` for shared formatter imports, dialects, default options and fixture loading.
 
+## Formatter corpus tests
+
+Formatter corpus tests live under `test/corpus/` and use input/expected SQL fixture pairs. They are intended for representative, public-safe SQL examples that should remain stable while the formatter internals evolve.
+
+Run only the corpus suite with:
+
+```bash
+npm run test:corpus
+```
+
+The corpus runner discovers `*.input.sql` files, formats each input with the dialect selected by the first corpus directory name, and compares the output with the matching `*.expected.sql` file. It also formats each expected file again to verify idempotency:
+
+```text
+format(input) === expected
+format(expected) === expected
+```
+
+When adding a fixture:
+
+- use sanitized SQL that can safely live in the public repository
+- keep examples focused on one representative SQL shape or safety boundary
+- include both the input and expected output files
+- preserve current behavior unless a behavior change was explicitly approved
+- do not use corpus fixtures as private roadmap notes or product planning documents
+
+Corpus fixtures document behavior on representative samples. They do not imply complete Watcom or MSSQL grammar coverage, and they should not be treated as a full parser conformance suite.
+
+## Formatter behavior guarantees
+
+SQLovely formatter tests aim to protect these practical guarantees:
+
+- formatting should be deterministic for the same input, dialect and options
+- expected corpus output should be idempotent
+- strings, comments and quoted identifiers should not be corrupted by keyword-casing or layout rules
+- large-file and cancellation safety guards should keep the extension responsive
+- dialect-specific behavior should be covered by dialect-named tests or corpus directories
+
+The formatter is intentionally conservative and does not claim full SQL grammar parsing. If a future change requires a behavior update, update the smallest relevant topic test or corpus fixture and make the behavior change explicit in the commit.
+
 ## Formatter pipeline internals
 
 Watcom structural rewrites are coordinated through `src/formatter/formattingPipeline.ts`. Shared formatter inputs such as the active dialect, resolved options, indentation string, cancellation checks and safety decision live in `src/formatter/formattingContext.ts`. Indentation is isolated in `src/formatter/indentation/indentationEngine.ts`, which applies keyword casing, block depth, query continuation depth, parenthesis continuation depth and CASE/exception branch depth after structural expansion. Keep the pipeline order explicit and behavior-preserving: compact/control-flow expansion, query/cursor/exception/expression normalization, block-ending normalization and parenthesis splitting should run before the indentation engine and final cleanup passes. When adding a formatter rule, prefer a small stateful pipeline pass that consumes the shared formatting context instead of expanding formatter orchestration logic in `formatSql.ts`.
