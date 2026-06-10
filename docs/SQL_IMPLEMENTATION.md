@@ -79,7 +79,7 @@ Metadata updates normalize supported date formats to `YYYY-MM-DD`, preserve and 
 
 ## Design boundaries
 
-SQLovely normalizes compact Watcom `IF ... THEN ... END IF` statements into block form before indentation is applied so closed inline IF statements do not leak indentation into following statements or objects. It also keeps `UNION ALL` on its own physical line and splits non-empty Watcom parentheses outside strings and comments onto separate indented lines for routine parameters and nested calls, while keeping empty calls such as `proc()` and simple type lengths such as `varchar(14)` inline.
+SQLovely normalizes compact Watcom `IF ... THEN ... END IF` control-flow statements into block form before indentation is applied so closed inline IF statements do not leak indentation into following statements or objects. Expression-style Watcom `IF ... THEN ... ELSE ... ENDIF` constructs are preserved as expressions instead of being rewritten as procedural blocks. The formatter also keeps `UNION ALL` on its own physical line and splits non-empty Watcom parentheses outside strings and comments onto separate indented lines for routine parameters and nested calls, while keeping empty calls such as `proc()` and simple type lengths such as `varchar(14)` inline.
 
 SQLovely currently does not provide:
 

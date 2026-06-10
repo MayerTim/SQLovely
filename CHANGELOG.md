@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed Watcom formatter handling for expression-style `IF ... THEN ... ELSE ... ENDIF` constructs so they are not rewritten as procedural IF blocks.
 - Added SQL formatter normalization that keeps `UNION ALL` on its own physical line.
 - Fixed Watcom formatter indentation after compact inline `IF ... THEN ... END IF` statements by expanding them into stable block form.
 - Added Watcom parenthesis formatting for parameters and nested calls outside strings/comments, with indentation for multiline argument lists.

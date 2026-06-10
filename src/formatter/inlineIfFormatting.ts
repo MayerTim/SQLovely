@@ -87,6 +87,16 @@ function tryExpandInlineIf(line: string, outsideSegments: readonly SqlOutsideSeg
   }
 
   const endIfMatch = findEndIf(line, outsideSegments, thenMatch.end);
+  const elseMatch = findKeyword(line, outsideSegments, 'else', thenMatch.end);
+
+  if (elseMatch && (!endIfMatch || elseMatch.start < endIfMatch.start)) {
+    // Watcom also supports expression-style IFs, for example:
+    //   IF condition THEN value ELSE value ENDIF
+    // Those may appear in SELECT lists and calculated assignments. Treat lines with an inline
+    // ELSE before ENDIF as expressions until a statement-aware formatter can safely rewrite them.
+    return undefined;
+  }
+
   const condition = line.slice(ifMatch.end, thenMatch.start).trim();
   const afterThen = endIfMatch ? line.slice(thenMatch.end, endIfMatch.start).trim() : line.slice(thenMatch.end).trim();
 

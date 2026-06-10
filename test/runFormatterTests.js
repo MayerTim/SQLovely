@@ -356,6 +356,32 @@ runTest('does not let compact Watcom IF statements leak indentation into followi
 });
 
 
+runTest('keeps Watcom IF expressions inline instead of rewriting them as control-flow blocks', () => {
+  const input = [
+    'begin',
+    'IF a = 1 THEN 1 ELSE 0 ENDIF;',
+    'select (if "v" is null then 0 else 1 endif) as flag;',
+    'select 2;',
+    'end;'
+  ].join('\n');
+
+  const expected = [
+    'BEGIN',
+    '  IF a = 1 THEN 1 ELSE 0 ENDIF;',
+    '  SELECT(',
+    '    IF "v" IS NULL THEN 0 ELSE 1 ENDIF',
+    '  ) AS flag;',
+    '  SELECT 2;',
+    'END;',
+    ''
+  ].join('\n');
+
+  const result = formatSql(input, watcomDialect, defaultOptions);
+
+  assert.equal(result.text, expected);
+});
+
+
 runTest('splits Watcom parenthesized parameter lists across indented lines', () => {
   const input = [
     'CREATE OR REPLACE FUNCTION "FCT"."OP_GTIN_VorherIstGrenze"(',
