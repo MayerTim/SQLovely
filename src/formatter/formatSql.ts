@@ -23,6 +23,7 @@ import {
 } from './parenthesisFormatting';
 import { createInitialSqlLineScanState, cloneSqlLineScanState, scanSqlLineOutsideLiteralsAndComments } from './sqlLineScanner';
 import { cleanupWatcomStatementContinuations } from './statementContinuationCleanup';
+import { cleanupWatcomDdlParentheses } from './ddlParenthesisCleanup';
 
 export interface FormatSqlResult {
   readonly text: string;
@@ -333,7 +334,10 @@ export function formatSql(
   const statementCleanedLines = dialect.id === 'watcom'
     ? cleanupWatcomStatementContinuations(separatorNormalizedLines, indentString)
     : separatorNormalizedLines;
-  let nextText = statementCleanedLines.join(split.eol);
+  const ddlParenthesisCleanedLines = dialect.id === 'watcom'
+    ? cleanupWatcomDdlParentheses(statementCleanedLines)
+    : statementCleanedLines;
+  let nextText = ddlParenthesisCleanedLines.join(split.eol);
 
   if (resolvedOptions.ensureFinalNewline || split.hadFinalNewline) {
     nextText += split.eol;

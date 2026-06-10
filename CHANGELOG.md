@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed Watcom DDL/list parenthesis cleanup so temporary-table closing parentheses align with the declaration and safe trailing DDL commas before `)` are removed.
 - Fixed Watcom statement continuation cleanup for multiline `UPDATE ... SET` assignments, compact `SELECT` comma spacing and arithmetic operator spacing outside strings/comments.
 - Fixed split Watcom `ORDER BY IF ... ENDIF` expression continuations so following sort keys keep their comma separator.
 - Fixed Watcom `ELSEIF` indentation so branch conditions do not add an extra block level before `THEN`.

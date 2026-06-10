@@ -61,7 +61,7 @@ Useful smoke tests:
 - verify loose legacy metadata headers are normalized only when they contain a recognizable version field
 - verify long metadata descriptions are wrapped without removing manual line breaks
 - verify formatter safety guards skip expensive rewrites for generated/large SQL while keeping lightweight cleanup
-- verify formatter smoke samples cover multiline `UPDATE ... SET` continuations and compact comma/operator spacing
+- verify formatter smoke samples cover multiline `UPDATE ... SET` continuations, compact comma/operator spacing and temporary-table DDL parenthesis alignment
 - verify multiline Watcom `ELSEIF` conditions align with the matching `IF` and do not leak indentation into following objects
 
 ## Settings during development
