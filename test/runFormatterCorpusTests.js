@@ -10,7 +10,7 @@ const dialectsByCorpusDirectory = new Map([
   ['mssql', mssqlDialect],
 ]);
 
-function listInputFixtures(directory) {
+function listFiles(directory, predicate) {
   if (!fs.existsSync(directory)) {
     return [];
   }
@@ -21,16 +21,28 @@ function listInputFixtures(directory) {
       const entryPath = path.join(directory, entry.name);
 
       if (entry.isDirectory()) {
-        return listInputFixtures(entryPath);
+        return listFiles(entryPath, predicate);
       }
 
-      return entry.isFile() && entry.name.endsWith('.input.sql') ? [entryPath] : [];
+      return entry.isFile() && predicate(entry.name) ? [entryPath] : [];
     })
     .sort((left, right) => left.localeCompare(right));
 }
 
+function listInputFixtures(directory) {
+  return listFiles(directory, (fileName) => fileName.endsWith('.input.sql'));
+}
+
+function listSqlFixtureFiles(directory) {
+  return listFiles(directory, (fileName) => fileName.endsWith('.sql'));
+}
+
 function getExpectedFixturePath(inputPath) {
   return inputPath.replace(/\.input\.sql$/u, '.expected.sql');
+}
+
+function getInputFixturePath(expectedPath) {
+  return expectedPath.replace(/\.expected\.sql$/u, '.input.sql');
 }
 
 function getDialectForFixture(inputPath) {
@@ -49,22 +61,51 @@ function getFixtureName(inputPath) {
   return path.relative(corpusRoot, inputPath).replace(/\.input\.sql$/u, '');
 }
 
+function getRelativeFixturePath(fixturePath) {
+  return path.relative(process.cwd(), fixturePath);
+}
+
+function findCorpusFixturePairingIssues(directory) {
+  return listSqlFixtureFiles(directory).flatMap((fixturePath) => {
+    const relativeFixturePath = getRelativeFixturePath(fixturePath);
+
+    if (fixturePath.endsWith('.input.sql')) {
+      const expectedPath = getExpectedFixturePath(fixturePath);
+
+      return fs.existsSync(expectedPath)
+        ? []
+        : [`Missing expected corpus fixture for ${relativeFixturePath}.`];
+    }
+
+    if (fixturePath.endsWith('.expected.sql')) {
+      const inputPath = getInputFixturePath(fixturePath);
+
+      return fs.existsSync(inputPath)
+        ? []
+        : [`Missing input corpus fixture for ${relativeFixturePath}.`];
+    }
+
+    return [
+      `Unsupported corpus SQL fixture name ${relativeFixturePath}; use .input.sql or .expected.sql.`,
+    ];
+  });
+}
+
 const inputFixtures = listInputFixtures(corpusRoot);
 
 if (inputFixtures.length === 0) {
   throw new Error(`No formatter corpus fixtures found under ${corpusRoot}.`);
 }
 
+runTest('formatter corpus fixtures are paired', () => {
+  assert.deepEqual(findCorpusFixturePairingIssues(corpusRoot), []);
+});
+
 for (const inputPath of inputFixtures) {
   const expectedPath = getExpectedFixturePath(inputPath);
   const fixtureName = getFixtureName(inputPath);
 
   runTest(`formatter corpus: ${fixtureName}`, () => {
-    assert.ok(
-      fs.existsSync(expectedPath),
-      `Expected corpus fixture is missing for ${path.relative(process.cwd(), inputPath)}.`,
-    );
-
     const input = fs.readFileSync(inputPath, 'utf8');
     const expected = fs.readFileSync(expectedPath, 'utf8');
     const dialect = getDialectForFixture(inputPath);
