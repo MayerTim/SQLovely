@@ -132,6 +132,9 @@ Metadata-header behavior is split into small internal modules under `src/extras/
 - `metadataHistory.ts` synchronizes version and history entries.
 - `metadataHeaderPlacement.ts` decides where headers are inserted relative to the detected SQL object.
 - `metadataText.ts` owns shared text-range and line-boundary helpers.
+- `legacyMetadataAliases.ts` owns loose legacy label aliases and field classifiers.
+- `legacyMetadataParser.ts` finds loose legacy header candidates around SQL objects and normalizes comment text.
+- `legacyMetadataMigration.ts` maps loose legacy fields and history entries to the modern metadata model.
 
 Keep `src/extras/metadataHeader.ts` as the public orchestration entry point. New metadata behavior should usually live in the focused helper module that owns that concern, with regression coverage in the metadata test suites.
 

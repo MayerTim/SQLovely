@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Isolated loose legacy metadata-header aliases, candidate parsing and migration logic into focused internal modules.
 - Extracted formatter indentation handling into a dedicated indentation engine while preserving existing formatter output.
 - Documented the internal formatter pipeline design, pass order and rules for adding future formatter passes.
 - Organized formatter regression tests into topic-based suites under `test/formatter/` while keeping the existing formatter test command as the entry point.
