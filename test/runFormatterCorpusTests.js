@@ -69,6 +69,10 @@ function toCrLf(text) {
   return text.replace(/\r\n|\r|\n/gu, '\n').replace(/\n/gu, '\r\n');
 }
 
+function readFixture(fixturePath) {
+  return fs.readFileSync(fixturePath, 'utf8');
+}
+
 function findCorpusFixturePairingIssues(directory) {
   return listSqlFixtureFiles(directory).flatMap((fixturePath) => {
     const relativeFixturePath = getRelativeFixturePath(fixturePath);
@@ -95,9 +99,27 @@ function findCorpusFixturePairingIssues(directory) {
   });
 }
 
-const inputFixtures = listInputFixtures(corpusRoot);
+function listFixturePairs() {
+  return listInputFixtures(corpusRoot).map((inputPath) => ({
+    dialect: getDialectForFixture(inputPath),
+    expectedPath: getExpectedFixturePath(inputPath),
+    inputPath,
+    name: getFixtureName(inputPath),
+  }));
+}
 
-if (inputFixtures.length === 0) {
+function assertCorpusFormatting({ dialect, expected, fixtureName, input, variant }) {
+  const result = formatSql(input, dialect, defaultOptions);
+  const idempotentResult = formatSql(expected, dialect, defaultOptions);
+  const testName = variant ? `${fixtureName} (${variant})` : fixtureName;
+
+  assert.equal(result.text, expected, `${testName} did not format to the expected output.`);
+  assert.equal(idempotentResult.text, expected, `${testName} expected output is not idempotent.`);
+}
+
+const fixturePairs = listFixturePairs();
+
+if (fixturePairs.length === 0) {
   throw new Error(`No formatter corpus fixtures found under ${corpusRoot}.`);
 }
 
@@ -105,41 +127,25 @@ runTest('formatter corpus fixtures are paired', () => {
   assert.deepEqual(findCorpusFixturePairingIssues(corpusRoot), []);
 });
 
-for (const inputPath of inputFixtures) {
-  const expectedPath = getExpectedFixturePath(inputPath);
-  const fixtureName = getFixtureName(inputPath);
-
-  runTest(`formatter corpus: ${fixtureName}`, () => {
-    const input = fs.readFileSync(inputPath, 'utf8');
-    const expected = fs.readFileSync(expectedPath, 'utf8');
-    const dialect = getDialectForFixture(inputPath);
-    const result = formatSql(input, dialect, defaultOptions);
-    const idempotentResult = formatSql(expected, dialect, defaultOptions);
-
-    assert.equal(result.text, expected, `${fixtureName} did not format to the expected output.`);
-    assert.equal(
-      idempotentResult.text,
-      expected,
-      `${fixtureName} expected output is not idempotent.`,
-    );
+for (const fixture of fixturePairs) {
+  runTest(`formatter corpus: ${fixture.name}`, () => {
+    assertCorpusFormatting({
+      dialect: fixture.dialect,
+      expected: readFixture(fixture.expectedPath),
+      fixtureName: fixture.name,
+      input: readFixture(fixture.inputPath),
+    });
   });
 }
 
-runTest('formatter corpus preserves CRLF line endings', () => {
-  for (const inputPath of inputFixtures) {
-    const expectedPath = getExpectedFixturePath(inputPath);
-    const fixtureName = getFixtureName(inputPath);
-    const input = toCrLf(fs.readFileSync(inputPath, 'utf8'));
-    const expected = toCrLf(fs.readFileSync(expectedPath, 'utf8'));
-    const dialect = getDialectForFixture(inputPath);
-    const result = formatSql(input, dialect, defaultOptions);
-    const idempotentResult = formatSql(expected, dialect, defaultOptions);
-
-    assert.equal(result.text, expected, `${fixtureName} did not preserve CRLF output.`);
-    assert.equal(
-      idempotentResult.text,
-      expected,
-      `${fixtureName} expected CRLF output is not idempotent.`,
-    );
-  }
-});
+for (const fixture of fixturePairs) {
+  runTest(`formatter corpus CRLF: ${fixture.name}`, () => {
+    assertCorpusFormatting({
+      dialect: fixture.dialect,
+      expected: toCrLf(readFixture(fixture.expectedPath)),
+      fixtureName: fixture.name,
+      input: toCrLf(readFixture(fixture.inputPath)),
+      variant: 'CRLF',
+    });
+  });
+}
