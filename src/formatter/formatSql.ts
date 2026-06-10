@@ -40,8 +40,6 @@ interface ExceptionIndentContext {
   handlerBodyIndentLevel: number;
 }
 
-const DECREASE_BEFORE_LINE = new Set(['end', 'endif', 'else', 'elseif', 'do', 'exception']);
-
 export function formatSql(
   text: string,
   dialect: SqlDialect,
@@ -202,6 +200,12 @@ export function formatSql(
                     0,
                     parenthesisIndentLevel - parenthesisIndentAnalysis.leadingClosingParentheses
                   );
+                  const leadingBlockIndentDecrease = getLeadingBlockIndentDecrease(lineWords, {
+                    isCaseEndLine,
+                    isCaseElseLine
+                  });
+                  const leadingBlockEndCount = getLeadingBlockEndCount(lineWords, isCaseEndLine);
+                  const totalBlockEndCount = getTotalBlockEndCount(lineWords, isCaseEndLine);
 
                   if (isBatchSeparator) {
                     indentLevel = 0;
@@ -212,8 +216,8 @@ export function formatSql(
                     indentLevel = closePreviousExceptionHandlerBody(indentLevel, activeExceptionContext);
                   } else if (closesExceptionSection && activeExceptionContext) {
                     indentLevel = activeExceptionContext.baseIndentLevel;
-                  } else if (firstWord && DECREASE_BEFORE_LINE.has(firstWord) && !isCaseEndLine && !isCaseElseLine) {
-                    indentLevel = Math.max(0, indentLevel - 1);
+                  } else if (leadingBlockIndentDecrease > 0) {
+                    indentLevel = Math.max(0, indentLevel - leadingBlockIndentDecrease);
                   }
 
                   const effectiveCaseExpressionIndentLevel = Math.max(
@@ -251,7 +255,9 @@ export function formatSql(
                     continue;
                   }
 
-                  indentLevel = Math.max(0, indentLevel + (isCaseThenLine ? 0 : getIndentIncreaseAfterLine(lineWords)));
+                  const nonLeadingBlockEndCount = Math.max(0, totalBlockEndCount - leadingBlockEndCount);
+                  const blockIndentDeltaAfterLine = (isCaseThenLine ? 0 : getIndentIncreaseAfterLine(lineWords)) - nonLeadingBlockEndCount;
+                  indentLevel = Math.max(0, indentLevel + blockIndentDeltaAfterLine);
 
                   if (isExceptionWhenLine && activeExceptionContext) {
                     activeExceptionContext.handlerBodyIndentLevel = 1;
@@ -283,7 +289,6 @@ export function formatSql(
     safetySummary: createFormattingSafetySummary(safety)
   };
 }
-
 export function formatSqlRangeText(
   text: string,
   dialect: SqlDialect,
@@ -328,13 +333,8 @@ function getIndentIncreaseAfterLine(words: readonly string[]): number {
   const firstWord = words[0];
   let increase = 0;
 
-  if (containsWord(words, 'begin') && firstWord !== 'end') {
-    increase += countWord(words, 'begin');
-  }
-
-  if (firstWord === 'if' && containsWord(words, 'then') && !containsEndIfPhrase(words)) {
-    increase += 1;
-  }
+  increase += countStandaloneWord(words, 'begin', (index) => words[index - 1] !== 'end');
+  increase += countIfThenOpeners(words);
 
   if (firstWord === 'then') {
     increase += 1;
@@ -344,13 +344,8 @@ function getIndentIncreaseAfterLine(words: readonly string[]): number {
     increase += 1;
   }
 
-  if (firstWord === 'while' && containsWord(words, 'loop') && !containsWord(words, 'end')) {
-    increase += 1;
-  }
-
-  if (firstWord === 'for' && (containsWord(words, 'do') || containsCursorForPhrase(words))) {
-    increase += 1;
-  }
+  increase += countWhileLoopOpeners(words);
+  increase += countForLoopOpeners(words);
 
   if (firstWord === 'do') {
     increase += 1;
@@ -359,6 +354,145 @@ function getIndentIncreaseAfterLine(words: readonly string[]): number {
   return increase;
 }
 
+interface LeadingBlockIndentContext {
+  readonly isCaseEndLine: boolean;
+  readonly isCaseElseLine: boolean;
+}
+
+function getLeadingBlockIndentDecrease(words: readonly string[], context: LeadingBlockIndentContext): number {
+  if (words.length === 0) {
+    return 0;
+  }
+
+  const firstWord = words[0];
+
+  if ((firstWord === 'else' || firstWord === 'elseif') && !context.isCaseElseLine) {
+    return 1;
+  }
+
+  if (firstWord === 'do' || firstWord === 'exception') {
+    return 1;
+  }
+
+  return getLeadingBlockEndCount(words, context.isCaseEndLine);
+}
+
+function getLeadingBlockEndCount(words: readonly string[], isCaseEndLine: boolean): number {
+  let count = 0;
+  let index = 0;
+
+  while (index < words.length) {
+    const length = getBlockEndPhraseLength(words, index, isCaseEndLine && index === 0);
+
+    if (length === 0) {
+      break;
+    }
+
+    count += 1;
+    index += length;
+  }
+
+  return count;
+}
+
+function getTotalBlockEndCount(words: readonly string[], isCaseEndLine: boolean): number {
+  let count = 0;
+  let index = 0;
+
+  while (index < words.length) {
+    const length = getBlockEndPhraseLength(words, index, isCaseEndLine && index === 0);
+
+    if (length > 0) {
+      count += 1;
+      index += length;
+      continue;
+    }
+
+    index += 1;
+  }
+
+  return count;
+}
+
+function getBlockEndPhraseLength(words: readonly string[], index: number, isCaseEndAtIndex: boolean): number {
+  const word = words[index];
+
+  if (word === 'endif') {
+    return 1;
+  }
+
+  if (word !== 'end' || isCaseEndAtIndex) {
+    return 0;
+  }
+
+  return isBlockEndPhrase(words.slice(index)) ? 2 : 1;
+}
+
+function countIfThenOpeners(words: readonly string[]): number {
+  let count = 0;
+
+  for (let index = 0; index < words.length; index += 1) {
+    if (words[index] !== 'if' || words[index - 1] === 'end') {
+      continue;
+    }
+
+    if (hasFollowingWordBeforeBlockEnd(words, index + 1, 'then')) {
+      count += 1;
+    }
+  }
+
+  return count;
+}
+
+function countWhileLoopOpeners(words: readonly string[]): number {
+  let count = 0;
+
+  for (let index = 0; index < words.length; index += 1) {
+    if (words[index] === 'while' && words[index - 1] !== 'end' && hasFollowingWordBeforeBlockEnd(words, index + 1, 'loop')) {
+      count += 1;
+    }
+  }
+
+  return count;
+}
+
+function countForLoopOpeners(words: readonly string[]): number {
+  let count = 0;
+
+  for (let index = 0; index < words.length; index += 1) {
+    if (words[index] !== 'for' || words[index - 1] === 'end') {
+      continue;
+    }
+
+    if (hasFollowingWordBeforeBlockEnd(words, index + 1, 'do') || containsCursorForPhrase(words.slice(index))) {
+      count += 1;
+    }
+  }
+
+  return count;
+}
+
+function hasFollowingWordBeforeBlockEnd(words: readonly string[], startIndex: number, expected: string): boolean {
+  for (let index = startIndex; index < words.length; index += 1) {
+    if (words[index] === expected) {
+      return true;
+    }
+
+    if (getBlockEndPhraseLength(words, index, false) > 0) {
+      return false;
+    }
+  }
+
+  return false;
+}
+
+function countStandaloneWord(
+  words: readonly string[],
+  expected: string,
+  shouldCount: (index: number) => boolean
+): number {
+  return words.filter((word, index) => word === expected && shouldCount(index)).length;
+}
 
 function closePreviousExceptionHandlerBody(
   indentLevel: number,
@@ -429,21 +563,8 @@ function isLogicalContinuationLine(line: string, words: readonly string[]): bool
 function containsCursorForPhrase(words: readonly string[]): boolean {
   return words.some((word, index) => word === 'cursor' && words[index + 1] === 'for');
 }
-
-function containsEndIfPhrase(words: readonly string[]): boolean {
-  if (containsWord(words, 'endif')) {
-    return true;
-  }
-
-  return words.some((word, index) => word === 'end' && words[index + 1] === 'if');
-}
-
 function containsWord(words: readonly string[], expected: string): boolean {
   return words.includes(expected);
-}
-
-function countWord(words: readonly string[], expected: string): number {
-  return words.filter((word) => word === expected).length;
 }
 
 export function cloneFormatterLineScanStateForTesting(): ReturnType<typeof cloneSqlLineScanState> {

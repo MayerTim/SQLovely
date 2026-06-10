@@ -405,6 +405,32 @@ runTest('splits stacked Watcom block endings before applying indentation', () =>
 });
 
 
+runTest('counts multiple block openings and endings on the same physical line', () => {
+  const input = [
+    'begin',
+    'begin select 1; end;',
+    'if a = 1 then if b = 1 then select 2; end if end if; -- generated compact nesting',
+    'select 3;',
+    'end;',
+    'grant execute on "FCT"."same_line" to "FCT";'
+  ].join('\n');
+
+  const expected = [
+    'BEGIN',
+    '  BEGIN SELECT 1; END;',
+    '  IF a = 1 THEN IF b = 1 THEN SELECT 2; END IF END IF; -- generated compact nesting',
+    '  SELECT 3;',
+    'END;',
+    'GRANT EXECUTE ON "FCT"."same_line" TO "FCT";',
+    ''
+  ].join('\n');
+
+  const result = formatSql(input, watcomDialect, defaultOptions);
+
+  assert.equal(result.text, expected);
+});
+
+
 runTest('keeps Watcom IF expressions inline instead of rewriting them as control-flow blocks', () => {
   const input = [
     'begin',
