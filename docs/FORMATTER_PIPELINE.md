@@ -11,7 +11,7 @@ The formatter is deliberately organized as a behavior-preserving pipeline rather
 1. Split the source text into physical lines while preserving the original end-of-line style.
 2. Create a shared `FormattingContext` with the active dialect, resolved options, safety decision, indentation string and cancellation helpers.
 3. Run structural expansion through `createFormattingPipeline`.
-4. Apply keyword casing and indentation to the expanded lines.
+4. Apply keyword casing and indentation to the expanded lines through the dedicated indentation engine.
 5. Run narrow cleanup passes for line-level fixes that depend on final indentation.
 6. Rejoin the lines and restore the final newline policy.
 
@@ -35,7 +35,7 @@ Pass order matters. For example, procedural IF expansion must happen before IF-e
 
 ## Indentation stage
 
-`formatSql.ts` owns indentation because it has to combine several independent depth sources:
+`src/formatter/indentation/indentationEngine.ts` owns indentation because it has to combine several independent depth sources:
 
 - procedural block depth (`BEGIN`, `IF`, `WHILE`, `FOR`, `LOOP`, `ELSE`, `END`, etc.)
 - query continuation depth (`SELECT`, `INTO`, `ORDER BY`, `GROUP BY`, logical predicates)
@@ -43,7 +43,7 @@ Pass order matters. For example, procedural IF expansion must happen before IF-e
 - scalar `CASE` expression depth
 - exception-handler branch depth
 
-Do not add broad structural rewrites directly to the indentation loop. Add them as a structural pass first, then adjust indentation only when the new structure needs a new depth rule.
+Do not add broad structural rewrites directly to the indentation engine. Add them as a structural pass first, then adjust indentation only when the new structure needs a new depth rule. Keep `formatSql.ts` focused on orchestration, cleanup and final text assembly.
 
 ## Cleanup pass order
 
