@@ -59,6 +59,7 @@
     "test:metadata": "npm run compile && node ./test/runMetadataHeaderTests.js",
     "test:formatter": "npm run compile && node ./test/runFormatterTests.js",
     "test:corpus": "npm run compile && node ./test/runFormatterCorpusTests.js",
+    "test:corpus:helpers": "npm run compile && node ./test/runFormatterCorpusHelperTests.js",
     "test:project": "npm run compile && node ./test/runProjectValidationTests.js",
     "test:diagnostics": "npm run compile && node ./test/runDiagnosticsTests.js",
     "validate": "npm run check && npm test",
