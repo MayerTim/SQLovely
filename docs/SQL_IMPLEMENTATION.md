@@ -78,9 +78,9 @@ The grammar highlights useful lexical regions in `.sql` files.
 
 SQLovely metadata headers are managed per detected procedure, function and trigger. The metadata extra scans the full document, scopes each existing header to its nearest SQL object, and inserts or updates the header directly before that object's body where possible.
 
-Loose legacy metadata-style comments are normalized only when a recognizable version field is present. This keeps regular comments from being rewritten accidentally while still supporting common dashed, slash-style and simple block-comment legacy headers.
+Loose legacy metadata-style comments are normalized only when a recognizable version field is present. This keeps regular comments from being rewritten accidentally while still supporting common dashed, slash-style, `//*` and simple block-comment legacy headers. Legacy German author/updater aliases such as `erstellt durch` and `geändert durch` are mapped to the current `Author` and `Updated By` fields.
 
-Metadata updates normalize supported date formats to `YYYY-MM-DD`, preserve and wrap multiline descriptions, add the `Updated By` field, and synchronize the `Version` field with the latest history entry. Version bumps are constrained to a single logical step, such as `1.0` to `1.1`, `1.0` to `2.0`, or `1.0.0` to `1.0.1`.
+Metadata updates normalize supported date formats to `YYYY-MM-DD`, including two-digit legacy years with `00`-`49` mapped to `2000`-`2049` and `50`-`99` mapped to `1950`-`1999`. They preserve and wrap multiline descriptions, add the `Updated By` field, and synchronize the `Version` field with the latest history entry. Version bumps are constrained to a single logical step, such as `1.0` to `1.1`, `1.0` to `2.0`, or `1.0.0` to `1.0.1`.
 
 ## Design boundaries
 

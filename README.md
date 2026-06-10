@@ -110,9 +110,9 @@ END;
 
 Headers are inserted directly before each detected object's first `BEGIN` line. Repeated runs update existing SQLovely blocks instead of duplicating them.
 
-When SQLovely finds a loose legacy metadata-style comment block for a detected object, it normalizes the block to the generated SQLovely format instead of adding a second header. Legacy detection supports common `--`, `//`, `/` and simple block-comment styles, but stays conservative and requires a recognizable version field so regular explanatory comments are left in place.
+When SQLovely finds a loose legacy metadata-style comment block for a detected object, it normalizes the block to the generated SQLovely format instead of adding a second header. Legacy detection supports common `--`, `//`, `/`, `//*` and simple block-comment styles, but stays conservative and requires a recognizable version field so regular explanatory comments are left in place. German legacy aliases such as `erstellt durch` and `geändert durch` are migrated into `Author` and `Updated By`.
 
-Metadata updates also normalize date values to `YYYY-MM-DD`, preserve multiline descriptions, wrap long description lines to `sqlovely.diagnostics.maxLineLength.limit`, and keep manual description line breaks. `Version` is synchronized with the latest history entry: newer valid history entries update the field, version bumps add missing history entries, and invalid jumps are coerced to a one-step bump.
+Metadata updates also normalize date values to `YYYY-MM-DD`, including common two-digit legacy years using `00`-`49` as `2000`-`2049` and `50`-`99` as `1950`-`1999`. They preserve multiline descriptions, wrap long description lines to `sqlovely.diagnostics.maxLineLength.limit`, and keep manual description line breaks. `Version` is synchronized with the latest history entry: newer valid history entries update the field, version bumps add missing history entries, and invalid jumps are coerced to a one-step bump.
 
 Extras are applied during normal SQLovely formatting by default:
 

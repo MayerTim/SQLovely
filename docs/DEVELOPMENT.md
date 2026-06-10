@@ -105,6 +105,6 @@ When changing metadata-header behavior, add or update regression tests for:
 - loose legacy header normalization
 - multi-object scripts
 - version/history synchronization
-- `Updated By` migration and preservation
-- date normalization
+- `Updated By` migration and preservation, including legacy `durch` aliases
+- date normalization, including two-digit legacy years
 - multiline description wrapping and manual line-break preservation

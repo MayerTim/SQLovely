@@ -16,8 +16,8 @@
 - Added metadata-header processing for every detected procedure, function and trigger in multi-object SQL scripts.
 - Added version/history synchronization so `Version` matches the latest history entry and invalid version jumps are coerced to one-step bumps.
 - Added multiline metadata descriptions with automatic wrapping to the configured line-length limit while preserving manual line breaks.
-- Added `Updated By` metadata support, including migration from legacy updated-by aliases such as `geändert von` and `geupdated von`.
-- Normalized metadata date values and history dates to `YYYY-MM-DD`, including common day-first and year-first separators.
+- Added `Updated By` metadata support, including migration from legacy updated-by aliases such as `geändert von`, `geändert durch` and `geupdated von`.
+- Normalized metadata date values and history dates to `YYYY-MM-DD`, including common day-first and year-first separators plus two-digit legacy years with a documented pivot rule.
 - Expanded metadata regression coverage for legacy headers, multiline descriptions, date normalization, version synchronization and multi-object scripts.
 
 ## 0.1.7
