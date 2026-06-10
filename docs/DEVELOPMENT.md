@@ -4,6 +4,7 @@ This document contains the development workflow for SQLovely.
 
 For user-facing extension usage, see `README.md`.
 For release packaging, see `PACKAGING.md`.
+For formatter architecture details, see `docs/FORMATTER_PIPELINE.md`.
 
 ## Setup
 
@@ -146,6 +147,8 @@ Formatter pass files are grouped by phase:
 
 - `src/formatter/passes/structural/` contains rewrite passes that can split or reshape SQL lines before indentation.
 - `src/formatter/passes/cleanup/` contains narrow line-level cleanup passes that run after indentation and should not introduce new structural SQL splits.
+
+See `docs/FORMATTER_PIPELINE.md` for the full pass order, invariants and checklist for adding formatter rules.
 
 ## Formatter performance regression focus
 

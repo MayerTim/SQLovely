@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Documented the internal formatter pipeline design, pass order and rules for adding future formatter passes.
 - Organized formatter regression tests into topic-based suites under `test/formatter/` while keeping the existing formatter test command as the entry point.
 - Split metadata-header parsing, rendering, history synchronization and placement helpers into dedicated internal modules without changing generated metadata behavior.
 - Debounced SQL diagnostics on document changes and reused formatter safety limits to skip expensive metadata diagnostics for very large SQL documents.
