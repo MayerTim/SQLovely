@@ -1,4 +1,8 @@
-export { formatSqlDocument, type FormatSqlDocumentOptions, type FormatSqlDocumentResult } from './formatSqlDocument';
+export {
+  formatSqlDocument,
+  type FormatSqlDocumentOptions,
+  type FormatSqlDocumentResult,
+} from './formatSqlDocument';
 export { formatSql, formatSqlRangeText, type FormatSqlResult } from './formatSql';
 export {
   DEFAULT_FORMAT_SQL_OPTIONS,
@@ -7,7 +11,7 @@ export {
   normalizeInsertSpaces,
   normalizeMaxConsecutiveBlankLines,
   type FormatSqlOptions,
-  type KeywordCase
+  type KeywordCase,
 } from './options';
 export {
   DEFAULT_FORMATTING_SAFETY_LIMITS,
@@ -16,5 +20,5 @@ export {
   shouldRunExpensiveLineFormatting,
   type FormattingSafetyDecision,
   type FormattingSafetyLimits,
-  type FormattingWorkload
+  type FormattingWorkload,
 } from './performanceGuards';

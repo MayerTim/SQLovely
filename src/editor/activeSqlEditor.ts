@@ -18,7 +18,7 @@ export function getActiveSqlEditorContext(): ActiveSqlEditorContext | undefined 
   return {
     editor,
     document: editor.document,
-    resource: editor.document.uri
+    resource: editor.document.uri,
   };
 }
 
@@ -26,13 +26,13 @@ export function getActiveSqlDocumentUri(): vscode.Uri | undefined {
   return getActiveSqlEditorContext()?.resource;
 }
 
-export function requireActiveSqlEditorContext(actionName: string): ActiveSqlEditorContext | undefined {
+export function requireActiveSqlEditorContext(
+  actionName: string,
+): ActiveSqlEditorContext | undefined {
   const activeContext = getActiveSqlEditorContext();
 
   if (!activeContext) {
-    void vscode.window.showWarningMessage(
-      `${actionName} requires an active .sql editor.`
-    );
+    void vscode.window.showWarningMessage(`${actionName} requires an active .sql editor.`);
     return undefined;
   }
 

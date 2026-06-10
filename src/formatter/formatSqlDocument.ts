@@ -21,7 +21,7 @@ export interface FormatSqlDocumentResult {
 export function formatSqlDocument(
   text: string,
   dialect: SqlDialect,
-  options: FormatSqlDocumentOptions = {}
+  options: FormatSqlDocumentOptions = {},
 ): FormatSqlDocumentResult {
   const formatting = formatSql(text, dialect, options);
 
@@ -29,20 +29,20 @@ export function formatSqlDocument(
     return {
       text: formatting.text,
       changed: formatting.changed,
-      formatting
+      formatting,
     };
   }
 
   const extras = applyExtras(formatting.text, dialect, {
     author: options.author ?? getDefaultAuthorName(),
     metadataHeaderEnabled: options.metadataHeaderEnabled,
-    maxLineLength: options.maxLineLength
+    maxLineLength: options.maxLineLength,
   });
 
   return {
     text: extras.text,
     changed: formatting.changed || extras.changed,
     formatting,
-    extras
+    extras,
   };
 }

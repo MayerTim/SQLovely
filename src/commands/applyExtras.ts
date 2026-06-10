@@ -18,12 +18,16 @@ export function registerApplySqlovelyExtrasCommand(): vscode.Disposable {
     const extraConfiguration = getExtrasConfiguration(activeContext.resource);
 
     if (!extraConfiguration.enabled) {
-      await vscode.window.showInformationMessage('SQLovely extras are disabled by sqlovely.extras.enabled.');
+      await vscode.window.showInformationMessage(
+        'SQLovely extras are disabled by sqlovely.extras.enabled.',
+      );
       return;
     }
 
     if (!extraConfiguration.metadataHeader.enabled) {
-      await vscode.window.showInformationMessage('SQLovely metadata headers are disabled by sqlovely.extras.metadataHeader.enabled.');
+      await vscode.window.showInformationMessage(
+        'SQLovely metadata headers are disabled by sqlovely.extras.metadataHeader.enabled.',
+      );
       return;
     }
 
@@ -33,13 +37,14 @@ export function registerApplySqlovelyExtrasCommand(): vscode.Disposable {
     const result = applyExtras(originalText, dialect, {
       author: getDefaultAuthorName(),
       metadataHeaderEnabled: extraConfiguration.metadataHeader.enabled,
-      maxLineLength: diagnosticsConfiguration.maxLineLength.limit
+      maxLineLength: diagnosticsConfiguration.maxLineLength.limit,
     });
 
     if (!result.changed) {
       if (result.metadataHeader.action === 'skipped') {
         await vscode.window.showWarningMessage(
-          result.metadataHeader.reason ?? 'SQLovely did not find any applicable SQLovely extras for this file.'
+          result.metadataHeader.reason ??
+            'SQLovely did not find any applicable SQLovely extras for this file.',
         );
         return;
       }
@@ -59,8 +64,6 @@ export function registerApplySqlovelyExtrasCommand(): vscode.Disposable {
       ? `${result.metadataHeader.object.type} ${result.metadataHeader.object.name}`
       : 'SQL object';
 
-    await vscode.window.showInformationMessage(
-      `SQLovely extras applied for ${objectDescription}.`
-    );
+    await vscode.window.showInformationMessage(`SQLovely extras applied for ${objectDescription}.`);
   });
 }

@@ -8,7 +8,10 @@ const multipartIdentifier = String.raw`${identifierPart}(?:\s*\.\s*${identifierP
 const createOrAlter = String.raw`(?:create\s+(?:or\s+alter\s+)?|alter\s+)`;
 
 export const mssqlObjectPatterns: SqlObjectPatterns = {
-  procedure: new RegExp(String.raw`\b${createOrAlter}(?:proc|procedure)\s+(${multipartIdentifier})`, 'i'),
+  procedure: new RegExp(
+    String.raw`\b${createOrAlter}(?:proc|procedure)\s+(${multipartIdentifier})`,
+    'i',
+  ),
   function: new RegExp(String.raw`\b${createOrAlter}function\s+(${multipartIdentifier})`, 'i'),
-  trigger: new RegExp(String.raw`\b${createOrAlter}trigger\s+(${multipartIdentifier})`, 'i')
+  trigger: new RegExp(String.raw`\b${createOrAlter}trigger\s+(${multipartIdentifier})`, 'i'),
 };

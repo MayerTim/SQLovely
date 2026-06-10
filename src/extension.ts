@@ -24,5 +24,4 @@ export function activate(context: vscode.ExtensionContext): void {
   outputChannel.appendLine(`Active dialect: ${activeDialect.displayName} (${activeDialect.id}).`);
 }
 
-export function deactivate(): void {
-}
+export function deactivate(): void {}

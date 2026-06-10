@@ -10,5 +10,5 @@ export const mssqlDialect: SqlDialect = {
   keywords: mssqlKeywords,
   builtinFunctions: mssqlBuiltinFunctions,
   batchSeparators: new Set<string>(['go']),
-  objectPatterns: mssqlObjectPatterns
+  objectPatterns: mssqlObjectPatterns,
 };

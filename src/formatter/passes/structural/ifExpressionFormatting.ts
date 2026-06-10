@@ -1,10 +1,10 @@
-import type { SqlDialect } from '../dialects';
+import type { SqlDialect } from '../../../dialects';
 import {
   cloneSqlLineScanState,
   scanSqlLineOutsideLiteralsAndComments,
   type SqlLineScanState,
-  type SqlOutsideSegment
-} from './sqlLineScanner';
+  type SqlOutsideSegment,
+} from '../../sqlLineScanner';
 
 export interface IfExpressionFormattingState {
   readonly scanState: SqlLineScanState;
@@ -61,12 +61,12 @@ const PROCEDURAL_BRANCH_STARTERS = new Set([
   'set',
   'signal',
   'update',
-  'while'
+  'while',
 ]);
 
 export function createInitialIfExpressionFormattingState(): IfExpressionFormattingState {
   return {
-    scanState: { inBlockComment: false }
+    scanState: { inBlockComment: false },
   };
 }
 
@@ -85,12 +85,12 @@ export function createInitialIfExpressionFormattingState(): IfExpressionFormatti
 export function expandWatcomIfExpressionLine(
   line: string,
   dialect: SqlDialect,
-  initialState: IfExpressionFormattingState
+  initialState: IfExpressionFormattingState,
 ): ExpandedLineResult {
   const scanResult = scanSqlLineOutsideLiteralsAndComments(line, initialState.scanState);
   const nextBaseState: IfExpressionFormattingState = {
     scanState: scanResult.nextState,
-    pendingExpression: initialState.pendingExpression
+    pendingExpression: initialState.pendingExpression,
   };
 
   if (dialect.id !== 'watcom' || scanResult.nextState.inBlockComment) {
@@ -111,15 +111,15 @@ export function expandWatcomIfExpressionLine(
     lines: [],
     nextState: {
       scanState: scanResult.nextState,
-      pendingExpression
-    }
+      pendingExpression,
+    },
   };
 }
 
 function continuePendingExpression(
   line: string,
   outsideSegments: readonly SqlOutsideSegment[],
-  state: IfExpressionFormattingState
+  state: IfExpressionFormattingState,
 ): ExpandedLineResult {
   const pendingExpression = state.pendingExpression;
 
@@ -133,8 +133,8 @@ function continuePendingExpression(
     return {
       lines: [...flushPendingExpression(pendingExpression), line],
       nextState: {
-        scanState: state.scanState
-      }
+        scanState: state.scanState,
+      },
     };
   }
 
@@ -142,8 +142,8 @@ function continuePendingExpression(
     return {
       lines: [continued.completedLine],
       nextState: {
-        scanState: state.scanState
-      }
+        scanState: state.scanState,
+      },
     };
   }
 
@@ -151,14 +151,14 @@ function continuePendingExpression(
     lines: [],
     nextState: {
       scanState: state.scanState,
-      pendingExpression: continued.pendingExpression
-    }
+      pendingExpression: continued.pendingExpression,
+    },
   };
 }
 
 function tryStartSplitIfExpression(
   line: string,
-  outsideSegments: readonly SqlOutsideSegment[]
+  outsideSegments: readonly SqlOutsideSegment[],
 ): PendingIfExpression | undefined {
   const trimmed = line.trim();
 
@@ -198,7 +198,7 @@ function tryStartSplitIfExpression(
     conditionParts: [condition],
     thenParts: [],
     elseParts: [],
-    phase: 'condition'
+    phase: 'condition',
   };
 }
 
@@ -210,7 +210,7 @@ interface ConsumedExpressionLine {
 function consumeExpressionLine(
   pendingExpression: PendingIfExpression,
   line: string,
-  outsideSegments: readonly SqlOutsideSegment[]
+  outsideSegments: readonly SqlOutsideSegment[],
 ): ConsumedExpressionLine | undefined {
   const trimmed = line.trim();
 
@@ -233,7 +233,7 @@ function consumeExpressionLine(
       conditionParts: appendNonEmpty(pendingExpression.conditionParts, beforeThen),
       thenParts: [],
       elseParts: [],
-      phase: 'then'
+      phase: 'then',
     };
 
     if (afterThen.length === 0) {
@@ -248,7 +248,7 @@ function consumeExpressionLine(
 
 function appendConditionLine(
   pendingExpression: PendingIfExpression,
-  trimmed: string
+  trimmed: string,
 ): ConsumedExpressionLine | undefined {
   if (isProceduralBranchText(trimmed)) {
     return undefined;
@@ -258,14 +258,14 @@ function appendConditionLine(
     pendingExpression: {
       ...pendingExpression,
       sourceLines: [...pendingExpression.sourceLines, trimmed],
-      conditionParts: [...pendingExpression.conditionParts, trimmed]
-    }
+      conditionParts: [...pendingExpression.conditionParts, trimmed],
+    },
   };
 }
 
 function consumeThenOrElseText(
   pendingExpression: PendingIfExpression,
-  text: string
+  text: string,
 ): ConsumedExpressionLine | undefined {
   if (pendingExpression.phase === 'then') {
     const elseIndex = findKeywordIndexInText(text, 'else');
@@ -277,7 +277,7 @@ function consumeThenOrElseText(
         ...pendingExpression,
         sourceLines: [...pendingExpression.sourceLines, text],
         thenParts: appendNonEmpty(pendingExpression.thenParts, beforeElse),
-        phase: 'else'
+        phase: 'else',
       };
 
       if (afterElse.length === 0) {
@@ -295,8 +295,8 @@ function consumeThenOrElseText(
       pendingExpression: {
         ...pendingExpression,
         sourceLines: [...pendingExpression.sourceLines, text],
-        thenParts: [...pendingExpression.thenParts, text]
-      }
+        thenParts: [...pendingExpression.thenParts, text],
+      },
     };
   }
 
@@ -305,7 +305,7 @@ function consumeThenOrElseText(
 
 function consumeElseText(
   pendingExpression: PendingIfExpression,
-  text: string
+  text: string,
 ): ConsumedExpressionLine | undefined {
   const endIfMatch = findEndIfInText(text);
 
@@ -319,8 +319,8 @@ function consumeElseText(
         ...pendingExpression,
         sourceLines: [...pendingExpression.sourceLines, text],
         elseParts: [...pendingExpression.elseParts, text],
-        phase: 'else'
-      }
+        phase: 'else',
+      },
     };
   }
 
@@ -330,17 +330,23 @@ function consumeElseText(
     return undefined;
   }
 
-  const completedLine = createIfExpressionLine({
-    ...pendingExpression,
-    sourceLines: [...pendingExpression.sourceLines, text],
-    elseParts: appendNonEmpty(pendingExpression.elseParts, beforeEndIf),
-    phase: 'else'
-  }, endIfMatch.suffix);
+  const completedLine = createIfExpressionLine(
+    {
+      ...pendingExpression,
+      sourceLines: [...pendingExpression.sourceLines, text],
+      elseParts: appendNonEmpty(pendingExpression.elseParts, beforeEndIf),
+      phase: 'else',
+    },
+    endIfMatch.suffix,
+  );
 
   return completedLine ? { completedLine } : undefined;
 }
 
-function createIfExpressionLine(pendingExpression: PendingIfExpression, suffix: string): string | undefined {
+function createIfExpressionLine(
+  pendingExpression: PendingIfExpression,
+  suffix: string,
+): string | undefined {
   const condition = joinParts(pendingExpression.conditionParts);
   const thenValue = joinParts(pendingExpression.thenParts);
   const elseValue = joinParts(pendingExpression.elseParts);
@@ -357,12 +363,18 @@ function flushPendingExpression(pendingExpression: PendingIfExpression): string[
 }
 
 function findEndIfInText(text: string): EndIfMatch | undefined {
-  const scanResult = scanSqlLineOutsideLiteralsAndComments(text, cloneSqlLineScanState({ inBlockComment: false }));
+  const scanResult = scanSqlLineOutsideLiteralsAndComments(
+    text,
+    cloneSqlLineScanState({ inBlockComment: false }),
+  );
   return findEndIf(text, scanResult.outsideSegments, 0);
 }
 
 function findKeywordIndexInText(text: string, keyword: string): number {
-  const scanResult = scanSqlLineOutsideLiteralsAndComments(text, cloneSqlLineScanState({ inBlockComment: false }));
+  const scanResult = scanSqlLineOutsideLiteralsAndComments(
+    text,
+    cloneSqlLineScanState({ inBlockComment: false }),
+  );
   const word = findKeyword(text, scanResult.outsideSegments, keyword, 0);
   return word?.start ?? -1;
 }
@@ -371,7 +383,7 @@ function findKeyword(
   line: string,
   outsideSegments: readonly SqlOutsideSegment[],
   keyword: string,
-  startIndex: number
+  startIndex: number,
 ): WordMatch | undefined {
   for (const segment of outsideSegments) {
     let index = Math.max(segment.start, startIndex);
@@ -397,7 +409,7 @@ function findKeyword(
 function findEndIf(
   line: string,
   outsideSegments: readonly SqlOutsideSegment[],
-  startIndex: number
+  startIndex: number,
 ): EndIfMatch | undefined {
   for (const segment of outsideSegments) {
     let index = Math.max(segment.start, startIndex);
@@ -413,7 +425,7 @@ function findEndIf(
         return {
           start: firstWord.start,
           end: firstWord.end,
-          suffix: line.slice(firstWord.end).trim()
+          suffix: line.slice(firstWord.end).trim(),
         };
       }
 
@@ -424,7 +436,7 @@ function findEndIf(
           return {
             start: firstWord.start,
             end: secondWord.end,
-            suffix: line.slice(secondWord.end).trim()
+            suffix: line.slice(secondWord.end).trim(),
           };
         }
       }
@@ -452,7 +464,7 @@ function readNextWord(line: string, startIndex: number, endIndex: number): WordM
     return {
       start,
       end: index,
-      normalized: line.slice(start, index).toLowerCase()
+      normalized: line.slice(start, index).toLowerCase(),
     };
   }
 
@@ -481,7 +493,10 @@ function collectWords(line: string, outsideSegments: readonly SqlOutsideSegment[
 }
 
 function isProceduralBranchText(text: string): boolean {
-  const scanResult = scanSqlLineOutsideLiteralsAndComments(text, cloneSqlLineScanState({ inBlockComment: false }));
+  const scanResult = scanSqlLineOutsideLiteralsAndComments(
+    text,
+    cloneSqlLineScanState({ inBlockComment: false }),
+  );
   const words = collectWords(text, scanResult.outsideSegments);
   const firstWord = words[0];
 
@@ -493,5 +508,8 @@ function appendNonEmpty(parts: readonly string[], text: string): readonly string
 }
 
 function joinParts(parts: readonly string[]): string {
-  return parts.map((part) => part.trim()).filter((part) => part.length > 0).join(' ');
+  return parts
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0)
+    .join(' ');
 }

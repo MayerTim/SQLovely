@@ -1,9 +1,9 @@
-import type { SqlDialect } from '../dialects';
+import type { SqlDialect } from '../../../dialects';
 import {
   scanSqlLineOutsideLiteralsAndComments,
   type SqlLineScanState,
-  type SqlOutsideSegment
-} from './sqlLineScanner';
+  type SqlOutsideSegment,
+} from '../../sqlLineScanner';
 
 export interface CaseExpressionFormattingState {
   readonly scanState: SqlLineScanState;
@@ -29,7 +29,7 @@ const BLOCK_END_FOLLOWERS = new Set(['for', 'if', 'loop', 'try', 'catch', 'while
 export function createInitialCaseExpressionFormattingState(): CaseExpressionFormattingState {
   return {
     scanState: { inBlockComment: false },
-    caseDepth: 0
+    caseDepth: 0,
   };
 }
 
@@ -43,13 +43,13 @@ export function createInitialCaseExpressionFormattingState(): CaseExpressionForm
 export function expandWatcomCaseExpressionLine(
   line: string,
   dialect: SqlDialect,
-  initialState: CaseExpressionFormattingState
+  initialState: CaseExpressionFormattingState,
 ): ExpandedLineResult {
   const scanResult = scanSqlLineOutsideLiteralsAndComments(line, initialState.scanState);
   const words = collectWords(line, scanResult.outsideSegments);
   const nextState: CaseExpressionFormattingState = {
     scanState: scanResult.nextState,
-    caseDepth: calculateNextCaseDepth(words, initialState.caseDepth)
+    caseDepth: calculateNextCaseDepth(words, initialState.caseDepth),
   };
 
   if (dialect.id !== 'watcom' || scanResult.nextState.inBlockComment || words.length === 0) {
@@ -66,7 +66,10 @@ export function expandWatcomCaseExpressionLine(
   return { lines: lines.length > 0 ? lines : [line], nextState };
 }
 
-function findCaseExpressionSplitPoints(words: readonly WordMatch[], initialCaseDepth: number): number[] {
+function findCaseExpressionSplitPoints(
+  words: readonly WordMatch[],
+  initialCaseDepth: number,
+): number[] {
   const splitPoints: number[] = [];
   let caseDepth = initialCaseDepth;
 
@@ -202,7 +205,7 @@ function collectWords(line: string, outsideSegments: readonly SqlOutsideSegment[
       words.push({
         start,
         end: index,
-        normalized: line.slice(start, index).toLowerCase()
+        normalized: line.slice(start, index).toLowerCase(),
       });
     }
   }

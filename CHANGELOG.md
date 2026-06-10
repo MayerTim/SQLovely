@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Streamlined CI validation to run the combined validation workflow once before packaging the VSIX.
+- Added explicit Prettier formatting, ESLint linting and TypeScript typecheck scripts to the project validation workflow.
+- Isolated loose legacy metadata-header aliases, candidate parsing and migration logic into focused internal modules.
+- Extracted formatter indentation handling into a dedicated indentation engine while preserving existing formatter output.
+- Documented the internal formatter pipeline design, pass order and rules for adding future formatter passes.
+- Organized formatter regression tests into topic-based suites under `test/formatter/` while keeping the existing formatter test command as the entry point.
+- Split metadata-header parsing, rendering, history synchronization and placement helpers into dedicated internal modules without changing generated metadata behavior.
+- Debounced SQL diagnostics on document changes and reused formatter safety limits to skip expensive metadata diagnostics for very large SQL documents.
+- Centralized formatter options, indentation settings, cancellation checks and safety decisions in a shared formatting context.
+- Grouped formatter passes into structural and cleanup phases to clarify rule ownership without changing formatter behavior.
+- Refactored Watcom formatter expansion passes behind an explicit internal pipeline while preserving existing formatter output.
 - Fixed Watcom DDL/list parenthesis cleanup so temporary-table closing parentheses align with the declaration and safe trailing DDL commas before `)` are removed.
 - Fixed Watcom statement continuation cleanup for multiline `UPDATE ... SET` assignments, compact `SELECT` comma spacing and arithmetic operator spacing outside strings/comments.
 - Fixed split Watcom `ORDER BY IF ... ENDIF` expression continuations so following sort keys keep their comma separator.
@@ -49,7 +60,6 @@
 - Added `sqlovely.extras.applyWithFormatting`, enabled by default.
 - SQLovely formatting can now apply enabled SQLovely Extras such as metadata-header insertion or updates.
 - Updated documentation and example workspace settings for the new formatting/extras behavior.
-
 
 ## 0.1.4
 

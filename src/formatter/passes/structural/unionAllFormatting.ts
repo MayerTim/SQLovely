@@ -2,8 +2,8 @@ import {
   cloneSqlLineScanState,
   scanSqlLineOutsideLiteralsAndComments,
   type SqlLineScanState,
-  type SqlOutsideSegment
-} from './sqlLineScanner';
+  type SqlOutsideSegment,
+} from '../../sqlLineScanner';
 
 interface ExpandedLineResult {
   readonly lines: readonly string[];
@@ -26,7 +26,10 @@ const SQL_WORD_PART = /[A-Za-z0-9_$#]/u;
  * comments. This prevents compact query chains such as `SELECT 1 UNION ALL SELECT 2` from being
  * treated as one long statement while leaving literal/comment text untouched.
  */
-export function expandUnionAllLine(line: string, initialState: SqlLineScanState): ExpandedLineResult {
+export function expandUnionAllLine(
+  line: string,
+  initialState: SqlLineScanState,
+): ExpandedLineResult {
   const scanResult = scanSqlLineOutsideLiteralsAndComments(line, initialState);
 
   if (scanResult.nextState.inBlockComment) {
@@ -43,11 +46,14 @@ export function expandUnionAllLine(line: string, initialState: SqlLineScanState)
 
   return {
     lines: expandedLines.length > 0 ? expandedLines : [line],
-    nextState: cloneSqlLineScanState(scanResult.nextState)
+    nextState: cloneSqlLineScanState(scanResult.nextState),
   };
 }
 
-function findUnionAllMatches(line: string, outsideSegments: readonly SqlOutsideSegment[]): KeywordMatch[] {
+function findUnionAllMatches(
+  line: string,
+  outsideSegments: readonly SqlOutsideSegment[],
+): KeywordMatch[] {
   const matches: KeywordMatch[] = [];
 
   for (const segment of outsideSegments) {
@@ -78,7 +84,7 @@ function findUnionAllMatches(line: string, outsideSegments: readonly SqlOutsideS
         matches.push({
           start: unionWord.start,
           end: allWord.end,
-          text: line.slice(unionWord.start, allWord.end)
+          text: line.slice(unionWord.start, allWord.end),
         });
         index = allWord.end;
         continue;

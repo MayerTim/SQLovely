@@ -18,7 +18,7 @@ export const DEFAULT_FORMAT_SQL_OPTIONS: FormatSqlOptions = {
   insertSpaces: true,
   maxConsecutiveBlankLines: 1,
   ensureFinalNewline: true,
-  safetyLimits: DEFAULT_FORMATTING_SAFETY_LIMITS
+  safetyLimits: DEFAULT_FORMATTING_SAFETY_LIMITS,
 };
 
 export function normalizeKeywordCase(value: unknown): KeywordCase {

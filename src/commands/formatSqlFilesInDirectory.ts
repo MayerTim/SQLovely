@@ -14,7 +14,8 @@ interface DirectoryFormatStats {
 }
 
 const SQL_FILE_PATTERN = '**/*.sql';
-const SQL_FILE_EXCLUDE_PATTERN = '{**/.git/**,**/.svn/**,**/.hg/**,**/node_modules/**,**/out/**,**/dist/**}';
+const SQL_FILE_EXCLUDE_PATTERN =
+  '{**/.git/**,**/.svn/**,**/.hg/**,**/node_modules/**,**/out/**,**/dist/**}';
 
 export function registerFormatSqlFilesInDirectoryCommand(): vscode.Disposable {
   return vscode.commands.registerCommand(COMMANDS.formatSqlFilesInDirectory, async () => {
@@ -26,11 +27,13 @@ export function registerFormatSqlFilesInDirectoryCommand(): vscode.Disposable {
 
     const sqlFiles = await vscode.workspace.findFiles(
       new vscode.RelativePattern(selectedDirectory, SQL_FILE_PATTERN),
-      SQL_FILE_EXCLUDE_PATTERN
+      SQL_FILE_EXCLUDE_PATTERN,
     );
 
     if (sqlFiles.length === 0) {
-      await vscode.window.showInformationMessage('SQLovely: No .sql files found in the selected directory.');
+      await vscode.window.showInformationMessage(
+        'SQLovely: No .sql files found in the selected directory.',
+      );
       return;
     }
 
@@ -44,14 +47,14 @@ export function registerFormatSqlFilesInDirectoryCommand(): vscode.Disposable {
       {
         location: vscode.ProgressLocation.Notification,
         title: 'SQLovely: Formatting SQL files',
-        cancellable: true
+        cancellable: true,
       },
-      async (progress, token) => formatSqlFiles(sqlFiles, progress, token)
+      async (progress, token) => formatSqlFiles(sqlFiles, progress, token),
     );
 
     await vscode.window.showInformationMessage(
       `SQLovely: Formatted ${stats.formatted} SQL file(s). ` +
-      `${stats.unchanged} unchanged, ${stats.skipped} skipped, ${stats.failed} failed.`
+        `${stats.unchanged} unchanged, ${stats.skipped} skipped, ${stats.failed} failed.`,
     );
   });
 }
@@ -64,19 +67,22 @@ async function askForDirectory(): Promise<vscode.Uri | undefined> {
     canSelectMany: false,
     defaultUri: workspaceFolder,
     openLabel: 'Format SQL files',
-    title: 'Select a directory containing SQL files'
+    title: 'Select a directory containing SQL files',
   });
 
   return selected?.[0];
 }
 
-async function confirmDirectoryFormatting(directory: vscode.Uri, fileCount: number): Promise<boolean> {
+async function confirmDirectoryFormatting(
+  directory: vscode.Uri,
+  fileCount: number,
+): Promise<boolean> {
   const directoryLabel = vscode.workspace.asRelativePath(directory, false);
   const action = 'Format SQL files';
   const selection = await vscode.window.showWarningMessage(
     `Format ${fileCount} .sql file(s) in "${directoryLabel}"? SQLovely Extras will not be applied by this command.`,
     { modal: true },
-    action
+    action,
   );
 
   return selection === action;
@@ -85,27 +91,28 @@ async function confirmDirectoryFormatting(directory: vscode.Uri, fileCount: numb
 async function formatSqlFiles(
   sqlFiles: readonly vscode.Uri[],
   progress: vscode.Progress<{ message?: string; increment?: number }>,
-  token: vscode.CancellationToken
+  token: vscode.CancellationToken,
 ): Promise<DirectoryFormatStats> {
   const stats: DirectoryFormatStats = {
     total: sqlFiles.length,
     formatted: 0,
     unchanged: 0,
     skipped: 0,
-    failed: 0
+    failed: 0,
   };
 
   const increment = sqlFiles.length > 0 ? 100 / sqlFiles.length : 100;
 
   for (const uri of sqlFiles) {
     if (token.isCancellationRequested) {
-      stats.skipped += sqlFiles.length - stats.formatted - stats.unchanged - stats.skipped - stats.failed;
+      stats.skipped +=
+        sqlFiles.length - stats.formatted - stats.unchanged - stats.skipped - stats.failed;
       break;
     }
 
     progress.report({
       message: vscode.workspace.asRelativePath(uri, false),
-      increment
+      increment,
     });
 
     try {
@@ -128,8 +135,13 @@ async function formatSqlFiles(
 
 type SingleFileFormatResult = 'formatted' | 'unchanged' | 'skipped';
 
-async function formatSingleSqlFile(uri: vscode.Uri, token: vscode.CancellationToken): Promise<SingleFileFormatResult> {
-  const openDocument = vscode.workspace.textDocuments.find((document) => document.uri.toString() === uri.toString());
+async function formatSingleSqlFile(
+  uri: vscode.Uri,
+  token: vscode.CancellationToken,
+): Promise<SingleFileFormatResult> {
+  const openDocument = vscode.workspace.textDocuments.find(
+    (document) => document.uri.toString() === uri.toString(),
+  );
 
   if (openDocument?.isDirty) {
     return 'skipped';
@@ -141,7 +153,7 @@ async function formatSingleSqlFile(uri: vscode.Uri, token: vscode.CancellationTo
     return 'skipped';
   }
 
-  const document = openDocument ?? await vscode.workspace.openTextDocument(uri);
+  const document = openDocument ?? (await vscode.workspace.openTextDocument(uri));
   const originalText = document.getText();
   const result = formatSqlDocument(originalText, getActiveDialect(uri), {
     keywordCase: formatConfiguration.keywordCase,
@@ -152,10 +164,13 @@ async function formatSingleSqlFile(uri: vscode.Uri, token: vscode.CancellationTo
     safetyLimits: formatConfiguration.safetyLimits,
     applyExtrasWithFormatting: false,
     metadataHeaderEnabled: false,
-    isCancellationRequested: () => token.isCancellationRequested
+    isCancellationRequested: () => token.isCancellationRequested,
   });
 
-  logFormattingSafetySummary(result.formatting.safetySummary, vscode.workspace.asRelativePath(uri, false));
+  logFormattingSafetySummary(
+    result.formatting.safetySummary,
+    vscode.workspace.asRelativePath(uri, false),
+  );
 
   if (token.isCancellationRequested) {
     return 'skipped';
@@ -168,7 +183,7 @@ async function formatSingleSqlFile(uri: vscode.Uri, token: vscode.CancellationTo
   const edit = new vscode.WorkspaceEdit();
   const fullRange = new vscode.Range(
     document.positionAt(0),
-    document.positionAt(originalText.length)
+    document.positionAt(originalText.length),
   );
 
   edit.replace(uri, fullRange, result.text);

@@ -2,8 +2,8 @@ import {
   cloneSqlLineScanState,
   scanSqlLineOutsideLiteralsAndComments,
   type SqlLineScanState,
-  type SqlOutsideSegment
-} from './sqlLineScanner';
+  type SqlOutsideSegment,
+} from '../../sqlLineScanner';
 
 export interface ParenthesisFormattingState {
   readonly scanState: SqlLineScanState;
@@ -48,13 +48,13 @@ const TYPE_LENGTH_WORDS = new Set([
   'tinyint',
   'uniqueidentifier',
   'varbinary',
-  'varchar'
+  'varchar',
 ]);
 
 export function createInitialParenthesisFormattingState(): ParenthesisFormattingState {
   return {
     scanState: { inBlockComment: false },
-    parenthesisDepth: 0
+    parenthesisDepth: 0,
   };
 }
 
@@ -65,7 +65,10 @@ export function createInitialParenthesisFormattingState(): ParenthesisFormatting
  * appear outside strings, quoted identifiers and comments. Empty calls like proc() and compact type
  * lengths such as varchar(14) stay inline to avoid noisy formatting of common SQL declarations.
  */
-export function expandParenthesesInLine(line: string, initialState: ParenthesisFormattingState): ParenthesisExpansionResult {
+export function expandParenthesesInLine(
+  line: string,
+  initialState: ParenthesisFormattingState,
+): ParenthesisExpansionResult {
   const scanResult = scanSqlLineOutsideLiteralsAndComments(line, initialState.scanState);
   const outside = createOutsideLookup(line.length, scanResult.outsideSegments);
 
@@ -74,8 +77,8 @@ export function expandParenthesesInLine(line: string, initialState: ParenthesisF
       lines: [line],
       nextState: {
         scanState: scanResult.nextState,
-        parenthesisDepth: updateDepthFromLine(line, outside, initialState.parenthesisDepth)
-      }
+        parenthesisDepth: updateDepthFromLine(line, outside, initialState.parenthesisDepth),
+      },
     };
   }
 
@@ -160,12 +163,15 @@ export function expandParenthesesInLine(line: string, initialState: ParenthesisF
     lines: lines.length > 0 ? lines : [line],
     nextState: {
       scanState: scanResult.nextState,
-      parenthesisDepth: depth
-    }
+      parenthesisDepth: depth,
+    },
   };
 }
 
-export function analyzeParenthesesForIndent(line: string, initialState: SqlLineScanState): ParenthesisIndentAnalysis {
+export function analyzeParenthesesForIndent(
+  line: string,
+  initialState: SqlLineScanState,
+): ParenthesisIndentAnalysis {
   const scanResult = scanSqlLineOutsideLiteralsAndComments(line, initialState);
   const outside = createOutsideLookup(line.length, scanResult.outsideSegments);
   let leadingClosingParentheses = 0;
@@ -207,12 +213,16 @@ export function analyzeParenthesesForIndent(line: string, initialState: SqlLineS
   return {
     leadingClosingParentheses,
     depthDelta,
-    nextScanState: scanResult.nextState
+    nextScanState: scanResult.nextState,
   };
 }
 
-function lineContainsSplittableParenthesis(line: string, outside: readonly boolean[], initialDepth: number): boolean {
-  let depth = initialDepth;
+function lineContainsSplittableParenthesis(
+  line: string,
+  outside: readonly boolean[],
+  initialDepth: number,
+): boolean {
+  const depth = initialDepth;
 
   for (let index = 0; index < line.length; index += 1) {
     if (!outside[index]) {
@@ -244,7 +254,11 @@ function lineContainsSplittableParenthesis(line: string, outside: readonly boole
   return false;
 }
 
-function updateDepthFromLine(line: string, outside: readonly boolean[], initialDepth: number): number {
+function updateDepthFromLine(
+  line: string,
+  outside: readonly boolean[],
+  initialDepth: number,
+): number {
   let depth = initialDepth;
 
   for (let index = 0; index < line.length; index += 1) {
@@ -271,7 +285,11 @@ function updateDepthFromLine(line: string, outside: readonly boolean[], initialD
   return depth;
 }
 
-function findInlineParenthesisEndToKeep(line: string, openIndex: number, outside: readonly boolean[]): number | undefined {
+function findInlineParenthesisEndToKeep(
+  line: string,
+  openIndex: number,
+  outside: readonly boolean[],
+): number | undefined {
   const closeIndex = findMatchingCloseOnSameLine(line, openIndex, outside);
 
   if (closeIndex === undefined) {
@@ -291,7 +309,11 @@ function findInlineParenthesisEndToKeep(line: string, openIndex: number, outside
   return undefined;
 }
 
-function findMatchingCloseOnSameLine(line: string, openIndex: number, outside: readonly boolean[]): number | undefined {
+function findMatchingCloseOnSameLine(
+  line: string,
+  openIndex: number,
+  outside: readonly boolean[],
+): number | undefined {
   let depth = 0;
 
   for (let index = openIndex; index < line.length; index += 1) {
@@ -342,7 +364,10 @@ function readWordBefore(line: string, index: number): string | undefined {
   return line.slice(cursor + 1, end);
 }
 
-function createOutsideLookup(length: number, outsideSegments: readonly SqlOutsideSegment[]): boolean[] {
+function createOutsideLookup(
+  length: number,
+  outsideSegments: readonly SqlOutsideSegment[],
+): boolean[] {
   const outside = new Array<boolean>(length).fill(false);
 
   for (const segment of outsideSegments) {
@@ -368,7 +393,7 @@ function appendTrailingClosePunctuation(
   line: string,
   start: number,
   outside: readonly boolean[],
-  append: (value: string) => void
+  append: (value: string) => void,
 ): number {
   let index = start;
 
@@ -385,10 +410,10 @@ function appendTrailingClosePunctuation(
 }
 
 export function cloneParenthesisFormattingStateForTesting(
-  state: ParenthesisFormattingState
+  state: ParenthesisFormattingState,
 ): ParenthesisFormattingState {
   return {
     scanState: cloneSqlLineScanState(state.scanState),
-    parenthesisDepth: state.parenthesisDepth
+    parenthesisDepth: state.parenthesisDepth,
   };
 }

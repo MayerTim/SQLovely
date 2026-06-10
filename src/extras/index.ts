@@ -1,7 +1,7 @@
 export {
   applyExtras,
   type ApplySqlovelyExtrasOptions,
-  type SqlovelyExtrasResult
+  type SqlovelyExtrasResult,
 } from './applyExtras';
 export {
   findExistingMetadataHeader,
@@ -10,6 +10,6 @@ export {
   METADATA_HEADER_START,
   type MetadataHeaderAction,
   type MetadataHeaderOptions,
-  type MetadataHeaderResult
+  type MetadataHeaderResult,
 } from './metadataHeader';
 export { detectPrimarySqlObject, type DetectedSqlObject } from './objectDetection';

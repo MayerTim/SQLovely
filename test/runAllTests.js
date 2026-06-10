@@ -5,7 +5,7 @@ const suites = [
   './runMetadataHeaderTests',
   './runMetadataRegressionTests',
   './runFormatterTests',
-  './runDiagnosticsTests'
+  './runDiagnosticsTests',
 ];
 
 for (const suite of suites) {

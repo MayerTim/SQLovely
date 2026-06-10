@@ -1,6 +1,12 @@
-import { createInitialSqlLineScanState, scanSqlLineOutsideLiteralsAndComments } from './sqlLineScanner';
+import {
+  createInitialSqlLineScanState,
+  scanSqlLineOutsideLiteralsAndComments,
+} from '../../sqlLineScanner';
 
-export function cleanupWatcomStatementContinuations(lines: readonly string[], indentString: string): string[] {
+export function cleanupWatcomStatementContinuations(
+  lines: readonly string[],
+  indentString: string,
+): string[] {
   const scanState = createInitialSqlLineScanState();
   const cleanedLines: string[] = [];
   let updateSetContinuationIndent: string | undefined;
@@ -20,16 +26,22 @@ export function cleanupWatcomStatementContinuations(lines: readonly string[], in
       }
     }
 
-    if (updateSetContinuationIndent !== undefined && trimmed.length > 0 && !isUpdateSetContinuationBoundary(trimmed)) {
+    if (
+      updateSetContinuationIndent !== undefined &&
+      trimmed.length > 0 &&
+      !isUpdateSetContinuationBoundary(trimmed)
+    ) {
       line = `${updateSetContinuationIndent}${trimmed}`;
-      trimmed = line.trim();
     }
 
     const rewritten = rewriteOutsideSqlText(line, scanState, cleanupStatementOutsideSqlText);
     line = rewritten.line;
     trimmed = line.trim();
 
-    if (updateSetContinuationIndent !== undefined && (trimmed.length === 0 || isUpdateSetContinuationBoundary(trimmed))) {
+    if (
+      updateSetContinuationIndent !== undefined &&
+      (trimmed.length === 0 || isUpdateSetContinuationBoundary(trimmed))
+    ) {
       updateSetContinuationIndent = undefined;
     }
 
@@ -46,7 +58,7 @@ export function cleanupWatcomStatementContinuations(lines: readonly string[], in
 function rewriteOutsideSqlText(
   line: string,
   scanState: ReturnType<typeof createInitialSqlLineScanState>,
-  rewrite: (line: string, start: number, end: number) => string
+  rewrite: (line: string, start: number, end: number) => string,
 ): { line: string } {
   const result = scanSqlLineOutsideLiteralsAndComments(line, scanState);
   let rewritten = '';
@@ -141,7 +153,7 @@ function isLeftOperandCharacter(char: string): boolean {
 }
 
 function isRightOperandCharacter(char: string): boolean {
-  return /[\w\[("']/u.test(char);
+  return /[\w[("']/u.test(char);
 }
 
 function isSplitAssignmentNameLine(trimmedLine: string): boolean {
@@ -149,7 +161,9 @@ function isSplitAssignmentNameLine(trimmedLine: string): boolean {
 }
 
 function isUpdateSetContinuationBoundary(trimmedLine: string): boolean {
-  return /^(?:where|from|order\s+by|group\s+by|having|if|else|elseif|end|select|insert|update|delete|return|grant|create|alter|for|while|do)\b/iu.test(trimmedLine);
+  return /^(?:where|from|order\s+by|group\s+by|having|if|else|elseif|end|select|insert|update|delete|return|grant|create|alter|for|while|do)\b/iu.test(
+    trimmedLine,
+  );
 }
 
 function getLeadingWhitespace(line: string): string {

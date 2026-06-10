@@ -6,7 +6,7 @@ const {
   applyExtras,
   insertOrUpdateMetadataHeader,
   METADATA_HEADER_END,
-  METADATA_HEADER_START
+  METADATA_HEADER_START,
 } = require('../dist/extras');
 const { watcomDialect } = require('../dist/dialects/watcom/dialect');
 const { mssqlDialect } = require('../dist/dialects/mssql/dialect');
@@ -35,7 +35,6 @@ runTest('inserts a metadata header for a Watcom procedure', () => {
   assert.ok(result.text.includes('-- Updated     : 2026-06-09'));
   assert.ok(result.text.includes('-- History     :'));
   assert.ok(result.text.includes('--   v1.0: Initial creation - 2026-06-09 Test Author'));
-  
 });
 
 runTest('does not duplicate an already current metadata header', () => {
@@ -67,7 +66,7 @@ runTest('updates an existing header while preserving created date and descriptio
     '  --',
     '  -- METADATA END',
     '',
-    'END;'
+    'END;',
   ].join('\n');
 
   const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
@@ -100,7 +99,7 @@ runTest('updates metadata version when a newer valid history entry exists', () =
     '  --   v1.1: Added validation - 2020-02-03 Existing Author',
     '  --',
     '  -- METADATA END',
-    'END;'
+    'END;',
   ].join('\n');
 
   const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
@@ -128,7 +127,7 @@ runTest('preserves an existing updated-by field when refreshing metadata', () =>
     '  --   v1.0: Initial creation - 2020-01-02 Original Author',
     '  --',
     '  -- METADATA END',
-    'END;'
+    'END;',
   ].join('\n');
 
   const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
@@ -136,7 +135,9 @@ runTest('preserves an existing updated-by field when refreshing metadata', () =>
   assert.equal(result.action, 'updated');
   assert.ok(result.text.includes('-- Author      : Original Author'));
   assert.ok(result.text.includes('-- Updated By  : Existing Updater'));
-  assert.ok(result.text.includes('-- Author      : Original Author\n-- Updated By  : Existing Updater'));
+  assert.ok(
+    result.text.includes('-- Author      : Original Author\n-- Updated By  : Existing Updater'),
+  );
 });
 
 runTest('adds a history entry when the metadata version was bumped', () => {
@@ -155,7 +156,7 @@ runTest('adds a history entry when the metadata version was bumped', () => {
     '  --   v1.0: Initial creation - 2020-01-02 Existing Author',
     '  --',
     '  -- METADATA END',
-    'END;'
+    'END;',
   ].join('\n');
 
   const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
@@ -182,7 +183,7 @@ runTest('corrects invalid metadata version bumps before adding history entries',
     '  --   v1.0: Initial creation - 2020-01-02 Existing Author',
     '  --',
     '  -- METADATA END',
-    'END;'
+    'END;',
   ].join('\n');
 
   const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
@@ -198,7 +199,7 @@ runTest('corrects invalid history version jumps to one-step increments', () => {
   const cases = [
     { requestedVersion: '3.0', expectedVersion: '2.0' },
     { requestedVersion: '1.5', expectedVersion: '1.1' },
-    { requestedVersion: '1.0.3', expectedVersion: '1.0.1' }
+    { requestedVersion: '1.0.3', expectedVersion: '1.0.1' },
   ];
 
   for (const testCase of cases) {
@@ -218,15 +219,22 @@ runTest('corrects invalid history version jumps to one-step increments', () => {
       `  --   v${testCase.requestedVersion}: Changed implementation - 2020-02-03 Existing Author`,
       '  --',
       '  -- METADATA END',
-      'END;'
+      'END;',
     ].join('\n');
 
     const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
 
     assert.equal(result.action, 'updated');
     assert.ok(result.text.includes(`-- Version     : ${testCase.expectedVersion}`));
-    assert.ok(result.text.includes(`--   v${testCase.expectedVersion}: Changed implementation - 2020-02-03 Existing Author`));
-    assert.equal(result.text.includes(`--   v${testCase.requestedVersion}: Changed implementation`), false);
+    assert.ok(
+      result.text.includes(
+        `--   v${testCase.expectedVersion}: Changed implementation - 2020-02-03 Existing Author`,
+      ),
+    );
+    assert.equal(
+      result.text.includes(`--   v${testCase.requestedVersion}: Changed implementation`),
+      false,
+    );
   }
 });
 
@@ -238,7 +246,7 @@ runTest('ignores object declarations inside comments and string literals', () =>
     'CREATE FUNCTION real_func() RETURNS integer',
     'BEGIN',
     'RETURN 1;',
-    'END;'
+    'END;',
   ].join('\n');
 
   const detected = detectPrimarySqlObject(input, watcomDialect);
@@ -246,7 +254,7 @@ runTest('ignores object declarations inside comments and string literals', () =>
   assert.deepEqual(detected, {
     type: 'function',
     name: 'real_func',
-    index: input.indexOf('CREATE FUNCTION real_func')
+    index: input.indexOf('CREATE FUNCTION real_func'),
   });
 });
 
@@ -258,7 +266,7 @@ runTest('detects the first real supported SQL object in declaration order', () =
     '',
     'CREATE PROCEDURE proc_after()',
     'BEGIN',
-    'END;'
+    'END;',
   ].join('\n');
 
   const detected = detectPrimarySqlObject(input, watcomDialect);
@@ -266,7 +274,7 @@ runTest('detects the first real supported SQL object in declaration order', () =
   assert.deepEqual(detected, {
     type: 'trigger',
     name: 'trg_before',
-    index: 0
+    index: 0,
   });
 });
 
@@ -303,7 +311,10 @@ runTest('preserves BOM and CRLF line endings when inserting a header', () => {
   assert.equal(result.action, 'inserted');
   assert.ok(result.text.startsWith('\ufeffCREATE PROCEDURE dbo.crlf_proc()\r\n-- METADATA\r\n'));
   assert.ok(result.text.includes(`${METADATA_HEADER_END}\r\nBEGIN\r\nEND;`));
-  assert.ok(!result.text.includes('\nCREATE PROCEDURE dbo.crlf_proc()') || result.text.includes('\r\nCREATE PROCEDURE dbo.crlf_proc()'));
+  assert.ok(
+    !result.text.includes('\nCREATE PROCEDURE dbo.crlf_proc()') ||
+      result.text.includes('\r\nCREATE PROCEDURE dbo.crlf_proc()'),
+  );
 });
 
 runTest('applies SQLovely extras through the extra pipeline', () => {
@@ -320,7 +331,7 @@ runTest('can disable metadata headers in the SQLovely extra pipeline', () => {
   const input = 'CREATE PROCEDURE dbo.my_proc()\nBEGIN\nEND;\n';
   const result = applyExtras(input, watcomDialect, {
     ...options,
-    metadataHeaderEnabled: false
+    metadataHeaderEnabled: false,
   });
 
   assert.equal(result.changed, false);
@@ -340,9 +351,9 @@ runTest('metadata header generation works with fixture-based SQL input', () => {
   assert.equal(countOccurrences(result.text, METADATA_HEADER_START), 1);
 });
 
-
 runTest('detects rudimentary MSSQL bracketed and temporary procedure names', () => {
-  const bracketedInput = 'CREATE OR ALTER PROCEDURE [dbo].[my proc]]name]\nAS\nBEGIN\nSELECT 1;\nEND;\n';
+  const bracketedInput =
+    'CREATE OR ALTER PROCEDURE [dbo].[my proc]]name]\nAS\nBEGIN\nSELECT 1;\nEND;\n';
   const bracketed = detectPrimarySqlObject(bracketedInput, mssqlDialect);
 
   assert.equal(bracketed?.type, 'procedure');
@@ -362,13 +373,13 @@ runTest('detects rudimentary MSSQL triggers and scalar functions', () => {
   assert.equal(trigger?.type, 'trigger');
   assert.equal(trigger?.name, 'dbo.trg_Audit');
 
-  const functionInput = 'CREATE OR ALTER FUNCTION [dbo].[ufn_value]() RETURNS int AS BEGIN RETURN 1 END;\n';
+  const functionInput =
+    'CREATE OR ALTER FUNCTION [dbo].[ufn_value]() RETURNS int AS BEGIN RETURN 1 END;\n';
   const func = detectPrimarySqlObject(functionInput, mssqlDialect);
 
   assert.equal(func?.type, 'function');
   assert.equal(func?.name, 'dbo.ufn_value');
 });
-
 
 runTest('migrates legacy top-level metadata headers before the SQL object BEGIN', () => {
   const input = [
@@ -381,7 +392,7 @@ runTest('migrates legacy top-level metadata headers before the SQL object BEGIN'
     'CREATE PROCEDURE dbo.legacy_proc()',
     'BEGIN',
     'SELECT 1;',
-    'END;'
+    'END;',
   ].join('\n');
 
   const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
@@ -394,7 +405,6 @@ runTest('migrates legacy top-level metadata headers before the SQL object BEGIN'
   assert.ok(result.text.includes('-- Description : Legacy description'));
   assert.ok(!result.text.includes('SQLovely-Metadata-Start'));
 });
-
 
 runTest('normalizes a loose legacy Watcom metadata header before BEGIN', () => {
   const input = [
@@ -416,13 +426,17 @@ runTest('normalizes a loose legacy Watcom metadata header before BEGIN', () => {
     '-- ---------------------------------------------------------------------------',
     'begin',
     '  -- do something',
-    'end;'
+    'end;',
   ].join('\n');
 
   const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
 
   assert.equal(result.action, 'updated');
-  assert.ok(result.text.includes('create or replace procedure "fct"."procedurename"\n( in "parameter1" integer,in "parameter2" integer )\n-- METADATA'));
+  assert.ok(
+    result.text.includes(
+      'create or replace procedure "fct"."procedurename"\n( in "parameter1" integer,in "parameter2" integer )\n-- METADATA',
+    ),
+  );
   assert.ok(result.text.includes('-- Description : <TODO>'));
   assert.ok(result.text.includes('-- Version     : 1.00'));
   assert.ok(result.text.includes('-- Author      : t.mayer'));
@@ -449,7 +463,7 @@ runTest('normalizes slash-style legacy metadata headers with labelled descriptio
     '// ////////////////////////////////////////',
     'BEGIN',
     'RETURN 1;',
-    'END;'
+    'END;',
   ].join('\n');
 
   const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
@@ -471,7 +485,7 @@ runTest('leaves non-metadata comment blocks in place while inserting a new heade
     '-- It is not a legacy metadata header.',
     'BEGIN',
     'SELECT 1;',
-    'END;'
+    'END;',
   ].join('\n');
 
   const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
@@ -481,7 +495,6 @@ runTest('leaves non-metadata comment blocks in place while inserting a new heade
   assert.ok(result.text.includes('-- Version     : 1.0'));
   assert.equal(countOccurrences(result.text, METADATA_HEADER_START), 1);
 });
-
 
 runTest('inserts metadata headers for every supported SQL object in a script', () => {
   const input = [
@@ -498,7 +511,7 @@ runTest('inserts metadata headers for every supported SQL object in a script', (
     'CREATE TRIGGER dbo.third_trigger',
     'BEGIN',
     'SELECT 3;',
-    'END;'
+    'END;',
   ].join('\n');
 
   const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
@@ -535,7 +548,7 @@ runTest('normalizes legacy metadata headers independently for multiple objects',
     '// /////////////////////////',
     'BEGIN',
     'RETURN 2;',
-    'END;'
+    'END;',
   ].join('\n');
 
   const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
@@ -573,7 +586,7 @@ runTest('keeps existing metadata headers scoped to their own SQL objects', () =>
     '-- METADATA END',
     'BEGIN',
     'SELECT 2;',
-    'END;'
+    'END;',
   ].join('\n');
 
   const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
@@ -586,7 +599,6 @@ runTest('keeps existing metadata headers scoped to their own SQL objects', () =>
   assert.ok(result.text.includes('-- Updated By  : Test Author'));
   assert.ok(result.text.includes('-- Created     : 2020-01-02'));
 });
-
 
 runTest('wraps metadata description lines to the configured max length', () => {
   const input = [
@@ -605,12 +617,12 @@ runTest('wraps metadata description lines to the configured max length', () => {
     '-- METADATA END',
     'BEGIN',
     'SELECT 1;',
-    'END;'
+    'END;',
   ].join('\n');
 
   const result = insertOrUpdateMetadataHeader(input, watcomDialect, {
     ...options,
-    maxLineLength: 72
+    maxLineLength: 72,
   });
   const metadataLines = getMetadataHeaderLines(result.text);
   const descriptionLines = metadataLines.filter((line) => /^--(?: Description :| {15})/.test(line));
@@ -619,7 +631,10 @@ runTest('wraps metadata description lines to the configured max length', () => {
   assert.ok(descriptionLines.length > 1);
   assert.ok(descriptionLines[0].startsWith('-- Description : This description'));
   assert.ok(descriptionLines.slice(1).every((line) => line.startsWith('--               ')));
-  assert.ok(metadataLines.every((line) => line.length <= 72), 'metadata lines should respect the configured limit');
+  assert.ok(
+    metadataLines.every((line) => line.length <= 72),
+    'metadata lines should respect the configured limit',
+  );
 });
 
 runTest('preserves manual line breaks in multiline metadata descriptions', () => {
@@ -641,30 +656,31 @@ runTest('preserves manual line breaks in multiline metadata descriptions', () =>
     '-- METADATA END',
     'BEGIN',
     'SELECT 1;',
-    'END;'
+    'END;',
   ].join('\n');
 
   const result = insertOrUpdateMetadataHeader(input, watcomDialect, {
     ...options,
-    maxLineLength: 120
+    maxLineLength: 120,
   });
 
   assert.equal(result.action, 'updated');
   assert.ok(result.text.includes('-- Description : First manually written sentence.'));
-  assert.ok(result.text.includes('--               Second manual line contains a colon: keep it separate.'));
+  assert.ok(
+    result.text.includes('--               Second manual line contains a colon: keep it separate.'),
+  );
   assert.ok(result.text.includes('--               Third manual line stays separate too.'));
   assert.equal(result.text.includes('First manually written sentence. Second manual line'), false);
 });
 
-
 function getMetadataHeaderLines(text) {
   const lines = text.split(/\r?\n/);
   const startIndex = lines.findIndex((line) => line.trim() === METADATA_HEADER_START);
-  const endIndex = lines.findIndex((line, index) => index > startIndex && line.trim() === METADATA_HEADER_END);
+  const endIndex = lines.findIndex(
+    (line, index) => index > startIndex && line.trim() === METADATA_HEADER_END,
+  );
 
-  return startIndex >= 0 && endIndex >= startIndex
-    ? lines.slice(startIndex, endIndex + 1)
-    : [];
+  return startIndex >= 0 && endIndex >= startIndex ? lines.slice(startIndex, endIndex + 1) : [];
 }
 
 function countOccurrences(text, needle) {

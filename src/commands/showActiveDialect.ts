@@ -10,7 +10,7 @@ export function registerShowActiveDialectCommand(): vscode.Disposable {
     const dialect = getActiveDialect(resource);
 
     void vscode.window.showInformationMessage(
-      `SQLovely dialect: ${dialect.displayName} (${dialect.id})`
+      `SQLovely dialect: ${dialect.displayName} (${dialect.id})`,
     );
   });
 }

@@ -20,5 +20,5 @@ function getTotalPassed() {
 module.exports = {
   assert,
   runTest,
-  getTotalPassed
+  getTotalPassed,
 };

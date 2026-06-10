@@ -3,10 +3,10 @@ const { assert, runTest } = require('./helpers/runTest');
 const {
   insertOrUpdateMetadataHeader,
   METADATA_HEADER_END,
-  METADATA_HEADER_START
+  METADATA_HEADER_START,
 } = require('../dist/extras');
 const {
-  findMissingMetadataHeaderIssues
+  findMissingMetadataHeaderIssues,
 } = require('../dist/diagnostics/metadataHeaderDiagnostics');
 const { watcomDialect } = require('../dist/dialects/watcom/dialect');
 
@@ -33,7 +33,7 @@ runTest('normalizes single-slash legacy metadata headers before Watcom procedure
     '/ ---------------------------------------------------------------------------',
     'BEGIN',
     '  SELECT 1;',
-    'END;'
+    'END;',
   ].join('\n');
 
   const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
@@ -65,7 +65,7 @@ runTest('normalizes block-comment legacy metadata headers before function bodies
     ' */',
     'BEGIN',
     'RETURN 1;',
-    'END;'
+    'END;',
   ].join('\n');
 
   const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
@@ -88,7 +88,7 @@ runTest('leaves loose comments without a version untouched while inserting metad
     '/ It should stay because it has no version field.',
     'BEGIN',
     'SELECT 1;',
-    'END;'
+    'END;',
   ].join('\n');
 
   const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
@@ -135,7 +135,7 @@ runTest('synchronizes version and history independently for multiple existing he
     '-- METADATA END',
     'BEGIN',
     'RETURN 2;',
-    'END;'
+    'END;',
   ].join('\n');
 
   const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
@@ -143,9 +143,17 @@ runTest('synchronizes version and history independently for multiple existing he
   assert.equal(result.action, 'updated');
   assert.equal(countOccurrences(result.text, METADATA_HEADER_START), 2);
   assertInObjectSection(result.text, 'dbo.first_existing', '-- Version     : 1.1');
-  assertInObjectSection(result.text, 'dbo.first_existing', '--   v1.1: Added validation - 2020-02-03 First Author');
+  assertInObjectSection(
+    result.text,
+    'dbo.first_existing',
+    '--   v1.1: Added validation - 2020-02-03 First Author',
+  );
   assertInObjectSection(result.text, 'dbo.second_existing', '-- Version     : 2.0');
-  assertInObjectSection(result.text, 'dbo.second_existing', '--   v2.0: <TODO> - 2026-06-09 Test Author');
+  assertInObjectSection(
+    result.text,
+    'dbo.second_existing',
+    '--   v2.0: <TODO> - 2026-06-09 Test Author',
+  );
 });
 
 runTest('normalizes invalid history version jumps to consecutive one-step bumps', () => {
@@ -167,7 +175,7 @@ runTest('normalizes invalid history version jumps to consecutive one-step bumps'
     '-- METADATA END',
     'BEGIN',
     'SELECT 1;',
-    'END;'
+    'END;',
   ].join('\n');
 
   const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
@@ -197,7 +205,7 @@ runTest('preserves patch-version schemes when adding missing history entries', (
     '-- METADATA END',
     'BEGIN',
     'SELECT 1;',
-    'END;'
+    'END;',
   ].join('\n');
 
   const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
@@ -208,31 +216,34 @@ runTest('preserves patch-version schemes when adding missing history entries', (
   assert.ok(result.text.includes('--   v1.0.1: <TODO> - 2026-06-09 Test Author'));
 });
 
-runTest('normalizes legacy headers and synchronizes invalid legacy version bumps in one pass', () => {
-  const input = [
-    'CREATE PROCEDURE dbo.legacy_invalid_version()',
-    '-- -------------------------',
-    '-- description: Legacy invalid bump',
-    '-- version: 1.5',
-    '-- author: Legacy Author',
-    '-- history:',
-    '-- v1.0 - initial creation',
-    '-- -------------------------',
-    'BEGIN',
-    'SELECT 1;',
-    'END;'
-  ].join('\n');
+runTest(
+  'normalizes legacy headers and synchronizes invalid legacy version bumps in one pass',
+  () => {
+    const input = [
+      'CREATE PROCEDURE dbo.legacy_invalid_version()',
+      '-- -------------------------',
+      '-- description: Legacy invalid bump',
+      '-- version: 1.5',
+      '-- author: Legacy Author',
+      '-- history:',
+      '-- v1.0 - initial creation',
+      '-- -------------------------',
+      'BEGIN',
+      'SELECT 1;',
+      'END;',
+    ].join('\n');
 
-  const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
+    const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
 
-  assert.equal(result.action, 'updated');
-  assert.ok(result.text.includes('-- Description : Legacy invalid bump'));
-  assert.ok(result.text.includes('-- Version     : 1.1'));
-  assert.ok(result.text.includes('-- Author      : Legacy Author'));
-  assert.ok(result.text.includes('--   v1.0: initial creation'));
-  assert.ok(result.text.includes('--   v1.1: <TODO> - 2026-06-09 Test Author'));
-  assert.equal(result.text.includes('-- Version     : 1.5'), false);
-});
+    assert.equal(result.action, 'updated');
+    assert.ok(result.text.includes('-- Description : Legacy invalid bump'));
+    assert.ok(result.text.includes('-- Version     : 1.1'));
+    assert.ok(result.text.includes('-- Author      : Legacy Author'));
+    assert.ok(result.text.includes('--   v1.0: initial creation'));
+    assert.ok(result.text.includes('--   v1.1: <TODO> - 2026-06-09 Test Author'));
+    assert.equal(result.text.includes('-- Version     : 1.5'), false);
+  },
+);
 
 runTest('normalizes metadata date fields to ISO format', () => {
   const input = [
@@ -251,7 +262,7 @@ runTest('normalizes metadata date fields to ISO format', () => {
     '-- METADATA END',
     'BEGIN',
     'SELECT 1;',
-    'END;'
+    'END;',
   ].join('\n');
 
   const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
@@ -276,7 +287,7 @@ runTest('normalizes valid legacy date values while preserving unknown placeholde
     '/ -------------------------',
     'BEGIN',
     'SELECT 1;',
-    'END;'
+    'END;',
   ].join('\n');
 
   const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
@@ -301,7 +312,7 @@ runTest('migrates legacy updated-by aliases into the new metadata header', () =>
     '/ -------------------------',
     'BEGIN',
     'SELECT 1;',
-    'END;'
+    'END;',
   ].join('\n');
 
   const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
@@ -315,31 +326,33 @@ runTest('migrates legacy updated-by aliases into the new metadata header', () =>
   assert.equal(result.text.includes('geupdated von'), false);
 });
 
-runTest('reports missing metadata only for objects without a current or normalizable legacy header', () => {
-  const input = [
-    'CREATE PROCEDURE dbo.legacy_header()',
-    '-- -------------------------',
-    '-- description: Legacy header',
-    '-- version: 1.0',
-    '-- history:',
-    '-- v1.0 - initial creation',
-    '-- -------------------------',
-    'BEGIN',
-    'SELECT 1;',
-    'END;',
-    '',
-    'CREATE FUNCTION dbo.missing_header() RETURNS integer',
-    'BEGIN',
-    'RETURN 2;',
-    'END;'
-  ].join('\n');
+runTest(
+  'reports missing metadata only for objects without a current or normalizable legacy header',
+  () => {
+    const input = [
+      'CREATE PROCEDURE dbo.legacy_header()',
+      '-- -------------------------',
+      '-- description: Legacy header',
+      '-- version: 1.0',
+      '-- history:',
+      '-- v1.0 - initial creation',
+      '-- -------------------------',
+      'BEGIN',
+      'SELECT 1;',
+      'END;',
+      '',
+      'CREATE FUNCTION dbo.missing_header() RETURNS integer',
+      'BEGIN',
+      'RETURN 2;',
+      'END;',
+    ].join('\n');
 
-  const issues = findMissingMetadataHeaderIssues(input, watcomDialect);
+    const issues = findMissingMetadataHeaderIssues(input, watcomDialect);
 
-  assert.equal(issues.length, 1);
-  assert.equal(issues[0].object.name, 'dbo.missing_header');
-});
-
+    assert.equal(issues.length, 1);
+    assert.equal(issues[0].object.name, 'dbo.missing_header');
+  },
+);
 
 runTest('migrates legacy created-through and changed-through aliases with two-digit dates', () => {
   const input = [
@@ -354,7 +367,7 @@ runTest('migrates legacy created-through and changed-through aliases with two-di
     '//* ---------------------------------------------------------------------------',
     'BEGIN',
     'SELECT 1;',
-    'END;'
+    'END;',
   ].join('\n');
 
   const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);
@@ -390,7 +403,7 @@ runTest('normalizes two-digit metadata dates with a stable pivot year', () => {
     '-- METADATA END',
     'BEGIN',
     'SELECT 1;',
-    'END;'
+    'END;',
   ].join('\n');
 
   const result = insertOrUpdateMetadataHeader(input, watcomDialect, options);

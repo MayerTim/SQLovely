@@ -105,5 +105,5 @@ export const watcomBuiltinFunctions = new Set<string>([
   'xmlparse',
   'xmlquery',
   'xmlserialize',
-  'year'
+  'year',
 ]);

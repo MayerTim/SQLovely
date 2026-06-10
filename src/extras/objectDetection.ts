@@ -7,7 +7,10 @@ export interface DetectedSqlObject {
   readonly index: number;
 }
 
-export function detectPrimarySqlObject(text: string, dialect: SqlDialect): DetectedSqlObject | undefined {
+export function detectPrimarySqlObject(
+  text: string,
+  dialect: SqlDialect,
+): DetectedSqlObject | undefined {
   return detectSqlObjects(text, dialect)[0];
 }
 
@@ -16,7 +19,7 @@ export function detectSqlObjects(text: string, dialect: SqlDialect): readonly De
   const candidates = [
     ...detectObjects(maskedText, dialect.objectPatterns.procedure, 'procedure'),
     ...detectObjects(maskedText, dialect.objectPatterns.function, 'function'),
-    ...detectObjects(maskedText, dialect.objectPatterns.trigger, 'trigger')
+    ...detectObjects(maskedText, dialect.objectPatterns.trigger, 'trigger'),
   ];
 
   candidates.sort((left, right) => left.index - right.index || left.name.localeCompare(right.name));
@@ -27,7 +30,7 @@ export function detectSqlObjects(text: string, dialect: SqlDialect): readonly De
 function detectObjects(
   text: string,
   pattern: RegExp,
-  type: SqlObjectType
+  type: SqlObjectType,
 ): readonly DetectedSqlObject[] {
   const objects: DetectedSqlObject[] = [];
   const searchablePattern = ensureGlobalSearchablePattern(pattern);
@@ -40,7 +43,7 @@ function detectObjects(
       objects.push({
         type,
         name: normalizeObjectName(rawName),
-        index: match.index
+        index: match.index,
       });
     }
 
