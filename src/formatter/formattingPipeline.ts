@@ -1,13 +1,13 @@
 import type { SqlDialect } from '../dialects';
-import { expandWatcomInlineIfLine } from './inlineIfFormatting';
-import { expandUnionAllLine } from './unionAllFormatting';
-import { createInitialCursorForFormattingState, expandWatcomCursorForLine } from './cursorForFormatting';
-import { createInitialQueryClauseFormattingState, expandWatcomQueryClauseLine } from './queryClauseFormatting';
-import { createInitialExceptionFormattingState, expandWatcomExceptionLine } from './exceptionFormatting';
-import { createInitialIfExpressionFormattingState, expandWatcomIfExpressionLine } from './ifExpressionFormatting';
-import { createInitialCaseExpressionFormattingState, expandWatcomCaseExpressionLine } from './caseExpressionFormatting';
-import { createInitialBlockEndFormattingState, expandWatcomBlockEndLine } from './blockEndFormatting';
-import { createInitialParenthesisFormattingState, expandParenthesesInLine } from './parenthesisFormatting';
+import { expandWatcomInlineIfLine } from './passes/structural/inlineIfFormatting';
+import { expandUnionAllLine } from './passes/structural/unionAllFormatting';
+import { createInitialCursorForFormattingState, expandWatcomCursorForLine } from './passes/structural/cursorForFormatting';
+import { createInitialQueryClauseFormattingState, expandWatcomQueryClauseLine } from './passes/structural/queryClauseFormatting';
+import { createInitialExceptionFormattingState, expandWatcomExceptionLine } from './passes/structural/exceptionFormatting';
+import { createInitialIfExpressionFormattingState, expandWatcomIfExpressionLine } from './passes/structural/ifExpressionFormatting';
+import { createInitialCaseExpressionFormattingState, expandWatcomCaseExpressionLine } from './passes/structural/caseExpressionFormatting';
+import { createInitialBlockEndFormattingState, expandWatcomBlockEndLine } from './passes/structural/blockEndFormatting';
+import { createInitialParenthesisFormattingState, expandParenthesesInLine } from './passes/structural/parenthesisFormatting';
 import { createInitialSqlLineScanState } from './sqlLineScanner';
 import { shouldRunExpensiveLineFormatting, type FormattingSafetyDecision } from './performanceGuards';
 

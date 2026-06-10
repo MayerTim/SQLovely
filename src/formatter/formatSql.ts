@@ -7,11 +7,11 @@ import {
   resolveFormattingSafetyLimits,
   type FormattingSafetyDecision
 } from './performanceGuards';
-import { analyzeParenthesesForIndent } from './parenthesisFormatting';
+import { analyzeParenthesesForIndent } from './passes/structural/parenthesisFormatting';
 import { createFormattingPipeline } from './formattingPipeline';
 import { createInitialSqlLineScanState, cloneSqlLineScanState, scanSqlLineOutsideLiteralsAndComments } from './sqlLineScanner';
-import { cleanupWatcomStatementContinuations } from './statementContinuationCleanup';
-import { cleanupWatcomDdlParentheses } from './ddlParenthesisCleanup';
+import { cleanupWatcomStatementContinuations } from './passes/cleanup/statementContinuationCleanup';
+import { cleanupWatcomDdlParentheses } from './passes/cleanup/ddlParenthesisCleanup';
 
 export interface FormatSqlResult {
   readonly text: string;

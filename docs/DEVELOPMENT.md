@@ -120,6 +120,11 @@ When changing metadata-header behavior, add or update regression tests for:
 
 Watcom structural rewrites are coordinated through `src/formatter/formattingPipeline.ts`. Keep the pipeline order explicit and behavior-preserving: compact/control-flow expansion, query/cursor/exception/expression normalization, block-ending normalization and parenthesis splitting should run before `formatSql.ts` applies indentation and final cleanup passes. When adding a formatter rule, prefer a small stateful pipeline pass instead of adding another nested loop to `formatSql.ts`.
 
+Formatter pass files are grouped by phase:
+
+- `src/formatter/passes/structural/` contains rewrite passes that can split or reshape SQL lines before indentation.
+- `src/formatter/passes/cleanup/` contains narrow line-level cleanup passes that run after indentation and should not introduce new structural SQL splits.
+
 ## Formatter performance regression focus
 
 When adding formatter passes, keep them lexical and linear where possible. Add or update tests for:

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Grouped formatter passes into structural and cleanup phases to clarify rule ownership without changing formatter behavior.
 - Refactored Watcom formatter expansion passes behind an explicit internal pipeline while preserving existing formatter output.
 - Fixed Watcom DDL/list parenthesis cleanup so temporary-table closing parentheses align with the declaration and safe trailing DDL commas before `)` are removed.
 - Fixed Watcom statement continuation cleanup for multiline `UPDATE ... SET` assignments, compact `SELECT` comma spacing and arithmetic operator spacing outside strings/comments.
