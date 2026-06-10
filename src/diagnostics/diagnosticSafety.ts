@@ -1,7 +1,7 @@
 import {
   analyzeFormattingSafety,
   type FormattingSafetyDecision,
-  type FormattingSafetyLimits
+  type FormattingSafetyLimits,
 } from '../formatter/performanceGuards';
 
 export interface DiagnosticSafetyDecision {
@@ -11,13 +11,13 @@ export interface DiagnosticSafetyDecision {
 
 export function analyzeDiagnosticSafety(
   text: string,
-  safetyLimits: FormattingSafetyLimits
+  safetyLimits: FormattingSafetyLimits,
 ): DiagnosticSafetyDecision {
   const formattingSafety = analyzeFormattingSafety(text, splitLinesForWorkload(text), safetyLimits);
 
   return {
     formattingSafety,
-    skipExpensiveMetadataDiagnostics: formattingSafety.skipExpensiveFormatting
+    skipExpensiveMetadataDiagnostics: formattingSafety.skipExpensiveFormatting,
   };
 }
 

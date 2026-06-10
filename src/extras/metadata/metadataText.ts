@@ -1,4 +1,9 @@
-export function replaceRange(text: string, startIndex: number, endIndex: number, replacement: string): string {
+export function replaceRange(
+  text: string,
+  startIndex: number,
+  endIndex: number,
+  replacement: string,
+): string {
   return `${text.slice(0, startIndex)}${replacement}${text.slice(endIndex)}`;
 }
 
@@ -12,7 +17,11 @@ export interface MarkerLineMatch {
   readonly indentation: string;
 }
 
-export function findMarkerLine(text: string, pattern: RegExp, startIndex: number): MarkerLineMatch | undefined {
+export function findMarkerLine(
+  text: string,
+  pattern: RegExp,
+  startIndex: number,
+): MarkerLineMatch | undefined {
   pattern.lastIndex = startIndex;
   const match = pattern.exec(text);
 
@@ -23,7 +32,7 @@ export function findMarkerLine(text: string, pattern: RegExp, startIndex: number
   return {
     startIndex: match.index,
     endIndex: match.index + match[0].length,
-    indentation: match[1] ?? ''
+    indentation: match[1] ?? '',
   };
 }
 

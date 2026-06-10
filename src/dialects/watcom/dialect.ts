@@ -10,5 +10,5 @@ export const watcomDialect: SqlDialect = {
   keywords: watcomKeywords,
   builtinFunctions: watcomBuiltinFunctions,
   batchSeparators: new Set<string>(),
-  objectPatterns: watcomObjectPatterns
+  objectPatterns: watcomObjectPatterns,
 };

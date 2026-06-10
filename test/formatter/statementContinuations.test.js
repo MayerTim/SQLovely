@@ -7,7 +7,7 @@ const {
   watcomDialect,
   mssqlDialect,
   defaultOptions,
-  readFixture
+  readFixture,
 } = require('./helpers');
 
 runTest('formats Watcom UPDATE SET assignment continuations and arithmetic spacing', () => {
@@ -18,7 +18,7 @@ runTest('formats Watcom UPDATE SET assignment continuations and arithmetic spaci
     '"Zeitpunkt"',
     '= current time',
     'where "lfd" = "iOPMaterialPlanLfd"',
-    'end;'
+    'end;',
   ].join('\n');
 
   const expected = [
@@ -28,7 +28,7 @@ runTest('formats Watcom UPDATE SET assignment continuations and arithmetic spaci
     '    "Zeitpunkt" = CURRENT time',
     '  WHERE "lfd" = "iOPMaterialPlanLfd"',
     'END;',
-    ''
+    '',
   ].join('\n');
 
   const result = formatSql(input, watcomDialect, defaultOptions);
@@ -40,16 +40,16 @@ runTest('formats compact Watcom select lists with comma spacing only outside quo
   const input = [
     'begin',
     'select "oGtin","oCharge","oSeriennr"',
-    "select 'a,b',\"x,y\",1+2",
-    'end;'
+    'select \'a,b\',"x,y",1+2',
+    'end;',
   ].join('\n');
 
   const expected = [
     'BEGIN',
     '  SELECT "oGtin", "oCharge", "oSeriennr"',
-    "  SELECT 'a,b', \"x,y\", 1 + 2",
+    '  SELECT \'a,b\', "x,y", 1 + 2',
     'END;',
-    ''
+    '',
   ].join('\n');
 
   const result = formatSql(input, watcomDialect, defaultOptions);

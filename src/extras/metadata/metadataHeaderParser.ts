@@ -3,32 +3,39 @@ import { findLooseLegacyMetadataHeader } from '../legacyMetadataHeader';
 import {
   LEGACY_METADATA_HEADER_END,
   LEGACY_METADATA_HEADER_START,
-  type ExistingMetadataHeader
+  type ExistingMetadataHeader,
 } from './metadataHeaderModel';
 import {
   findLineEnd,
   findLineStart,
   findMarkerLine,
   readLineIndentation,
-  type MarkerLineMatch
+  type MarkerLineMatch,
 } from './metadataText';
 
 export function findExistingMetadataHeader(
   text: string,
   object?: DetectedSqlObject,
-  nextObjectIndex = text.length
+  nextObjectIndex = text.length,
 ): ExistingMetadataHeader | undefined {
   if (!object) {
-    return findModernMetadataHeaderInRange(text, 0, text.length)
-      ?? findLegacyMetadataHeaderInRange(text, 0, text.length);
+    return (
+      findModernMetadataHeaderInRange(text, 0, text.length) ??
+      findLegacyMetadataHeaderInRange(text, 0, text.length)
+    );
   }
 
-  return findModernMetadataHeaderForObject(text, object, nextObjectIndex)
-    ?? findLegacyMetadataHeaderForObject(text, object, nextObjectIndex)
-    ?? findLooseLegacyExistingMetadataHeader(text, object);
+  return (
+    findModernMetadataHeaderForObject(text, object, nextObjectIndex) ??
+    findLegacyMetadataHeaderForObject(text, object, nextObjectIndex) ??
+    findLooseLegacyExistingMetadataHeader(text, object)
+  );
 }
 
-function findLooseLegacyExistingMetadataHeader(text: string, object: DetectedSqlObject): ExistingMetadataHeader | undefined {
+function findLooseLegacyExistingMetadataHeader(
+  text: string,
+  object: DetectedSqlObject,
+): ExistingMetadataHeader | undefined {
   const looseHeader = findLooseLegacyMetadataHeader(text, object);
 
   if (!looseHeader) {
@@ -37,14 +44,14 @@ function findLooseLegacyExistingMetadataHeader(text: string, object: DetectedSql
 
   return {
     ...looseHeader,
-    isLegacy: true
+    isLegacy: true,
   };
 }
 
 function findModernMetadataHeaderForObject(
   text: string,
   object: DetectedSqlObject,
-  nextObjectIndex: number
+  nextObjectIndex: number,
 ): ExistingMetadataHeader | undefined {
   return findModernMetadataHeaderInRange(text, object.index, nextObjectIndex);
 }
@@ -52,7 +59,7 @@ function findModernMetadataHeaderForObject(
 function findModernMetadataHeaderInRange(
   text: string,
   startIndex: number,
-  endIndex: number
+  endIndex: number,
 ): ExistingMetadataHeader | undefined {
   const start = findMarkerLine(text, /^([ \t]*)--\s*METADATA\s*$/gmu, startIndex);
 
@@ -72,7 +79,7 @@ function findModernMetadataHeaderInRange(
 function createModernMetadataHeader(
   text: string,
   start: MarkerLineMatch,
-  end: MarkerLineMatch
+  end: MarkerLineMatch,
 ): ExistingMetadataHeader {
   const endIndex = findLineEnd(text, end.startIndex);
   const headerText = text.slice(start.startIndex, endIndex);
@@ -83,23 +90,25 @@ function createModernMetadataHeader(
     fields: parseMetadataFields(headerText),
     historyEntries: parseHistoryEntries(headerText),
     indentation: start.indentation,
-    isLegacy: false
+    isLegacy: false,
   };
 }
 
 function findLegacyMetadataHeaderForObject(
   text: string,
   object: DetectedSqlObject,
-  nextObjectIndex: number
+  nextObjectIndex: number,
 ): ExistingMetadataHeader | undefined {
-  return findLegacyMetadataHeaderInRange(text, object.index, nextObjectIndex)
-    ?? findLegacyMetadataHeaderBeforeObject(text, object);
+  return (
+    findLegacyMetadataHeaderInRange(text, object.index, nextObjectIndex) ??
+    findLegacyMetadataHeaderBeforeObject(text, object)
+  );
 }
 
 function findLegacyMetadataHeaderInRange(
   text: string,
   startIndex: number,
-  endIndex: number
+  endIndex: number,
 ): ExistingMetadataHeader | undefined {
   const startIndexInRange = text.indexOf(LEGACY_METADATA_HEADER_START, startIndex);
 
@@ -112,7 +121,7 @@ function findLegacyMetadataHeaderInRange(
 
 function findLegacyMetadataHeaderBeforeObject(
   text: string,
-  object: DetectedSqlObject
+  object: DetectedSqlObject,
 ): ExistingMetadataHeader | undefined {
   let searchStartIndex = 0;
   let closestHeader: ExistingMetadataHeader | undefined;
@@ -144,9 +153,12 @@ function findLegacyMetadataHeaderBeforeObject(
 function createLegacyMetadataHeaderFromMarker(
   text: string,
   markerIndex: number,
-  searchEndIndex: number
+  searchEndIndex: number,
 ): ExistingMetadataHeader | undefined {
-  const endMarkerIndex = text.indexOf(LEGACY_METADATA_HEADER_END, markerIndex + LEGACY_METADATA_HEADER_START.length);
+  const endMarkerIndex = text.indexOf(
+    LEGACY_METADATA_HEADER_END,
+    markerIndex + LEGACY_METADATA_HEADER_START.length,
+  );
 
   if (endMarkerIndex < 0 || endMarkerIndex >= searchEndIndex) {
     return undefined;
@@ -162,14 +174,14 @@ function createLegacyMetadataHeaderFromMarker(
     fields: parseMetadataFields(headerText),
     historyEntries: [],
     indentation: readLineIndentation(text, startLineIndex),
-    isLegacy: true
+    isLegacy: true,
   };
 }
 
 function isHeaderImmediatelyBeforeObject(
   text: string,
   header: ExistingMetadataHeader,
-  object: DetectedSqlObject
+  object: DetectedSqlObject,
 ): boolean {
   const betweenText = text.slice(header.endIndex, findLineStart(text, object.index));
   return /^\s*$/u.test(betweenText);
@@ -180,9 +192,8 @@ function parseMetadataFields(headerText: string): ReadonlyMap<string, string> {
   let currentKey: string | undefined;
 
   for (const line of headerText.split(/\r\n|\r|\n/u)) {
-    const descriptionContinuation = currentKey === 'description'
-      ? parseDescriptionContinuationLine(line)
-      : undefined;
+    const descriptionContinuation =
+      currentKey === 'description' ? parseDescriptionContinuationLine(line) : undefined;
 
     if (descriptionContinuation !== undefined) {
       fields.set('description', `${fields.get('description') ?? ''}\n${descriptionContinuation}`);
@@ -213,10 +224,7 @@ function parseMetadataFields(headerText: string): ReadonlyMap<string, string> {
 }
 
 function normalizeMetadataFieldKey(rawKey: string): string | undefined {
-  const key = rawKey
-    .trim()
-    .replace(/\s+/gu, ' ')
-    .toLowerCase();
+  const key = rawKey.trim().replace(/\s+/gu, ' ').toLowerCase();
 
   if (/^(?:description|beschreibung)$/iu.test(key)) {
     return 'description';
@@ -226,19 +234,35 @@ function normalizeMetadataFieldKey(rawKey: string): string | undefined {
     return 'version';
   }
 
-  if (/^(?:author|created by|erstellt von|erstellt durch|ersteller|angelegt von|angelegt durch)$/iu.test(key)) {
+  if (
+    /^(?:author|created by|erstellt von|erstellt durch|ersteller|angelegt von|angelegt durch)$/iu.test(
+      key,
+    )
+  ) {
     return 'author';
   }
 
-  if (/^(?:updated by|modified by|last updated by|geändert von|geändert durch|geaendert von|geaendert durch|geupdated von|geupdated durch|aktualisiert von|aktualisiert durch)$/iu.test(key)) {
+  if (
+    /^(?:updated by|modified by|last updated by|geändert von|geändert durch|geaendert von|geaendert durch|geupdated von|geupdated durch|aktualisiert von|aktualisiert durch)$/iu.test(
+      key,
+    )
+  ) {
     return 'updated by';
   }
 
-  if (/^(?:created|created date|created on|created at|creation date|erstellt datum|erstellt am|erstellungsdatum|erstelldatum)$/iu.test(key)) {
+  if (
+    /^(?:created|created date|created on|created at|creation date|erstellt datum|erstellt am|erstellungsdatum|erstelldatum)$/iu.test(
+      key,
+    )
+  ) {
     return 'created';
   }
 
-  if (/^(?:updated|updated date|updated on|updated at|last updated|modified|modified date|modified on|modified at|letzte änderung|letzte aenderung|geändert|geändert am|geändert datum|geaendert|geaendert am|geaendert datum|geupdated|geupdated am|geupdated datum|aktualisiert|aktualisiert am)$/iu.test(key)) {
+  if (
+    /^(?:updated|updated date|updated on|updated at|last updated|modified|modified date|modified on|modified at|letzte änderung|letzte aenderung|geändert|geändert am|geändert datum|geaendert|geaendert am|geaendert datum|geupdated|geupdated am|geupdated datum|aktualisiert|aktualisiert am)$/iu.test(
+      key,
+    )
+  ) {
     return 'updated';
   }
 
@@ -270,7 +294,10 @@ function parseHistoryEntries(headerText: string): readonly string[] {
       continue;
     }
 
-    if (/^[ \t]*--[ \t]*METADATA END[ \t]*$/iu.test(line) || /^[ \t]*--[ \t]*SQLovely-Metadata-End[ \t]*$/iu.test(line)) {
+    if (
+      /^[ \t]*--[ \t]*METADATA END[ \t]*$/iu.test(line) ||
+      /^[ \t]*--[ \t]*SQLovely-Metadata-End[ \t]*$/iu.test(line)
+    ) {
       break;
     }
 

@@ -1,7 +1,12 @@
 import * as vscode from 'vscode';
 
 import { COMMANDS } from '../constants';
-import { getActiveDialect, getDiagnosticsConfiguration, getExtrasConfiguration, getFormatConfiguration } from '../config';
+import {
+  getActiveDialect,
+  getDiagnosticsConfiguration,
+  getExtrasConfiguration,
+  getFormatConfiguration,
+} from '../config';
 import { requireActiveSqlEditorContext } from '../editor/activeSqlEditor';
 import { replaceDocumentText } from '../editor/replaceDocumentText';
 import { formatSqlDocument } from '../formatter';
@@ -18,7 +23,9 @@ export function registerFormatCurrentFileCommand(): vscode.Disposable {
     const formatConfiguration = getFormatConfiguration(activeContext.resource);
 
     if (!formatConfiguration.enabled) {
-      await vscode.window.showInformationMessage('SQLovely formatting is disabled by sqlovely.format.enabled.');
+      await vscode.window.showInformationMessage(
+        'SQLovely formatting is disabled by sqlovely.format.enabled.',
+      );
       return;
     }
 
@@ -32,15 +39,21 @@ export function registerFormatCurrentFileCommand(): vscode.Disposable {
       maxConsecutiveBlankLines: formatConfiguration.maxConsecutiveBlankLines,
       ensureFinalNewline: formatConfiguration.ensureFinalNewline,
       safetyLimits: formatConfiguration.safetyLimits,
-      applyExtrasWithFormatting: extrasConfiguration.enabled && extrasConfiguration.applyWithFormatting,
+      applyExtrasWithFormatting:
+        extrasConfiguration.enabled && extrasConfiguration.applyWithFormatting,
       metadataHeaderEnabled: extrasConfiguration.metadataHeader.enabled,
-      maxLineLength: diagnosticsConfiguration.maxLineLength.limit
+      maxLineLength: diagnosticsConfiguration.maxLineLength.limit,
     });
 
-    logFormattingSafetySummary(result.formatting.safetySummary, vscode.workspace.asRelativePath(activeContext.resource, false));
+    logFormattingSafetySummary(
+      result.formatting.safetySummary,
+      vscode.workspace.asRelativePath(activeContext.resource, false),
+    );
 
     if (!result.changed) {
-      await vscode.window.showInformationMessage('SQLovely: No formatting or extra changes needed.');
+      await vscode.window.showInformationMessage(
+        'SQLovely: No formatting or extra changes needed.',
+      );
       return;
     }
 

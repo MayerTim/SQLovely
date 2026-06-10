@@ -7,7 +7,7 @@ const {
   watcomDialect,
   mssqlDialect,
   defaultOptions,
-  readFixture
+  readFixture,
 } = require('./helpers');
 
 runTest('formats compact Watcom CASE expressions without leaking indentation', () => {
@@ -16,7 +16,7 @@ runTest('formats compact Watcom CASE expressions without leaking indentation', (
     'set "v" = case when "a" = 1 then 1 when "a" = 2 then 2 else 0 end;',
     'select case when "a" = 1 then \'yes\' else \'no\' end as "flag" from "items" where "active" = 1 and "deleted" = 0;',
     'select 2;',
-    'end;'
+    'end;',
   ].join('\n');
 
   const expected = [
@@ -30,15 +30,15 @@ runTest('formats compact Watcom CASE expressions without leaking indentation', (
     '  END;',
     '  SELECT CASE',
     '    WHEN "a" = 1',
-    '    THEN \'yes\'',
-    '    ELSE \'no\'',
+    "    THEN 'yes'",
+    "    ELSE 'no'",
     '  END AS "flag"',
     '  FROM "items"',
     '  WHERE "active" = 1',
     '    AND "deleted" = 0;',
     '  SELECT 2;',
     'END;',
-    ''
+    '',
   ].join('\n');
 
   const result = formatSql(input, watcomDialect, defaultOptions);
@@ -51,7 +51,7 @@ runTest('preserves nested Watcom CASE expressions and ignores strings or comment
     "select 'case when then else end' as note -- case when comment",
     'begin',
     'set "v" = case when "a" = 1 then case when "b" = 1 then 2 else 3 end else 0 end;',
-    'end;'
+    'end;',
   ].join('\n');
 
   const expected = [
@@ -67,7 +67,7 @@ runTest('preserves nested Watcom CASE expressions and ignores strings or comment
     '    ELSE 0',
     '  END;',
     'END;',
-    ''
+    '',
   ].join('\n');
 
   const result = formatSql(input, watcomDialect, defaultOptions);

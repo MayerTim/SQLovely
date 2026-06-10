@@ -35,7 +35,7 @@ function createExtraSaveEdits(document: vscode.TextDocument): vscode.TextEdit[] 
   const result = applyExtras(originalText, getActiveDialect(document.uri), {
     author: getDefaultAuthorName(),
     metadataHeaderEnabled: extraConfiguration.metadataHeader.enabled,
-    maxLineLength: diagnosticsConfiguration.maxLineLength.limit
+    maxLineLength: diagnosticsConfiguration.maxLineLength.limit,
   });
 
   if (!result.changed) {
@@ -44,7 +44,7 @@ function createExtraSaveEdits(document: vscode.TextDocument): vscode.TextEdit[] 
 
   const fullRange = new vscode.Range(
     document.positionAt(0),
-    document.positionAt(originalText.length)
+    document.positionAt(originalText.length),
   );
 
   return [vscode.TextEdit.replace(fullRange, result.text)];

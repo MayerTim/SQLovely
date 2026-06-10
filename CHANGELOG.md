@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added explicit Prettier formatting, ESLint linting and TypeScript typecheck scripts to the project validation workflow.
 - Isolated loose legacy metadata-header aliases, candidate parsing and migration logic into focused internal modules.
 - Extracted formatter indentation handling into a dedicated indentation engine while preserving existing formatter output.
 - Documented the internal formatter pipeline design, pass order and rules for adding future formatter passes.
@@ -58,7 +59,6 @@
 - Added `sqlovely.extras.applyWithFormatting`, enabled by default.
 - SQLovely formatting can now apply enabled SQLovely Extras such as metadata-header insertion or updates.
 - Updated documentation and example workspace settings for the new formatting/extras behavior.
-
 
 ## 0.1.4
 

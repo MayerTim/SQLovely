@@ -6,20 +6,20 @@ import { insertOrUpdateMetadataHeader } from '../extras';
 import {
   findMissingMetadataHeaderIssue,
   MISSING_METADATA_HEADER_DIAGNOSTIC_CODE,
-  SQL_OVELY_DIAGNOSTIC_SOURCE
+  SQL_OVELY_DIAGNOSTIC_SOURCE,
 } from '../diagnostics';
 import { getDefaultAuthorName } from '../utils/defaultAuthor';
 
 const PROVIDED_CODE_ACTION_KINDS = [
   vscode.CodeActionKind.QuickFix,
-  vscode.CodeActionKind.SourceFixAll
+  vscode.CodeActionKind.SourceFixAll,
 ];
 
 export function registerSqlovelyCodeActionProviders(): vscode.Disposable {
   return vscode.languages.registerCodeActionsProvider(
     SQL_LANGUAGE_ID,
     new SqlovelyMetadataHeaderCodeActionProvider(),
-    { providedCodeActionKinds: PROVIDED_CODE_ACTION_KINDS }
+    { providedCodeActionKinds: PROVIDED_CODE_ACTION_KINDS },
   );
 }
 
@@ -27,7 +27,7 @@ class SqlovelyMetadataHeaderCodeActionProvider implements vscode.CodeActionProvi
   provideCodeActions(
     document: vscode.TextDocument,
     _range: vscode.Range | vscode.Selection,
-    context: vscode.CodeActionContext
+    context: vscode.CodeActionContext,
   ): vscode.ProviderResult<vscode.CodeAction[]> {
     if (!isMissingMetadataHeaderActionAllowed(document.uri)) {
       return [];
@@ -50,12 +50,12 @@ class SqlovelyMetadataHeaderCodeActionProvider implements vscode.CodeActionProvi
 
     const action = new vscode.CodeAction(
       `Insert SQLovely metadata header for ${issue.object.type} ${issue.object.name}`,
-      wantsSourceFixAll ? vscode.CodeActionKind.SourceFixAll : vscode.CodeActionKind.QuickFix
+      wantsSourceFixAll ? vscode.CodeActionKind.SourceFixAll : vscode.CodeActionKind.QuickFix,
     );
 
     const result = insertOrUpdateMetadataHeader(document.getText(), dialect, {
       author: getDefaultAuthorName(),
-      maxLineLength: diagnosticsConfiguration.maxLineLength.limit
+      maxLineLength: diagnosticsConfiguration.maxLineLength.limit,
     });
 
     if (result.text === document.getText()) {
@@ -66,7 +66,7 @@ class SqlovelyMetadataHeaderCodeActionProvider implements vscode.CodeActionProvi
     action.edit.replace(
       document.uri,
       new vscode.Range(document.positionAt(0), document.positionAt(document.getText().length)),
-      result.text
+      result.text,
     );
     action.diagnostics = relevantDiagnostics;
     action.isPreferred = true;
@@ -83,11 +83,13 @@ function isMissingMetadataHeaderActionAllowed(resource: vscode.Uri): boolean {
     diagnosticsConfiguration.enabled &&
     diagnosticsConfiguration.missingMetadataHeader.enabled &&
     extrasConfiguration.enabled &&
-    extrasConfiguration.metadataHeader.enabled
+    extrasConfiguration.metadataHeader.enabled,
   );
 }
 
 function isMissingMetadataHeaderDiagnostic(diagnostic: vscode.Diagnostic): boolean {
-  return diagnostic.source === SQL_OVELY_DIAGNOSTIC_SOURCE &&
-    diagnostic.code === MISSING_METADATA_HEADER_DIAGNOSTIC_CODE;
+  return (
+    diagnostic.source === SQL_OVELY_DIAGNOSTIC_SOURCE &&
+    diagnostic.code === MISSING_METADATA_HEADER_DIAGNOSTIC_CODE
+  );
 }

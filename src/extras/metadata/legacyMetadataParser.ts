@@ -2,14 +2,19 @@ import type { DetectedSqlObject } from '../objectDetection';
 import { maskSqlCommentsAndStrings } from '../sqlTextMasking';
 import type { LegacyTextLine, LooseMetadataHeaderCandidate } from './legacyMetadataModel';
 
-export function findLooseHeaderCandidate(text: string, object: DetectedSqlObject): LooseMetadataHeaderCandidate | undefined {
-  return findLooseHeaderCandidateBetweenObjectAndBody(text, object)
-    ?? findLooseHeaderCandidateBeforeObject(text, object);
+export function findLooseHeaderCandidate(
+  text: string,
+  object: DetectedSqlObject,
+): LooseMetadataHeaderCandidate | undefined {
+  return (
+    findLooseHeaderCandidateBetweenObjectAndBody(text, object) ??
+    findLooseHeaderCandidateBeforeObject(text, object)
+  );
 }
 
 function findLooseHeaderCandidateBetweenObjectAndBody(
   text: string,
-  object: DetectedSqlObject
+  object: DetectedSqlObject,
 ): LooseMetadataHeaderCandidate | undefined {
   const maskedText = maskSqlCommentsAndStrings(text);
   const beginMatch = findBeginTokenAfterObject(maskedText, object.index);
@@ -30,12 +35,15 @@ function findLooseHeaderCandidateBetweenObjectAndBody(
 
 function findLooseHeaderCandidateBeforeObject(
   text: string,
-  object: DetectedSqlObject
+  object: DetectedSqlObject,
 ): LooseMetadataHeaderCandidate | undefined {
   return findLooseHeaderCandidateBeforeIndex(text, findLineStart(text, object.index));
 }
 
-function findLooseHeaderCandidateBeforeIndex(text: string, index: number): LooseMetadataHeaderCandidate | undefined {
+function findLooseHeaderCandidateBeforeIndex(
+  text: string,
+  index: number,
+): LooseMetadataHeaderCandidate | undefined {
   const lines = readTextLines(text);
   const anchorLineIndex = findLineIndexAtOrAfter(lines, index);
 
@@ -89,7 +97,7 @@ function findLooseHeaderCandidateBeforeIndex(text: string, index: number): Loose
     startIndex: startLine.startIndex,
     endIndex: endLine.endIndex,
     headerText: text.slice(startLine.startIndex, endLine.endIndex),
-    indentation: readLineIndentation(text, startLine.startIndex)
+    indentation: readLineIndentation(text, startLine.startIndex),
   };
 }
 
@@ -102,7 +110,7 @@ export function normalizeLegacyContent(value: string): string {
 
 export function isLegacySeparatorContent(value: string): boolean {
   const normalizedValue = value.trim();
-  return normalizedValue.length >= 3 && /^[\-_/=*\s]+$/u.test(normalizedValue);
+  return normalizedValue.length >= 3 && /^[-_/=*\s]+$/u.test(normalizedValue);
 }
 
 export function readLegacyCommentContent(line: string): string | undefined {
@@ -152,7 +160,7 @@ function readTextLines(text: string): readonly LegacyTextLine[] {
     lines.push({
       startIndex,
       endIndex,
-      content: text.slice(startIndex, endIndex)
+      content: text.slice(startIndex, endIndex),
     });
 
     if (endIndex >= text.length) {
@@ -170,7 +178,9 @@ function readTextLines(text: string): readonly LegacyTextLine[] {
 }
 
 function findLineIndexAtOrAfter(lines: readonly LegacyTextLine[], index: number): number {
-  const exactLineIndex = lines.findIndex((line) => line.startIndex <= index && line.endIndex >= index);
+  const exactLineIndex = lines.findIndex(
+    (line) => line.startIndex <= index && line.endIndex >= index,
+  );
 
   if (exactLineIndex >= 0) {
     return exactLineIndex;
@@ -189,7 +199,10 @@ function isBlankLine(line: string): boolean {
   return line.trim().length === 0;
 }
 
-function findBeginTokenAfterObject(maskedText: string, objectIndex: number): RegExpExecArray | undefined {
+function findBeginTokenAfterObject(
+  maskedText: string,
+  objectIndex: number,
+): RegExpExecArray | undefined {
   const pattern = /\bbegin\b/giu;
   pattern.lastIndex = objectIndex;
   const match = pattern.exec(maskedText);

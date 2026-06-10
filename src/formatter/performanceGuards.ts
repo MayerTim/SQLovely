@@ -22,11 +22,11 @@ export const DEFAULT_FORMATTING_SAFETY_LIMITS: FormattingSafetyLimits = {
   enabled: true,
   maxComplexDocumentLength: 1_000_000,
   maxComplexDocumentLines: 5_000,
-  maxComplexLineLength: 5_000
+  maxComplexLineLength: 5_000,
 };
 
 export function resolveFormattingSafetyLimits(
-  options: Partial<FormattingSafetyLimits> | undefined
+  options: Partial<FormattingSafetyLimits> | undefined,
 ): FormattingSafetyLimits {
   const merged = { ...DEFAULT_FORMATTING_SAFETY_LIMITS, ...options };
 
@@ -36,27 +36,27 @@ export function resolveFormattingSafetyLimits(
       merged.maxComplexDocumentLength,
       DEFAULT_FORMATTING_SAFETY_LIMITS.maxComplexDocumentLength,
       10_000,
-      10_000_000
+      10_000_000,
     ),
     maxComplexDocumentLines: normalizePositiveInteger(
       merged.maxComplexDocumentLines,
       DEFAULT_FORMATTING_SAFETY_LIMITS.maxComplexDocumentLines,
       100,
-      100_000
+      100_000,
     ),
     maxComplexLineLength: normalizePositiveInteger(
       merged.maxComplexLineLength,
       DEFAULT_FORMATTING_SAFETY_LIMITS.maxComplexLineLength,
       250,
-      100_000
-    )
+      100_000,
+    ),
   };
 }
 
 export function analyzeFormattingSafety(
   text: string,
   lines: readonly string[],
-  limits: FormattingSafetyLimits
+  limits: FormattingSafetyLimits,
 ): FormattingSafetyDecision {
   const workload = analyzeFormattingWorkload(text, lines);
 
@@ -65,7 +65,7 @@ export function analyzeFormattingSafety(
       workload,
       limits,
       skipExpensiveFormatting: false,
-      reasons: []
+      reasons: [],
     };
   }
 
@@ -83,13 +83,13 @@ export function analyzeFormattingSafety(
     workload,
     limits,
     skipExpensiveFormatting: reasons.length > 0,
-    reasons
+    reasons,
   };
 }
 
 export function shouldRunExpensiveLineFormatting(
   line: string,
-  decision: FormattingSafetyDecision
+  decision: FormattingSafetyDecision,
 ): boolean {
   if (!decision.limits.enabled) {
     return true;
@@ -102,7 +102,9 @@ export function shouldRunExpensiveLineFormatting(
   return line.length <= decision.limits.maxComplexLineLength;
 }
 
-export function createFormattingSafetySummary(decision: FormattingSafetyDecision): string | undefined {
+export function createFormattingSafetySummary(
+  decision: FormattingSafetyDecision,
+): string | undefined {
   if (!decision.skipExpensiveFormatting) {
     return undefined;
   }
@@ -120,7 +122,7 @@ function analyzeFormattingWorkload(text: string, lines: readonly string[]): Form
   return {
     documentLength: text.length,
     lineCount: lines.length,
-    longestLineLength
+    longestLineLength,
   };
 }
 
@@ -128,7 +130,7 @@ function normalizePositiveInteger(
   value: unknown,
   fallback: number,
   min: number,
-  max: number
+  max: number,
 ): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     return fallback;

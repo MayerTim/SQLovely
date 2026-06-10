@@ -2,7 +2,7 @@ import type { SqlDialect } from '../../../dialects';
 import {
   scanSqlLineOutsideLiteralsAndComments,
   type SqlLineScanState,
-  type SqlOutsideSegment
+  type SqlOutsideSegment,
 } from '../../sqlLineScanner';
 
 export interface ExceptionFormattingState {
@@ -27,7 +27,7 @@ const SQL_WORD_PART = /[A-Za-z0-9_$#]/u;
 export function createInitialExceptionFormattingState(): ExceptionFormattingState {
   return {
     scanState: { inBlockComment: false },
-    inExceptionSection: false
+    inExceptionSection: false,
   };
 }
 
@@ -42,13 +42,13 @@ export function createInitialExceptionFormattingState(): ExceptionFormattingStat
 export function expandWatcomExceptionLine(
   line: string,
   dialect: SqlDialect,
-  initialState: ExceptionFormattingState
+  initialState: ExceptionFormattingState,
 ): ExpandedLineResult {
   const scanResult = scanSqlLineOutsideLiteralsAndComments(line, initialState.scanState);
   const words = collectWords(line, scanResult.outsideSegments);
   const nextState: ExceptionFormattingState = {
     scanState: scanResult.nextState,
-    inExceptionSection: calculateNextExceptionSectionState(words, initialState.inExceptionSection)
+    inExceptionSection: calculateNextExceptionSectionState(words, initialState.inExceptionSection),
   };
 
   if (dialect.id !== 'watcom' || scanResult.nextState.inBlockComment || words.length === 0) {
@@ -65,7 +65,10 @@ export function expandWatcomExceptionLine(
   return { lines: lines.length > 0 ? lines : [line], nextState };
 }
 
-function findExceptionSplitPoints(words: readonly WordMatch[], inExceptionSection: boolean): number[] {
+function findExceptionSplitPoints(
+  words: readonly WordMatch[],
+  inExceptionSection: boolean,
+): number[] {
   const splitPoints: number[] = [];
   let exceptionSectionSeen = inExceptionSection;
 
@@ -101,7 +104,7 @@ function findExceptionSplitPoints(words: readonly WordMatch[], inExceptionSectio
 
 function calculateNextExceptionSectionState(
   words: readonly WordMatch[],
-  initialInExceptionSection: boolean
+  initialInExceptionSection: boolean,
 ): boolean {
   let inExceptionSection = initialInExceptionSection;
 
@@ -145,12 +148,14 @@ function isImmediatelyAfterThen(words: readonly WordMatch[], index: number): boo
 function isBlockEndPhrase(words: readonly WordMatch[], index: number): boolean {
   const nextWord = words[index + 1]?.normalized;
 
-  return nextWord === 'if' ||
+  return (
+    nextWord === 'if' ||
     nextWord === 'for' ||
     nextWord === 'loop' ||
     nextWord === 'try' ||
     nextWord === 'catch' ||
-    nextWord === 'while';
+    nextWord === 'while'
+  );
 }
 
 function splitLineAtIndexes(line: string, indexes: readonly number[]): string[] {
@@ -205,7 +210,7 @@ function collectWords(line: string, outsideSegments: readonly SqlOutsideSegment[
       words.push({
         start,
         end: index,
-        normalized: line.slice(start, index).toLowerCase()
+        normalized: line.slice(start, index).toLowerCase(),
       });
     }
   }

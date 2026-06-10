@@ -3,7 +3,7 @@ import {
   cloneSqlLineScanState,
   scanSqlLineOutsideLiteralsAndComments,
   type SqlLineScanState,
-  type SqlOutsideSegment
+  type SqlOutsideSegment,
 } from '../../sqlLineScanner';
 
 interface ExpandedLineResult {
@@ -33,7 +33,7 @@ const SQL_WORD_PART = /[A-Za-z0-9_$#]/u;
 export function expandWatcomInlineIfLine(
   line: string,
   dialect: SqlDialect,
-  initialState: SqlLineScanState
+  initialState: SqlLineScanState,
 ): ExpandedLineResult {
   const scanResult = scanSqlLineOutsideLiteralsAndComments(line, initialState);
 
@@ -50,7 +50,10 @@ export function expandWatcomInlineIfLine(
   return { lines: expanded ?? [line], nextState: scanResult.nextState };
 }
 
-function startsWithIfOutsideComments(line: string, outsideSegments: readonly SqlOutsideSegment[]): boolean {
+function startsWithIfOutsideComments(
+  line: string,
+  outsideSegments: readonly SqlOutsideSegment[],
+): boolean {
   const firstContentIndex = line.search(/\S/u);
 
   if (firstContentIndex < 0) {
@@ -67,7 +70,10 @@ function startsWithIfOutsideComments(line: string, outsideSegments: readonly Sql
   });
 }
 
-function tryExpandInlineIf(line: string, outsideSegments: readonly SqlOutsideSegment[]): string[] | undefined {
+function tryExpandInlineIf(
+  line: string,
+  outsideSegments: readonly SqlOutsideSegment[],
+): string[] | undefined {
   const firstContentIndex = line.search(/\S/u);
 
   if (firstContentIndex < 0) {
@@ -98,7 +104,9 @@ function tryExpandInlineIf(line: string, outsideSegments: readonly SqlOutsideSeg
   }
 
   const condition = line.slice(ifMatch.end, thenMatch.start).trim();
-  const afterThen = endIfMatch ? line.slice(thenMatch.end, endIfMatch.start).trim() : line.slice(thenMatch.end).trim();
+  const afterThen = endIfMatch
+    ? line.slice(thenMatch.end, endIfMatch.start).trim()
+    : line.slice(thenMatch.end).trim();
 
   if (condition.length === 0) {
     return undefined;
@@ -124,7 +132,11 @@ function tryExpandInlineIf(line: string, outsideSegments: readonly SqlOutsideSeg
   return lines.length > 1 ? lines : undefined;
 }
 
-function formatExpandedIfLines(conditionLines: readonly string[], inlineStatement: string, endIfText: string | undefined): string[] {
+function formatExpandedIfLines(
+  conditionLines: readonly string[],
+  inlineStatement: string,
+  endIfText: string | undefined,
+): string[] {
   const firstConditionLine = conditionLines[0];
 
   if (!firstConditionLine) {
@@ -151,7 +163,10 @@ function formatExpandedIfLines(conditionLines: readonly string[], inlineStatemen
 }
 
 function splitConditionOnLogicalOperators(condition: string): string[] {
-  const scanResult = scanSqlLineOutsideLiteralsAndComments(condition, cloneSqlLineScanState({ inBlockComment: false }));
+  const scanResult = scanSqlLineOutsideLiteralsAndComments(
+    condition,
+    cloneSqlLineScanState({ inBlockComment: false }),
+  );
   const outside = new Array<boolean>(condition.length).fill(false);
 
   for (const segment of scanResult.outsideSegments) {
@@ -233,7 +248,7 @@ function findKeyword(
   line: string,
   outsideSegments: readonly SqlOutsideSegment[],
   keyword: string,
-  startIndex: number
+  startIndex: number,
 ): KeywordMatch | undefined {
   for (const segment of outsideSegments) {
     let index = Math.max(segment.start, startIndex);
@@ -265,7 +280,7 @@ function findKeyword(
 function findEndIf(
   line: string,
   outsideSegments: readonly SqlOutsideSegment[],
-  startIndex: number
+  startIndex: number,
 ): KeywordMatch | undefined {
   for (const segment of outsideSegments) {
     let index = Math.max(segment.start, startIndex);
@@ -295,7 +310,11 @@ function findEndIf(
 
         if (secondWord && secondWord.end <= segment.end && secondWord.text.toLowerCase() === 'if') {
           const trailingSemicolonEnd = consumeOptionalSemicolon(line, secondWord.end, segment.end);
-          return { start: firstWord.start, end: trailingSemicolonEnd, text: line.slice(firstWord.start, trailingSemicolonEnd) };
+          return {
+            start: firstWord.start,
+            end: trailingSemicolonEnd,
+            text: line.slice(firstWord.start, trailingSemicolonEnd),
+          };
         }
       }
 

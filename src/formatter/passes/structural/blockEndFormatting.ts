@@ -2,7 +2,7 @@ import type { SqlDialect } from '../../../dialects';
 import {
   scanSqlLineOutsideLiteralsAndComments,
   type SqlLineScanState,
-  type SqlOutsideSegment
+  type SqlOutsideSegment,
 } from '../../sqlLineScanner';
 
 export interface BlockEndFormattingState {
@@ -33,7 +33,7 @@ const BLOCK_END_FOLLOWERS = new Set(['if', 'for', 'loop', 'while', 'try', 'catch
 
 export function createInitialBlockEndFormattingState(): BlockEndFormattingState {
   return {
-    scanState: { inBlockComment: false }
+    scanState: { inBlockComment: false },
   };
 }
 
@@ -52,7 +52,7 @@ export function createInitialBlockEndFormattingState(): BlockEndFormattingState 
 export function expandWatcomBlockEndLine(
   line: string,
   dialect: SqlDialect,
-  initialState: BlockEndFormattingState
+  initialState: BlockEndFormattingState,
 ): ExpandedLineResult {
   const scanResult = scanSqlLineOutsideLiteralsAndComments(line, initialState.scanState);
   const nextState = { scanState: scanResult.nextState };
@@ -66,7 +66,10 @@ export function expandWatcomBlockEndLine(
   return { lines: expanded ?? [line], nextState };
 }
 
-function trySplitStackedBlockEnds(line: string, outsideSegments: readonly SqlOutsideSegment[]): string[] | undefined {
+function trySplitStackedBlockEnds(
+  line: string,
+  outsideSegments: readonly SqlOutsideSegment[],
+): string[] | undefined {
   const trimmed = line.trim();
 
   if (!/^end\b/i.test(trimmed) && !/^endif\b/i.test(trimmed)) {
@@ -82,7 +85,10 @@ function trySplitStackedBlockEnds(line: string, outsideSegments: readonly SqlOut
   return endPhrases.map((phrase) => phrase.text + (phrase.hasSemicolon ? ';' : ''));
 }
 
-function collectBlockEndPhrases(line: string, outsideSegments: readonly SqlOutsideSegment[]): EndPhraseToken[] {
+function collectBlockEndPhrases(
+  line: string,
+  outsideSegments: readonly SqlOutsideSegment[],
+): EndPhraseToken[] {
   const words = collectWords(line, outsideSegments);
   const phrases: EndPhraseToken[] = [];
   let index = 0;
@@ -96,7 +102,7 @@ function collectBlockEndPhrases(line: string, outsideSegments: readonly SqlOutsi
         start: current.start,
         end: semicolonEnd.end,
         text: line.slice(current.start, current.end),
-        hasSemicolon: semicolonEnd.hasSemicolon
+        hasSemicolon: semicolonEnd.hasSemicolon,
       });
       index += 1;
       continue;
@@ -111,7 +117,7 @@ function collectBlockEndPhrases(line: string, outsideSegments: readonly SqlOutsi
           start: current.start,
           end: semicolonEnd.end,
           text: line.slice(current.start, next.end).replace(/\s+/gu, ' '),
-          hasSemicolon: semicolonEnd.hasSemicolon
+          hasSemicolon: semicolonEnd.hasSemicolon,
         });
         index += 2;
         continue;
@@ -149,7 +155,10 @@ function lineContainsOnlyBlockEnds(line: string, phrases: readonly EndPhraseToke
   return phraseIndex === sortedPhrases.length;
 }
 
-function consumeOptionalSemicolon(line: string, start: number): { readonly end: number; readonly hasSemicolon: boolean } {
+function consumeOptionalSemicolon(
+  line: string,
+  start: number,
+): { readonly end: number; readonly hasSemicolon: boolean } {
   let index = start;
 
   while (index < line.length && /\s/u.test(line[index])) {
@@ -185,7 +194,7 @@ function collectWords(line: string, outsideSegments: readonly SqlOutsideSegment[
       words.push({
         start,
         end: index,
-        normalized: line.slice(start, index).toLowerCase()
+        normalized: line.slice(start, index).toLowerCase(),
       });
     }
   }

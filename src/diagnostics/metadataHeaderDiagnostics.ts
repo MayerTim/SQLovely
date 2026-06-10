@@ -15,14 +15,14 @@ export interface MissingMetadataHeaderIssue {
 
 export function findMissingMetadataHeaderIssue(
   text: string,
-  dialect: SqlDialect
+  dialect: SqlDialect,
 ): MissingMetadataHeaderIssue | undefined {
   return findMissingMetadataHeaderIssues(text, dialect)[0];
 }
 
 export function findMissingMetadataHeaderIssues(
   text: string,
-  dialect: SqlDialect
+  dialect: SqlDialect,
 ): readonly MissingMetadataHeaderIssue[] {
   const objects = detectSqlObjects(text, dialect);
   const issues: MissingMetadataHeaderIssue[] = [];
@@ -39,7 +39,7 @@ export function findMissingMetadataHeaderIssues(
       message: `SQLovely metadata header is missing for ${object.type} ${object.name}.`,
       object,
       startIndex: object.index,
-      endIndex: findDeclarationLineEnd(text, object.index)
+      endIndex: findDeclarationLineEnd(text, object.index),
     });
   }
 

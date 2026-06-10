@@ -22,10 +22,24 @@ npm ci
 
 ## Validate
 
-Run TypeScript checks:
+Run the full static validation workflow:
 
 ```bash
 npm run check
+```
+
+This runs the TypeScript typecheck, ESLint and the Prettier formatting check. The checks can also be run individually:
+
+```bash
+npm run typecheck
+npm run lint
+npm run format:check
+```
+
+Format source files with Prettier:
+
+```bash
+npm run format
 ```
 
 Run the test suite:
@@ -120,8 +134,6 @@ When changing metadata-header behavior, add or update regression tests for:
 - `Updated By` migration and preservation, including legacy `durch` aliases
 - date normalization, including two-digit legacy years
 - multiline description wrapping and manual line-break preservation
-
-
 
 ## Metadata-header internals
 

@@ -3,12 +3,9 @@ const { assert, runTest } = require('./helpers/runTest');
 const {
   findMissingMetadataHeaderIssue,
   findMissingMetadataHeaderIssues,
-  MISSING_METADATA_HEADER_DIAGNOSTIC_CODE
+  MISSING_METADATA_HEADER_DIAGNOSTIC_CODE,
 } = require('../dist/diagnostics/metadataHeaderDiagnostics');
-const {
-  insertOrUpdateMetadataHeader,
-  METADATA_HEADER_START
-} = require('../dist/extras');
+const { insertOrUpdateMetadataHeader, METADATA_HEADER_START } = require('../dist/extras');
 const { watcomDialect } = require('../dist/dialects/watcom/dialect');
 const { mssqlDialect } = require('../dist/dialects/mssql/dialect');
 
@@ -31,13 +28,12 @@ runTest('does not report a diagnostic when a SQLovely metadata header already ex
   const input = 'CREATE FUNCTION dbo.has_header() RETURNS integer\nBEGIN\nRETURN 1;\nEND;\n';
   const withHeader = insertOrUpdateMetadataHeader(input, watcomDialect, {
     now: fixedDate,
-    author: 'Test Author'
+    author: 'Test Author',
   }).text;
 
   assert.ok(withHeader.includes(METADATA_HEADER_START));
   assert.equal(findMissingMetadataHeaderIssue(withHeader, watcomDialect), undefined);
 });
-
 
 runTest('does not report missing metadata when a loose legacy header can be normalized', () => {
   const input = [
@@ -49,7 +45,7 @@ runTest('does not report missing metadata when a loose legacy header can be norm
     '-- ================================',
     'BEGIN',
     'SELECT 1;',
-    'END;'
+    'END;',
   ].join('\n');
 
   assert.equal(findMissingMetadataHeaderIssue(input, watcomDialect), undefined);
@@ -60,15 +56,18 @@ runTest('does not report a diagnostic for files without supported SQL objects', 
   assert.equal(findMissingMetadataHeaderIssue(input, watcomDialect), undefined);
 });
 
-runTest('ignores commented-out and string-literal declarations for missing-header diagnostics', () => {
-  const input = [
-    '-- CREATE PROCEDURE fake_proc()',
-    "SELECT 'CREATE FUNCTION fake_func()';",
-    '/* CREATE TRIGGER fake_trigger */'
-  ].join('\n');
+runTest(
+  'ignores commented-out and string-literal declarations for missing-header diagnostics',
+  () => {
+    const input = [
+      '-- CREATE PROCEDURE fake_proc()',
+      "SELECT 'CREATE FUNCTION fake_func()';",
+      '/* CREATE TRIGGER fake_trigger */',
+    ].join('\n');
 
-  assert.equal(findMissingMetadataHeaderIssue(input, watcomDialect), undefined);
-});
+    assert.equal(findMissingMetadataHeaderIssue(input, watcomDialect), undefined);
+  },
+);
 
 runTest('reports missing metadata headers for MSSQL CREATE OR ALTER procedures', () => {
   const input = 'CREATE OR ALTER PROC [dbo].[needs_header]\nAS\nBEGIN\nSELECT 1;\nEND;\n';
@@ -80,7 +79,6 @@ runTest('reports missing metadata headers for MSSQL CREATE OR ALTER procedures',
   assert.ok(issue.message.includes('procedure dbo.needs_header'));
 });
 
-
 runTest('reports missing metadata headers for every supported object in a script', () => {
   const input = [
     'CREATE PROCEDURE dbo.first_missing()',
@@ -90,7 +88,7 @@ runTest('reports missing metadata headers for every supported object in a script
     'CREATE FUNCTION dbo.second_missing() RETURNS integer',
     'BEGIN',
     'RETURN 1;',
-    'END;'
+    'END;',
   ].join('\n');
   const issues = findMissingMetadataHeaderIssues(input, watcomDialect);
 
@@ -119,7 +117,7 @@ runTest('does not use one existing metadata header for every object in a script'
     '',
     'CREATE PROCEDURE dbo.needs_header()',
     'BEGIN',
-    'END;'
+    'END;',
   ].join('\n');
   const issues = findMissingMetadataHeaderIssues(input, watcomDialect);
 
@@ -145,7 +143,7 @@ runTest('keeps metadata diagnostics enabled for normal-sized documents', () => {
     enabled: true,
     maxComplexDocumentLength: 1000,
     maxComplexDocumentLines: 100,
-    maxComplexLineLength: 1000
+    maxComplexLineLength: 1000,
   });
 
   assert.equal(decision.skipExpensiveMetadataDiagnostics, false);
@@ -158,7 +156,7 @@ runTest('skips expensive metadata diagnostics for large documents', () => {
     enabled: true,
     maxComplexDocumentLength: 1000,
     maxComplexDocumentLines: 2,
-    maxComplexLineLength: 1000
+    maxComplexLineLength: 1000,
   });
 
   assert.equal(decision.skipExpensiveMetadataDiagnostics, true);
@@ -172,7 +170,7 @@ runTest('does not skip diagnostics when safety guards are disabled', () => {
     enabled: false,
     maxComplexDocumentLength: 1,
     maxComplexDocumentLines: 1,
-    maxComplexLineLength: 1
+    maxComplexLineLength: 1,
   });
 
   assert.equal(decision.skipExpensiveMetadataDiagnostics, false);

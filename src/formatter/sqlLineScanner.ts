@@ -22,7 +22,7 @@ export function cloneSqlLineScanState(state: SqlLineScanState): SqlLineScanState
 
 export function scanSqlLineOutsideLiteralsAndComments(
   line: string,
-  initialState: SqlLineScanState
+  initialState: SqlLineScanState,
 ): SqlLineScanResult {
   const outsideSegments: SqlOutsideSegment[] = [];
   const state = cloneSqlLineScanState(initialState);

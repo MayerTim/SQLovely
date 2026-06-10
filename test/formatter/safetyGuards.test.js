@@ -7,14 +7,14 @@ const {
   watcomDialect,
   mssqlDialect,
   defaultOptions,
-  readFixture
+  readFixture,
 } = require('./helpers');
 
 runTest('formatter skips expensive Watcom passes for large documents', () => {
   const input = [
     'begin',
     ...Array.from({ length: 101 }, () => 'select 1 union all select 2;'),
-    'end;'
+    'end;',
   ].join('\n');
 
   const result = formatSql(input, watcomDialect, {
@@ -23,8 +23,8 @@ runTest('formatter skips expensive Watcom passes for large documents', () => {
       enabled: true,
       maxComplexDocumentLength: 1000000,
       maxComplexDocumentLines: 100,
-      maxComplexLineLength: 5000
-    }
+      maxComplexLineLength: 5000,
+    },
   });
 
   assert.ok(result.text.includes('SELECT 1 UNION ALL SELECT 2;'));
@@ -42,8 +42,8 @@ runTest('formatter keeps very long lines out of expensive line-level passes', ()
       enabled: true,
       maxComplexDocumentLength: 1000000,
       maxComplexDocumentLines: 5000,
-      maxComplexLineLength: 250
-    }
+      maxComplexLineLength: 250,
+    },
   });
 
   assert.equal(result.text, `SELECT my_func(${longValue}), other;\n`);
@@ -54,7 +54,7 @@ runTest('formatter returns the original text when cancellation is requested', ()
   const input = 'begin\nselect 1 union all select 2;\nend;';
   const result = formatSql(input, watcomDialect, {
     ...defaultOptions,
-    isCancellationRequested: () => true
+    isCancellationRequested: () => true,
   });
 
   assert.equal(result.text, input);

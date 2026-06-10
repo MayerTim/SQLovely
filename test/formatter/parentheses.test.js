@@ -7,7 +7,7 @@ const {
   watcomDialect,
   mssqlDialect,
   defaultOptions,
-  readFixture
+  readFixture,
 } = require('./helpers');
 
 runTest('splits Watcom parenthesized parameter lists across indented lines', () => {
@@ -16,7 +16,7 @@ runTest('splits Watcom parenthesized parameter lists across indented lines', () 
     'IN "iText" long varchar,IN "iIndexPosition" integer )',
     'RETURNS integer',
     'BEGIN',
-    'END;'
+    'END;',
   ].join('\n');
 
   const expected = [
@@ -27,7 +27,7 @@ runTest('splits Watcom parenthesized parameter lists across indented lines', () 
     'RETURNS integer',
     'BEGIN',
     'END;',
-    ''
+    '',
   ].join('\n');
 
   const result = formatSql(input, watcomDialect, defaultOptions);
@@ -35,28 +35,31 @@ runTest('splits Watcom parenthesized parameter lists across indented lines', () 
   assert.equal(result.text, expected);
 });
 
-runTest('splits nested Watcom function-call parentheses without touching string literals or type lengths', () => {
-  const input = [
-    'select my_func(isnull(test), test);',
-    "select '(' || my_func(value) || ')' as value;",
-    'returns varchar(14)'
-  ].join('\n');
+runTest(
+  'splits nested Watcom function-call parentheses without touching string literals or type lengths',
+  () => {
+    const input = [
+      'select my_func(isnull(test), test);',
+      "select '(' || my_func(value) || ')' as value;",
+      'returns varchar(14)',
+    ].join('\n');
 
-  const expected = [
-    'SELECT my_func(',
-    '  ISNULL(',
-    '    test',
-    '  ),',
-    '  test',
-    ');',
-    "SELECT '(' || my_func(",
-    '  VALUE',
-    ") || ')' AS VALUE;",
-    'RETURNS varchar(14)',
-    ''
-  ].join('\n');
+    const expected = [
+      'SELECT my_func(',
+      '  ISNULL(',
+      '    test',
+      '  ),',
+      '  test',
+      ');',
+      "SELECT '(' || my_func(",
+      '  VALUE',
+      ") || ')' AS VALUE;",
+      'RETURNS varchar(14)',
+      '',
+    ].join('\n');
 
-  const result = formatSql(input, watcomDialect, defaultOptions);
+    const result = formatSql(input, watcomDialect, defaultOptions);
 
-  assert.equal(result.text, expected);
-});
+    assert.equal(result.text, expected);
+  },
+);

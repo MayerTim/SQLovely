@@ -4,7 +4,7 @@ import {
   analyzeFormattingSafety,
   createFormattingSafetySummary,
   resolveFormattingSafetyLimits,
-  type FormattingSafetyDecision
+  type FormattingSafetyDecision,
 } from './performanceGuards';
 
 export interface FormattingContext {
@@ -31,7 +31,7 @@ export function createFormattingContext(input: CreateFormattingContextOptions): 
     options,
     safety,
     safetySummary: createFormattingSafetySummary(safety),
-    indentString: createIndentString(options.indentSize, options.insertSpaces)
+    indentString: createIndentString(options.indentSize, options.insertSpaces),
   };
 }
 
@@ -39,7 +39,7 @@ export function resolveFormatSqlOptions(options: Partial<FormatSqlOptions> = {})
   return {
     ...DEFAULT_FORMAT_SQL_OPTIONS,
     ...options,
-    safetyLimits: resolveFormattingSafetyLimits(options.safetyLimits)
+    safetyLimits: resolveFormattingSafetyLimits(options.safetyLimits),
   };
 }
 

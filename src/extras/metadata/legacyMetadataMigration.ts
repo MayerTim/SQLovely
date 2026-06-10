@@ -8,14 +8,21 @@ import {
   legacyUpdatedByPatterns,
   legacyUpdatedDatePatterns,
   legacyVersionPatterns,
-  trimTrailingInlineLabel
+  trimTrailingInlineLabel,
 } from './legacyMetadataAliases';
-import { MISSING_DESCRIPTION_PLACEHOLDER, type ParsedLooseMetadataHeader } from './legacyMetadataModel';
-import { isLegacySeparatorContent, normalizeLegacyContent, readLegacyCommentContent } from './legacyMetadataParser';
+import {
+  MISSING_DESCRIPTION_PLACEHOLDER,
+  type ParsedLooseMetadataHeader,
+} from './legacyMetadataModel';
+import {
+  isLegacySeparatorContent,
+  normalizeLegacyContent,
+  readLegacyCommentContent,
+} from './legacyMetadataParser';
 
 export function parseLooseLegacyMetadataHeader(
   headerText: string,
-  object: DetectedSqlObject
+  object: DetectedSqlObject,
 ): ParsedLooseMetadataHeader | undefined {
   const commentContents = headerText
     .split(/\r\n|\r|\n/u)
@@ -58,7 +65,7 @@ export function parseLooseLegacyMetadataHeader(
 
   return {
     fields,
-    historyEntries: parseLooseLegacyHistoryEntries(commentContents)
+    historyEntries: parseLooseLegacyHistoryEntries(commentContents),
   };
 }
 
@@ -68,7 +75,7 @@ function findLegacyVersion(commentContents: readonly string[]): string | undefin
 
 function findFirstLegacyFieldValue(
   commentContents: readonly string[],
-  patterns: readonly RegExp[]
+  patterns: readonly RegExp[],
 ): string | undefined {
   for (const content of commentContents) {
     const normalizedContent = normalizeLegacyContent(content);
@@ -92,10 +99,10 @@ function findFirstLegacyFieldValue(
 
 function findLegacyDescription(
   commentContents: readonly string[],
-  object: DetectedSqlObject
+  object: DetectedSqlObject,
 ): string | undefined {
   const labelledDescription = findFirstLegacyFieldValue(commentContents, [
-    /^\s*(?:description|beschreibung)[ \t]*[:=][ \t]*(.+)$/iu
+    /^\s*(?:description|beschreibung)[ \t]*[:=][ \t]*(.+)$/iu,
   ]);
 
   if (labelledDescription) {
@@ -111,7 +118,10 @@ function findLegacyDescription(
       continue;
     }
 
-    if (isLegacyDescriptionLabelOnly(normalizedContent) || isLegacyObjectTitleLine(normalizedContent, object)) {
+    if (
+      isLegacyDescriptionLabelOnly(normalizedContent) ||
+      isLegacyObjectTitleLine(normalizedContent, object)
+    ) {
       continue;
     }
 
@@ -179,14 +189,16 @@ function isLegacyObjectTitleLine(value: string, object: DetectedSqlObject): bool
   const comparableValue = normalizeComparableIdentifier(value);
   const objectNameParts = object.name.split('.');
   const objectName = normalizeComparableIdentifier(object.name);
-  const objectShortName = normalizeComparableIdentifier(objectNameParts[objectNameParts.length - 1] ?? object.name);
+  const objectShortName = normalizeComparableIdentifier(
+    objectNameParts[objectNameParts.length - 1] ?? object.name,
+  );
 
   return comparableValue === objectName || comparableValue === objectShortName;
 }
 
 function normalizeComparableIdentifier(value: string): string {
   return value
-    .replace(/^["\[]|["\]]$/gu, '')
+    .replace(/^(?:"|\[)|(?:"|\])$/gu, '')
     .replace(/\s+/gu, '')
     .toLowerCase();
 }

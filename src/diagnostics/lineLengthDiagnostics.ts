@@ -10,7 +10,10 @@ export interface MaxLineLengthIssue {
   readonly limit: number;
 }
 
-export function findMaxLineLengthIssues(text: string, limit: number): readonly MaxLineLengthIssue[] {
+export function findMaxLineLengthIssues(
+  text: string,
+  limit: number,
+): readonly MaxLineLengthIssue[] {
   const normalizedLimit = normalizeLimit(limit);
   const issues: MaxLineLengthIssue[] = [];
   let lineStartIndex = 0;
@@ -36,7 +39,7 @@ export function findMaxLineLengthIssues(text: string, limit: number): readonly M
         startIndex: lineStartIndex,
         endIndex: rawLineEndIndex,
         length,
-        limit: normalizedLimit
+        limit: normalizedLimit,
       });
     }
 

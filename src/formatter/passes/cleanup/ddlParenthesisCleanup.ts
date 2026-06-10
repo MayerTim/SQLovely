@@ -1,4 +1,7 @@
-import { createInitialSqlLineScanState, scanSqlLineOutsideLiteralsAndComments } from '../../sqlLineScanner';
+import {
+  createInitialSqlLineScanState,
+  scanSqlLineOutsideLiteralsAndComments,
+} from '../../sqlLineScanner';
 
 interface ParenthesisFrame {
   readonly indent: string;
@@ -50,7 +53,7 @@ export function cleanupWatcomDdlParentheses(lines: readonly string[]): string[] 
           stack.push({
             indent: getLeadingWhitespace(line),
             openerText,
-            isDdlList: isWatcomDdlListOpener(openerText)
+            isDdlList: isWatcomDdlListOpener(openerText),
           });
         } else if (char === ')') {
           stack.pop();
@@ -67,8 +70,11 @@ export function cleanupWatcomDdlParentheses(lines: readonly string[]): string[] 
 function isWatcomDdlListOpener(openerText: string): boolean {
   const normalized = openerText.replace(/\s+/gu, ' ').trim();
 
-  return /^(?:declare\s+(?:local\s+)?temporary\s+table|create\s+(?:local\s+)?temporary\s+table|create\s+table|alter\s+table)\b.+\($/iu.test(normalized) ||
-    /^result\s*\($/iu.test(normalized);
+  return (
+    /^(?:declare\s+(?:local\s+)?temporary\s+table|create\s+(?:local\s+)?temporary\s+table|create\s+table|alter\s+table)\b.+\($/iu.test(
+      normalized,
+    ) || /^result\s*\($/iu.test(normalized)
+  );
 }
 
 function findPreviousNonBlankLineIndex(lines: readonly string[], startIndex: number): number {

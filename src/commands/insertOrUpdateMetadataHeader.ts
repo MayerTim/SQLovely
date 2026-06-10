@@ -9,7 +9,9 @@ import { getDefaultAuthorName } from '../utils/defaultAuthor';
 
 export function registerInsertOrUpdateMetadataHeaderCommand(): vscode.Disposable {
   return vscode.commands.registerCommand(COMMANDS.insertOrUpdateMetadataHeader, async () => {
-    const activeContext = requireActiveSqlEditorContext('SQLovely: Insert or Update Metadata Header');
+    const activeContext = requireActiveSqlEditorContext(
+      'SQLovely: Insert or Update Metadata Header',
+    );
 
     if (!activeContext) {
       return;
@@ -18,12 +20,16 @@ export function registerInsertOrUpdateMetadataHeaderCommand(): vscode.Disposable
     const extraConfiguration = getExtrasConfiguration(activeContext.resource);
 
     if (!extraConfiguration.enabled) {
-      await vscode.window.showInformationMessage('SQLovely extras are disabled by sqlovely.extras.enabled.');
+      await vscode.window.showInformationMessage(
+        'SQLovely extras are disabled by sqlovely.extras.enabled.',
+      );
       return;
     }
 
     if (!extraConfiguration.metadataHeader.enabled) {
-      await vscode.window.showInformationMessage('SQLovely metadata headers are disabled by sqlovely.extras.metadataHeader.enabled.');
+      await vscode.window.showInformationMessage(
+        'SQLovely metadata headers are disabled by sqlovely.extras.metadataHeader.enabled.',
+      );
       return;
     }
 
@@ -32,12 +38,12 @@ export function registerInsertOrUpdateMetadataHeaderCommand(): vscode.Disposable
     const originalText = activeContext.document.getText();
     const result = insertOrUpdateMetadataHeader(originalText, dialect, {
       author: getDefaultAuthorName(),
-      maxLineLength: diagnosticsConfiguration.maxLineLength.limit
+      maxLineLength: diagnosticsConfiguration.maxLineLength.limit,
     });
 
     if (result.action === 'skipped') {
       await vscode.window.showWarningMessage(
-        result.reason ?? 'SQLovely could not detect a supported SQL object declaration.'
+        result.reason ?? 'SQLovely could not detect a supported SQL object declaration.',
       );
       return;
     }
@@ -59,7 +65,7 @@ export function registerInsertOrUpdateMetadataHeaderCommand(): vscode.Disposable
       : 'SQL object';
 
     await vscode.window.showInformationMessage(
-      `SQLovely metadata header ${result.action} for ${objectDescription}.`
+      `SQLovely metadata header ${result.action} for ${objectDescription}.`,
     );
   });
 }

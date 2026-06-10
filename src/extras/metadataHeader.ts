@@ -5,16 +5,12 @@ import {
   METADATA_HEADER_END,
   METADATA_HEADER_START,
   type ExistingMetadataHeader,
-  type MetadataHeaderRemovalRange
+  type MetadataHeaderRemovalRange,
 } from './metadata/metadataHeaderModel';
 import { findExistingMetadataHeader } from './metadata/metadataHeaderParser';
 import { getMetadataHeaderInsertionTarget } from './metadata/metadataHeaderPlacement';
 import { buildMetadataHeader } from './metadata/metadataHeaderRenderer';
-import {
-  detectPreferredLineBreak,
-  findLineEnd,
-  replaceRange
-} from './metadata/metadataText';
+import { detectPreferredLineBreak, findLineEnd, replaceRange } from './metadata/metadataText';
 
 export { METADATA_HEADER_END, METADATA_HEADER_START };
 export { findExistingMetadataHeader } from './metadata/metadataHeaderParser';
@@ -37,7 +33,7 @@ export interface MetadataHeaderResult {
 export function insertOrUpdateMetadataHeader(
   text: string,
   dialect: SqlDialect,
-  options: MetadataHeaderOptions = {}
+  options: MetadataHeaderOptions = {},
 ): MetadataHeaderResult {
   let nextText = text;
   let action: MetadataHeaderAction = 'unchanged';
@@ -54,7 +50,13 @@ export function insertOrUpdateMetadataHeader(
     firstObject = object;
 
     const nextObject = findNextObjectAfter(nextText, dialect, object.index);
-    const result = applyMetadataHeaderForObject(nextText, dialect, object, nextObject?.index ?? nextText.length, options);
+    const result = applyMetadataHeaderForObject(
+      nextText,
+      dialect,
+      object,
+      nextObject?.index ?? nextText.length,
+      options,
+    );
 
     if (result.text !== nextText) {
       action = combineMetadataHeaderAction(action, result.action);
@@ -68,14 +70,14 @@ export function insertOrUpdateMetadataHeader(
     return {
       action: 'skipped',
       text,
-      reason: 'No supported SQL object declaration was found.'
+      reason: 'No supported SQL object declaration was found.',
     };
   }
 
   return {
     action: nextText === text ? 'unchanged' : action,
     text: nextText,
-    object: firstObject
+    object: firstObject,
   };
 }
 
@@ -90,23 +92,31 @@ function applyMetadataHeaderForObject(
   dialect: SqlDialect,
   object: DetectedSqlObject,
   nextObjectIndex: number,
-  options: MetadataHeaderOptions
+  options: MetadataHeaderOptions,
 ): SingleObjectMetadataHeaderResult {
   const existingHeader = findExistingMetadataHeader(text, object, nextObjectIndex);
   const lineBreak = detectPreferredLineBreak(text);
-  const removalRange = existingHeader ? getExistingHeaderRemovalRange(text, existingHeader) : undefined;
+  const removalRange = existingHeader
+    ? getExistingHeaderRemovalRange(text, existingHeader)
+    : undefined;
   const workingText = removalRange
     ? replaceRange(text, removalRange.startIndex, removalRange.endIndex, '')
     : text;
-  const objectIndexShift = removalRange && removalRange.startIndex < object.index
-    ? removalRange.endIndex - removalRange.startIndex
-    : 0;
+  const objectIndexShift =
+    removalRange && removalRange.startIndex < object.index
+      ? removalRange.endIndex - removalRange.startIndex
+      : 0;
   const adjustedObject = {
     ...object,
-    index: object.index - objectIndexShift
+    index: object.index - objectIndexShift,
   };
-  const adjustedNextObjectIndex = nextObjectIndex - calculateRemovedCharactersBeforeIndex(removalRange, nextObjectIndex);
-  const insertionTarget = getMetadataHeaderInsertionTarget(workingText, adjustedObject, adjustedNextObjectIndex);
+  const adjustedNextObjectIndex =
+    nextObjectIndex - calculateRemovedCharactersBeforeIndex(removalRange, nextObjectIndex);
+  const insertionTarget = getMetadataHeaderInsertionTarget(
+    workingText,
+    adjustedObject,
+    adjustedNextObjectIndex,
+  );
   const newHeader = buildMetadataHeader({
     object: adjustedObject,
     dialect,
@@ -116,22 +126,28 @@ function applyMetadataHeaderForObject(
     indentation: insertionTarget.indentation,
     existingFields: existingHeader?.fields,
     existingHistoryEntries: existingHeader?.historyEntries,
-    maxLineLength: normalizeMetadataHeaderMaxLineLength(options.maxLineLength)
+    maxLineLength: normalizeMetadataHeaderMaxLineLength(options.maxLineLength),
   });
-  const nextText = insertMetadataHeaderAt(workingText, insertionTarget.index, newHeader, lineBreak, insertionTarget.blankLineAfter);
+  const nextText = insertMetadataHeaderAt(
+    workingText,
+    insertionTarget.index,
+    newHeader,
+    lineBreak,
+    insertionTarget.blankLineAfter,
+  );
   const nextUpperBound = Math.min(existingHeader?.startIndex ?? object.index, object.index);
 
   return {
     action: existingHeader ? (nextText === text ? 'unchanged' : 'updated') : 'inserted',
     text: nextText,
-    nextUpperBound
+    nextUpperBound,
   };
 }
 
 function findLastUnprocessedObject(
   text: string,
   dialect: SqlDialect,
-  upperBound: number
+  upperBound: number,
 ): DetectedSqlObject | undefined {
   const objects = detectSqlObjects(text, dialect).filter((object) => object.index < upperBound);
   return objects[objects.length - 1];
@@ -140,14 +156,14 @@ function findLastUnprocessedObject(
 function findNextObjectAfter(
   text: string,
   dialect: SqlDialect,
-  objectIndex: number
+  objectIndex: number,
 ): DetectedSqlObject | undefined {
   return detectSqlObjects(text, dialect).find((object) => object.index > objectIndex);
 }
 
 function combineMetadataHeaderAction(
   currentAction: MetadataHeaderAction,
-  nextAction: MetadataHeaderAction
+  nextAction: MetadataHeaderAction,
 ): MetadataHeaderAction {
   if (currentAction === 'inserted' || nextAction === 'inserted') {
     return 'inserted';
@@ -162,7 +178,7 @@ function combineMetadataHeaderAction(
 
 function calculateRemovedCharactersBeforeIndex(
   removalRange: MetadataHeaderRemovalRange | undefined,
-  index: number
+  index: number,
 ): number {
   if (!removalRange || removalRange.startIndex >= index) {
     return 0;
@@ -176,21 +192,24 @@ function insertMetadataHeaderAt(
   index: number,
   header: string,
   lineBreak: string,
-  blankLineAfter: boolean
+  blankLineAfter: boolean,
 ): string {
-  const needsLeadingLineBreak = index > 0 && !text.slice(0, index).endsWith('\n') && !text.slice(0, index).endsWith('\r');
+  const needsLeadingLineBreak =
+    index > 0 && !text.slice(0, index).endsWith('\n') && !text.slice(0, index).endsWith('\r');
   const leadingLineBreak = needsLeadingLineBreak ? lineBreak : '';
-  const trailingSeparator = text.length === index
-    ? lineBreak
-    : blankLineAfter ? `${lineBreak}${lineBreak}` : lineBreak;
+  const trailingSeparator =
+    text.length === index ? lineBreak : blankLineAfter ? `${lineBreak}${lineBreak}` : lineBreak;
 
   return replaceRange(text, index, index, `${leadingLineBreak}${header}${trailingSeparator}`);
 }
 
-function getExistingHeaderRemovalRange(text: string, header: ExistingMetadataHeader): MetadataHeaderRemovalRange {
+function getExistingHeaderRemovalRange(
+  text: string,
+  header: ExistingMetadataHeader,
+): MetadataHeaderRemovalRange {
   return {
     startIndex: header.startIndex,
-    endIndex: expandRemovalEndIndex(text, header.endIndex)
+    endIndex: expandRemovalEndIndex(text, header.endIndex),
   };
 }
 

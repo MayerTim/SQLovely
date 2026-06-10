@@ -10,5 +10,5 @@ const createOrAlter = String.raw`(?:create\s+(?:or\s+replace\s+)?|alter\s+)`;
 export const watcomObjectPatterns: SqlObjectPatterns = {
   procedure: new RegExp(String.raw`\b${createOrAlter}procedure\s+(${multipartIdentifier})`, 'i'),
   function: new RegExp(String.raw`\b${createOrAlter}function\s+(${multipartIdentifier})`, 'i'),
-  trigger: new RegExp(String.raw`\b${createOrAlter}trigger\s+(${multipartIdentifier})`, 'i')
+  trigger: new RegExp(String.raw`\b${createOrAlter}trigger\s+(${multipartIdentifier})`, 'i'),
 };

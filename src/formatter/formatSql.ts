@@ -2,7 +2,11 @@ import type { SqlDialect } from '../dialects';
 import type { FormatSqlOptions } from './options';
 import type { FormattingSafetyDecision } from './performanceGuards';
 import { createFormattingPipeline } from './formattingPipeline';
-import { createFormattingContext, isFormattingCancellationRequested, type FormattingContext } from './formattingContext';
+import {
+  createFormattingContext,
+  isFormattingCancellationRequested,
+  type FormattingContext,
+} from './formattingContext';
 import { createInitialSqlLineScanState, cloneSqlLineScanState } from './sqlLineScanner';
 import { cleanupWatcomStatementContinuations } from './passes/cleanup/statementContinuationCleanup';
 import { cleanupWatcomDdlParentheses } from './passes/cleanup/ddlParenthesisCleanup';
@@ -24,7 +28,7 @@ interface SplitTextResult {
 export function formatSql(
   text: string,
   dialect: SqlDialect,
-  options: Partial<FormatSqlOptions> = {}
+  options: Partial<FormatSqlOptions> = {},
 ): FormatSqlResult {
   const split = splitSqlText(text);
   const context = createFormattingContext({ text, lines: split.lines, dialect, options });
@@ -38,7 +42,7 @@ export function formatSql(
   const indentationResult = formatLinesWithIndentation({
     sourceLines: split.lines,
     context,
-    pipeline: formattingPipeline
+    pipeline: formattingPipeline,
   });
 
   if (indentationResult.cancelled) {
@@ -46,15 +50,18 @@ export function formatSql(
   }
 
   const formattedLines = indentationResult.lines;
-  const separatorNormalizedLines = activeDialect.id === 'watcom'
-    ? restoreOrderByIfExpressionSeparators(formattedLines)
-    : formattedLines;
-  const statementCleanedLines = activeDialect.id === 'watcom'
-    ? cleanupWatcomStatementContinuations(separatorNormalizedLines, indentString)
-    : separatorNormalizedLines;
-  const ddlParenthesisCleanedLines = activeDialect.id === 'watcom'
-    ? cleanupWatcomDdlParentheses(statementCleanedLines)
-    : statementCleanedLines;
+  const separatorNormalizedLines =
+    activeDialect.id === 'watcom'
+      ? restoreOrderByIfExpressionSeparators(formattedLines)
+      : formattedLines;
+  const statementCleanedLines =
+    activeDialect.id === 'watcom'
+      ? cleanupWatcomStatementContinuations(separatorNormalizedLines, indentString)
+      : separatorNormalizedLines;
+  const ddlParenthesisCleanedLines =
+    activeDialect.id === 'watcom'
+      ? cleanupWatcomDdlParentheses(statementCleanedLines)
+      : statementCleanedLines;
   let nextText = ddlParenthesisCleanedLines.join(split.eol);
 
   if (resolvedOptions.ensureFinalNewline || split.hadFinalNewline) {
@@ -65,14 +72,14 @@ export function formatSql(
     text: nextText,
     changed: nextText !== text,
     safety,
-    safetySummary: context.safetySummary
+    safetySummary: context.safetySummary,
   };
 }
 
 export function formatSqlRangeText(
   text: string,
   dialect: SqlDialect,
-  options: Partial<FormatSqlOptions> = {}
+  options: Partial<FormatSqlOptions> = {},
 ): FormatSqlResult {
   return formatSql(text, dialect, { ...options, ensureFinalNewline: false });
 }
@@ -82,7 +89,7 @@ function createUnchangedFormatResult(text: string, context: FormattingContext): 
     text,
     changed: false,
     safety: context.safety,
-    safetySummary: context.safetySummary
+    safetySummary: context.safetySummary,
   };
 }
 
@@ -93,7 +100,10 @@ function restoreOrderByIfExpressionSeparators(lines: readonly string[]): string[
     const line = normalizedLines[index];
     const trimmed = line.trim();
 
-    if (!isIfExpressionLineMissingSeparator(trimmed) || !isInsideOrderByContinuation(normalizedLines, index)) {
+    if (
+      !isIfExpressionLineMissingSeparator(trimmed) ||
+      !isInsideOrderByContinuation(normalizedLines, index)
+    ) {
       continue;
     }
 
@@ -159,7 +169,9 @@ function isLikelyOrderByListContinuationLine(trimmedLine: string): boolean {
     return false;
   }
 
-  return !/^(?:select|into|from|where|group\s+by|having|order\s+by|union|limit|offset|fetch|for\s+update|end|else|elseif|when|then|do|begin|grant|create)\b/iu.test(trimmedLine);
+  return !/^(?:select|into|from|where|group\s+by|having|order\s+by|union|limit|offset|fetch|for\s+update|end|else|elseif|when|then|do|begin|grant|create)\b/iu.test(
+    trimmedLine,
+  );
 }
 
 function countLeadingWhitespace(line: string): number {

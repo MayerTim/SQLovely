@@ -5,7 +5,7 @@ import {
   type HistoryVersionNormalizationResult,
   type ParsedHistoryEntryVersion,
   type ParsedVersion,
-  type VersionAndHistorySynchronizationResult
+  type VersionAndHistorySynchronizationResult,
 } from './metadataHeaderModel';
 
 export function synchronizeVersionAndHistory(context: {
@@ -22,22 +22,25 @@ export function synchronizeVersionAndHistory(context: {
       version: requestedVersion,
       historyEntries: [
         ...normalizedHistory.historyEntries,
-        createHistoryEntry(requestedVersion, context.date, context.author)
-      ]
+        createHistoryEntry(requestedVersion, context.date, context.author),
+      ],
     };
   }
 
-  if (normalizedHistory.changed && versionsEqual(context.version, normalizedHistory.originalLastVersion ?? '')) {
+  if (
+    normalizedHistory.changed &&
+    versionsEqual(context.version, normalizedHistory.originalLastVersion ?? '')
+  ) {
     return {
       version: normalizedHistory.lastVersion,
-      historyEntries: normalizedHistory.historyEntries
+      historyEntries: normalizedHistory.historyEntries,
     };
   }
 
   if (versionsEqual(requestedVersion, normalizedHistory.lastVersion)) {
     return {
       version: normalizedHistory.lastVersion,
-      historyEntries: normalizedHistory.historyEntries
+      historyEntries: normalizedHistory.historyEntries,
     };
   }
 
@@ -48,18 +51,20 @@ export function synchronizeVersionAndHistory(context: {
       version: nextVersion,
       historyEntries: [
         ...normalizedHistory.historyEntries,
-        createHistoryEntry(nextVersion, context.date, context.author)
-      ]
+        createHistoryEntry(nextVersion, context.date, context.author),
+      ],
     };
   }
 
   return {
     version: normalizedHistory.lastVersion,
-    historyEntries: normalizedHistory.historyEntries
+    historyEntries: normalizedHistory.historyEntries,
   };
 }
 
-function normalizeHistoryVersions(historyEntries: readonly string[]): HistoryVersionNormalizationResult {
+function normalizeHistoryVersions(
+  historyEntries: readonly string[],
+): HistoryVersionNormalizationResult {
   const normalizedEntries: string[] = [];
   let previousVersion: string | undefined;
   let originalLastVersion: string | undefined;
@@ -80,9 +85,10 @@ function normalizeHistoryVersions(historyEntries: readonly string[]): HistoryVer
     const normalizedVersion = previousVersion
       ? coerceNextVersion(previousVersion, originalVersion)
       : originalVersion;
-    const normalizedEntry = normalizedVersion === originalVersion
-      ? dateNormalizedEntry
-      : replaceHistoryEntryVersion(dateNormalizedEntry, normalizedVersion);
+    const normalizedEntry =
+      normalizedVersion === originalVersion
+        ? dateNormalizedEntry
+        : replaceHistoryEntryVersion(dateNormalizedEntry, normalizedVersion);
 
     normalizedEntries.push(normalizedEntry);
     previousVersion = normalizedVersion;
@@ -93,7 +99,7 @@ function normalizeHistoryVersions(historyEntries: readonly string[]): HistoryVer
     historyEntries: normalizedEntries,
     lastVersion: previousVersion,
     originalLastVersion,
-    changed
+    changed,
   };
 }
 
@@ -136,7 +142,11 @@ function coerceNextVersion(previousVersion: string, requestedVersion: string): s
   const previousNumbers = normalizeVersionNumbers(previous, requested.numbers.length);
   const requestedNumbers = normalizeVersionNumbers(requested, requested.numbers.length);
   const targetNumbers = [...previousNumbers];
-  const preferredBumpIndex = determinePreferredBumpIndex(previousNumbers, requestedNumbers, requested.numbers.length);
+  const preferredBumpIndex = determinePreferredBumpIndex(
+    previousNumbers,
+    requestedNumbers,
+    requested.numbers.length,
+  );
 
   targetNumbers[preferredBumpIndex] = (previousNumbers[preferredBumpIndex] ?? 0) + 1;
 
@@ -150,7 +160,7 @@ function coerceNextVersion(previousVersion: string, requestedVersion: string): s
 function determinePreferredBumpIndex(
   previousNumbers: readonly number[],
   requestedNumbers: readonly number[],
-  requestedSegmentCount: number
+  requestedSegmentCount: number,
 ): number {
   if ((requestedNumbers[0] ?? 0) > (previousNumbers[0] ?? 0)) {
     return 0;
@@ -180,9 +190,7 @@ function isValidOneStepVersionBump(previous: ParsedVersion, requested: ParsedVer
     const prefixMatches = previousNumbers
       .slice(0, bumpIndex)
       .every((value, index) => value === requestedNumbers[index]);
-    const suffixResets = requestedNumbers
-      .slice(bumpIndex + 1)
-      .every((value) => value === 0);
+    const suffixResets = requestedNumbers.slice(bumpIndex + 1).every((value) => value === 0);
 
     if (prefixMatches && suffixResets) {
       return true;
@@ -200,14 +208,12 @@ function parseVersion(value: string): ParsedVersion | undefined {
     return undefined;
   }
 
-  const segments = rawVersion
-    .replace(/,/gu, '.')
-    .split('.');
+  const segments = rawVersion.replace(/,/gu, '.').split('.');
 
   return {
     text: segments.join('.'),
     segments,
-    numbers: segments.map((segment) => Number.parseInt(segment, 10))
+    numbers: segments.map((segment) => Number.parseInt(segment, 10)),
   };
 }
 
@@ -259,7 +265,10 @@ function normalizeVersionNumbers(version: ParsedVersion, segmentCount: number): 
   return numbers;
 }
 
-function formatVersionNumbers(numbers: readonly number[], requestedSegments: readonly string[]): string {
+function formatVersionNumbers(
+  numbers: readonly number[],
+  requestedSegments: readonly string[],
+): string {
   return numbers
     .slice(0, requestedSegments.length)
     .map((value, index) => formatVersionSegment(value, requestedSegments[index] ?? String(value)))

@@ -7,7 +7,7 @@ const {
   watcomDialect,
   mssqlDialect,
   defaultOptions,
-  readFixture
+  readFixture,
 } = require('./helpers');
 
 runTest('formats Watcom exception handlers with stable indentation', () => {
@@ -17,7 +17,7 @@ runTest('formats Watcom exception handlers with stable indentation', () => {
     'exception when others then begin',
     'set "v" = 0;',
     'end',
-    'end;'
+    'end;',
   ].join('\n');
 
   const expected = [
@@ -29,7 +29,7 @@ runTest('formats Watcom exception handlers with stable indentation', () => {
     '      SET "v" = 0;',
     '    END',
     'END;',
-    ''
+    '',
   ].join('\n');
 
   const result = formatSql(input, watcomDialect, defaultOptions);
@@ -43,7 +43,7 @@ runTest('keeps ON EXCEPTION RESUME and exception declarations as normal statemen
     'on exception resume',
     'declare "ex" exception for sqlstate value \'75000\';',
     "select 'exception when others then begin' as note -- exception when others then begin",
-    'end;'
+    'end;',
   ].join('\n');
 
   const expected = [
@@ -52,7 +52,7 @@ runTest('keeps ON EXCEPTION RESUME and exception declarations as normal statemen
     '  DECLARE "ex" EXCEPTION FOR SQLSTATE VALUE \'75000\';',
     "  SELECT 'exception when others then begin' AS note -- exception when others then begin",
     'END;',
-    ''
+    '',
   ].join('\n');
 
   const result = formatSql(input, watcomDialect, defaultOptions);

@@ -6,7 +6,7 @@ import { findLineEndIncludingBreak, findLineStart, readLineIndentation } from '.
 export function getMetadataHeaderInsertionTarget(
   text: string,
   object: DetectedSqlObject,
-  nextObjectIndex: number
+  nextObjectIndex: number,
 ): MetadataHeaderInsertionTarget {
   const maskedText = maskSqlCommentsAndStrings(text);
   const beginMatch = findBeginTokenAfterObject(maskedText, object.index, nextObjectIndex);
@@ -17,7 +17,7 @@ export function getMetadataHeaderInsertionTarget(
     return {
       index: beginLineStart,
       indentation: readLineIndentation(text, beginLineStart),
-      blankLineAfter: false
+      blankLineAfter: false,
     };
   }
 
@@ -26,14 +26,14 @@ export function getMetadataHeaderInsertionTarget(
   return {
     index: findLineEndIncludingBreak(text, object.index),
     indentation: `${readLineIndentation(text, declarationLineStart)}  `,
-    blankLineAfter: true
+    blankLineAfter: true,
   };
 }
 
 function findBeginTokenAfterObject(
   maskedText: string,
   objectIndex: number,
-  nextObjectIndex: number
+  nextObjectIndex: number,
 ): RegExpExecArray | undefined {
   const pattern = /\bbegin\b/giu;
   pattern.lastIndex = objectIndex;

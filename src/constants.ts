@@ -9,5 +9,5 @@ export const COMMANDS = {
   formatCurrentFile: 'sqlovely.formatCurrentFile',
   formatSqlFilesInDirectory: 'sqlovely.formatSqlFilesInDirectory',
   insertOrUpdateMetadataHeader: 'sqlovely.insertOrUpdateMetadataHeader',
-  applyExtras: 'sqlovely.applyExtras'
+  applyExtras: 'sqlovely.applyExtras',
 } as const;

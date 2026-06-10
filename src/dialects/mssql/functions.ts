@@ -130,5 +130,5 @@ export const mssqlBuiltinFunctions = new Set<string>([
   'xmlparse',
   'xmlquery',
   'xmlserialize',
-  'year'
+  'year',
 ]);

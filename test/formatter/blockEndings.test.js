@@ -7,7 +7,7 @@ const {
   watcomDialect,
   mssqlDialect,
   defaultOptions,
-  readFixture
+  readFixture,
 } = require('./helpers');
 
 runTest('splits stacked Watcom block endings before applying indentation', () => {
@@ -25,7 +25,7 @@ runTest('splits stacked Watcom block endings before applying indentation', () =>
     'end if end if end for;',
     'select 3;',
     'end;',
-    'grant execute on "FCT"."stacked" to "FCT";'
+    'grant execute on "FCT"."stacked" to "FCT";',
   ].join('\n');
 
   const expected = [
@@ -49,7 +49,7 @@ runTest('splits stacked Watcom block endings before applying indentation', () =>
     '  SELECT 3;',
     'END;',
     'GRANT EXECUTE ON "FCT"."stacked" TO "FCT";',
-    ''
+    '',
   ].join('\n');
 
   const result = formatSql(input, watcomDialect, defaultOptions);
@@ -64,7 +64,7 @@ runTest('counts multiple block openings and endings on the same physical line', 
     'if a = 1 then if b = 1 then select 2; end if end if; -- generated compact nesting',
     'select 3;',
     'end;',
-    'grant execute on "FCT"."same_line" to "FCT";'
+    'grant execute on "FCT"."same_line" to "FCT";',
   ].join('\n');
 
   const expected = [
@@ -74,7 +74,7 @@ runTest('counts multiple block openings and endings on the same physical line', 
     '  SELECT 3;',
     'END;',
     'GRANT EXECUTE ON "FCT"."same_line" TO "FCT";',
-    ''
+    '',
   ].join('\n');
 
   const result = formatSql(input, watcomDialect, defaultOptions);

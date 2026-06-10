@@ -8,7 +8,7 @@ export const DEFAULT_DIALECT_ID: SqlDialectId = 'watcom';
 
 export const DIALECTS: Record<SqlDialectId, SqlDialect> = {
   watcom: watcomDialect,
-  mssql: mssqlDialect
+  mssql: mssqlDialect,
 };
 
 export const DIALECT_ORDER: readonly SqlDialectId[] = ['watcom', 'mssql'];

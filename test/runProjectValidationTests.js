@@ -12,28 +12,6 @@ function exists(relativePath) {
   return fs.existsSync(path.join(root, relativePath));
 }
 
-function walk(relativePath = '.') {
-  const start = path.join(root, relativePath);
-  const entries = [];
-
-  for (const entry of fs.readdirSync(start, { withFileTypes: true })) {
-    if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === 'out') {
-      continue;
-    }
-
-    const entryRelativePath = path.join(relativePath, entry.name);
-    const normalized = entryRelativePath.replaceAll(path.sep, '/');
-
-    if (entry.isDirectory()) {
-      entries.push(...walk(entryRelativePath));
-    } else {
-      entries.push(normalized.replace(/^\.\//u, ''));
-    }
-  }
-
-  return entries;
-}
-
 runTest('project manifest and grammar configuration are internally consistent', () => {
   const manifest = readJson('package.json');
   const grammarContribution = manifest.contributes.grammars[0];
@@ -98,7 +76,7 @@ runTest('all contributed commands have activation events and compiled handlers',
     ['sqlovely.formatCurrentFile', 'dist/commands/formatCurrentFile.js'],
     ['sqlovely.formatSqlFilesInDirectory', 'dist/commands/formatSqlFilesInDirectory.js'],
     ['sqlovely.insertOrUpdateMetadataHeader', 'dist/commands/insertOrUpdateMetadataHeader.js'],
-    ['sqlovely.applyExtras', 'dist/commands/applyExtras.js']
+    ['sqlovely.applyExtras', 'dist/commands/applyExtras.js'],
   ]);
 
   for (const contribution of manifest.contributes.commands) {
@@ -136,7 +114,10 @@ runTest('VSIX packaging scripts are available and keep package output isolated',
 
   assert.ok(manifest.devDependencies['@vscode/vsce']);
   assert.equal(manifest.scripts.validate, 'npm run check && npm test');
-  assert.equal(manifest.scripts['package:vsix'], 'npm run validate && node ./scripts/packageVsix.js');
+  assert.equal(
+    manifest.scripts['package:vsix'],
+    'npm run validate && node ./scripts/packageVsix.js',
+  );
   assert.ok(exists('scripts/packageVsix.js'));
   assert.ok(vscodeIgnore.includes('scripts/**'));
   assert.ok(vscodeIgnore.includes('out/**'));
@@ -149,11 +130,7 @@ runTest('VSIX packaging scripts are available and keep package output isolated',
 });
 
 runTest('documentation and onboarding examples are present', () => {
-  const requiredDocs = [
-    'docs/DEVELOPMENT.md',
-    'docs/SQL_IMPLEMENTATION.md',
-    'PACKAGING.md'
-  ];
+  const requiredDocs = ['docs/DEVELOPMENT.md', 'docs/SQL_IMPLEMENTATION.md', 'PACKAGING.md'];
 
   for (const doc of requiredDocs) {
     assert.ok(exists(doc), `${doc} should exist`);
@@ -169,7 +146,7 @@ runTest('documentation and onboarding examples are present', () => {
     'docs/GETTING_STARTED.md',
     'docs/WORKSPACE_SETTINGS.md',
     'docs/SYNTAX_GRAMMAR.md',
-    'docs/SQL_COVERAGE.md'
+    'docs/SQL_COVERAGE.md',
   ];
 
   for (const doc of oldDocs) {
@@ -185,7 +162,7 @@ runTest('example settings and SQL smoke-test files are valid project assets', ()
   const exampleSettings = [
     'examples/settings/watcom-conservative.settings.json',
     'examples/settings/watcom-format-on-save.settings.json',
-    'examples/settings/mssql-sandbox.settings.json'
+    'examples/settings/mssql-sandbox.settings.json',
   ];
 
   for (const file of exampleSettings) {
@@ -196,7 +173,10 @@ runTest('example settings and SQL smoke-test files are valid project assets', ()
   assert.ok(exists('examples/sql/watcom-procedure.sql'));
   assert.ok(exists('examples/sql/mssql-procedure.sql'));
 
-  const watcomExample = fs.readFileSync(path.join(root, 'examples/sql/watcom-procedure.sql'), 'utf8');
+  const watcomExample = fs.readFileSync(
+    path.join(root, 'examples/sql/watcom-procedure.sql'),
+    'utf8',
+  );
   const mssqlExample = fs.readFileSync(path.join(root, 'examples/sql/mssql-procedure.sql'), 'utf8');
 
   assert.ok(/create\s+procedure/i.test(watcomExample));
@@ -225,7 +205,6 @@ runTest('project package hygiene rules exclude local-only files from distributab
   assert.ok(gitIgnore.includes('*.zip'));
 });
 
-
 runTest('SQLovely grammar exposes the expected repository sections', () => {
   const grammar = readJson('syntaxes/sqlovely.tmLanguage.json');
   const repositories = Object.keys(grammar.repository || {});
@@ -244,7 +223,6 @@ runTest('SQLovely grammar exposes the expected repository sections', () => {
   assert.ok(repositories.includes('operators'));
 });
 
-
 runTest('SQLovely grammar gives generated metadata headers semantic scopes', () => {
   const grammarText = fs.readFileSync(path.join(root, 'syntaxes/sqlovely.tmLanguage.json'), 'utf8');
 
@@ -260,14 +238,16 @@ runTest('SQLovely grammar gives generated metadata headers semantic scopes', () 
     'meta.field.description.continuation.metadata.sqlovely.sql',
     'meta.field.updated-by.metadata.sqlovely.sql',
     'entity.name.other.updater.metadata.sqlovely.sql',
-    'meta.history-entry.metadata.sqlovely.sql'
+    'meta.history-entry.metadata.sqlovely.sql',
   ]) {
     assert.ok(grammarText.includes(fragment), `metadata grammar should include ${fragment}`);
   }
 });
 
 runTest('SQLovely grammar includes audited SQL lexical categories', () => {
-  const grammarText = fs.readFileSync(path.join(root, 'syntaxes/sqlovely.tmLanguage.json'), 'utf8').toLowerCase();
+  const grammarText = fs
+    .readFileSync(path.join(root, 'syntaxes/sqlovely.tmLanguage.json'), 'utf8')
+    .toLowerCase();
 
   for (const fragment of [
     'begin\\\\s+atomic',
@@ -283,30 +263,47 @@ runTest('SQLovely grammar includes audited SQL lexical categories', () => {
     'create\\\\s+or\\\\s+alter',
     'keyword.other.batch-separator',
     'variable.parameter.host',
-    'entity.name.identifier.bracketed'
+    'entity.name.identifier.bracketed',
   ]) {
     assert.ok(grammarText.includes(fragment), `grammar should include ${fragment}`);
   }
 });
 
-runTest('SQLovely grammar scopes quoted built-in function calls before generic quoted identifiers', () => {
-  const grammar = readJson('syntaxes/sqlovely.tmLanguage.json');
-  const topLevelIncludes = grammar.patterns.map((pattern) => pattern.include).filter(Boolean);
-  const quotedFunctionIndex = topLevelIncludes.indexOf('#quotedBuiltinFunctions');
-  const delimitedIdentifierIndex = topLevelIncludes.indexOf('#delimitedIdentifiers');
-  const pattern = grammar.repository.quotedBuiltinFunctions.patterns[0];
+runTest(
+  'SQLovely grammar scopes quoted built-in function calls before generic quoted identifiers',
+  () => {
+    const grammar = readJson('syntaxes/sqlovely.tmLanguage.json');
+    const topLevelIncludes = grammar.patterns.map((pattern) => pattern.include).filter(Boolean);
+    const quotedFunctionIndex = topLevelIncludes.indexOf('#quotedBuiltinFunctions');
+    const delimitedIdentifierIndex = topLevelIncludes.indexOf('#delimitedIdentifiers');
+    const pattern = grammar.repository.quotedBuiltinFunctions.patterns[0];
 
-  assert.ok(quotedFunctionIndex >= 0, 'quoted built-in function matcher should be included');
-  assert.ok(delimitedIdentifierIndex >= 0, 'generic quoted identifier matcher should be included');
-  assert.ok(
-    quotedFunctionIndex < delimitedIdentifierIndex,
-    'quoted built-in function matcher must run before generic quoted identifiers'
-  );
-  assert.equal(pattern.name, 'support.function.builtin.quoted.sql.sqlovely');
+    assert.ok(quotedFunctionIndex >= 0, 'quoted built-in function matcher should be included');
+    assert.ok(
+      delimitedIdentifierIndex >= 0,
+      'generic quoted identifier matcher should be included',
+    );
+    assert.ok(
+      quotedFunctionIndex < delimitedIdentifierIndex,
+      'quoted built-in function matcher must run before generic quoted identifiers',
+    );
+    assert.equal(pattern.name, 'support.function.builtin.quoted.sql.sqlovely');
 
-  for (const builtin of ['isnull', 'string', 'date', 'substr', 'xmlelement', 'xmlserialize', 'row_number']) {
-    assert.ok(pattern.match.toLowerCase().includes(builtin), `quoted function matcher should include ${builtin}`);
-  }
+    for (const builtin of [
+      'isnull',
+      'string',
+      'date',
+      'substr',
+      'xmlelement',
+      'xmlserialize',
+      'row_number',
+    ]) {
+      assert.ok(
+        pattern.match.toLowerCase().includes(builtin),
+        `quoted function matcher should include ${builtin}`,
+      );
+    }
 
-  assert.equal(pattern.captures['2'].name, 'support.function.builtin.sql.sqlovely');
-});
+    assert.equal(pattern.captures['2'].name, 'support.function.builtin.sql.sqlovely');
+  },
+);

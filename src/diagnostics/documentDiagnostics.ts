@@ -1,11 +1,16 @@
 import * as vscode from 'vscode';
 
-import { getActiveDialect, getExtrasConfiguration, getDiagnosticsConfiguration, getFormatConfiguration } from '../config';
+import {
+  getActiveDialect,
+  getExtrasConfiguration,
+  getDiagnosticsConfiguration,
+  getFormatConfiguration,
+} from '../config';
 import { SQL_LANGUAGE_ID } from '../constants';
 import {
   findMissingMetadataHeaderIssues,
   MISSING_METADATA_HEADER_DIAGNOSTIC_CODE,
-  SQL_OVELY_DIAGNOSTIC_SOURCE
+  SQL_OVELY_DIAGNOSTIC_SOURCE,
 } from './metadataHeaderDiagnostics';
 import { findMaxLineLengthIssues, MAX_LINE_LENGTH_DIAGNOSTIC_CODE } from './lineLengthDiagnostics';
 import { analyzeDiagnosticSafety } from './diagnosticSafety';
@@ -73,7 +78,7 @@ export function registerSqlovelyDiagnostics(context: vscode.ExtensionContext): v
       ) {
         updateAllOpenDocuments();
       }
-    })
+    }),
   );
 
   updateAllOpenDocuments();
@@ -95,7 +100,7 @@ export function registerSqlovelyDiagnostics(context: vscode.ExtensionContext): v
 
 export function updateSqlovelyDiagnosticsForDocument(
   document: vscode.TextDocument,
-  collection: vscode.DiagnosticCollection
+  collection: vscode.DiagnosticCollection,
 ): void {
   if (document.languageId !== SQL_LANGUAGE_ID) {
     collection.delete(document.uri);
@@ -115,7 +120,8 @@ export function updateSqlovelyDiagnosticsForDocument(
   const diagnosticSafety = analyzeDiagnosticSafety(text, formatConfiguration.safetyLimits);
   const diagnostics: vscode.Diagnostic[] = [];
 
-  const shouldCheckMissingMetadataHeader = diagnosticsConfiguration.missingMetadataHeader.enabled &&
+  const shouldCheckMissingMetadataHeader =
+    diagnosticsConfiguration.missingMetadataHeader.enabled &&
     extrasConfiguration.enabled &&
     extrasConfiguration.metadataHeader.enabled &&
     !diagnosticSafety.skipExpensiveMetadataDiagnostics;
@@ -124,9 +130,12 @@ export function updateSqlovelyDiagnosticsForDocument(
     const dialect = getActiveDialect(document.uri);
     for (const issue of findMissingMetadataHeaderIssues(text, dialect)) {
       const diagnostic = new vscode.Diagnostic(
-        new vscode.Range(document.positionAt(issue.startIndex), document.positionAt(issue.endIndex)),
+        new vscode.Range(
+          document.positionAt(issue.startIndex),
+          document.positionAt(issue.endIndex),
+        ),
         issue.message,
-        vscode.DiagnosticSeverity.Warning
+        vscode.DiagnosticSeverity.Warning,
       );
 
       diagnostic.source = SQL_OVELY_DIAGNOSTIC_SOURCE;
@@ -136,11 +145,17 @@ export function updateSqlovelyDiagnosticsForDocument(
   }
 
   if (diagnosticsConfiguration.maxLineLength.enabled) {
-    for (const issue of findMaxLineLengthIssues(text, diagnosticsConfiguration.maxLineLength.limit)) {
+    for (const issue of findMaxLineLengthIssues(
+      text,
+      diagnosticsConfiguration.maxLineLength.limit,
+    )) {
       const diagnostic = new vscode.Diagnostic(
-        new vscode.Range(document.positionAt(issue.startIndex), document.positionAt(issue.endIndex)),
+        new vscode.Range(
+          document.positionAt(issue.startIndex),
+          document.positionAt(issue.endIndex),
+        ),
         issue.message,
-        vscode.DiagnosticSeverity.Information
+        vscode.DiagnosticSeverity.Information,
       );
 
       diagnostic.source = SQL_OVELY_DIAGNOSTIC_SOURCE;

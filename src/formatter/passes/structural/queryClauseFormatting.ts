@@ -3,7 +3,7 @@ import {
   cloneSqlLineScanState,
   scanSqlLineOutsideLiteralsAndComments,
   type SqlLineScanState,
-  type SqlOutsideSegment
+  type SqlOutsideSegment,
 } from '../../sqlLineScanner';
 
 export interface QueryClauseFormattingState {
@@ -31,7 +31,7 @@ const LOGICAL_CLAUSE_STARTERS = new Set(['where', 'on', 'having', 'and', 'or']);
 export function createInitialQueryClauseFormattingState(): QueryClauseFormattingState {
   return {
     scanState: { inBlockComment: false },
-    parenthesisDepth: 0
+    parenthesisDepth: 0,
   };
 }
 
@@ -45,13 +45,13 @@ export function createInitialQueryClauseFormattingState(): QueryClauseFormatting
 export function expandWatcomQueryClauseLine(
   line: string,
   dialect: SqlDialect,
-  initialState: QueryClauseFormattingState
+  initialState: QueryClauseFormattingState,
 ): ExpandedLineResult {
   const scanResult = scanSqlLineOutsideLiteralsAndComments(line, initialState.scanState);
   const outside = createOutsideLookup(line.length, scanResult.outsideSegments);
   const nextState: QueryClauseFormattingState = {
     scanState: scanResult.nextState,
-    parenthesisDepth: updateParenthesisDepth(line, outside, initialState.parenthesisDepth)
+    parenthesisDepth: updateParenthesisDepth(line, outside, initialState.parenthesisDepth),
   };
 
   if (dialect.id !== 'watcom' || scanResult.nextState.inBlockComment) {
@@ -74,14 +74,16 @@ export function expandWatcomQueryClauseLine(
 
   return {
     lines: expandedLines.length > 0 ? expandedLines : [line],
-    nextState
+    nextState,
   };
 }
 
 function findClauseSplitPoints(line: string, words: readonly WordMatch[]): number[] {
   const firstContentIndex = line.search(/\S/u);
   const splitPoints: number[] = [];
-  const hasTopLevelQueryWord = words.some((word, index) => word.depth === 0 && isQueryWord(words, index));
+  const hasTopLevelQueryWord = words.some(
+    (word, index) => word.depth === 0 && isQueryWord(words, index),
+  );
 
   if (!hasTopLevelQueryWord) {
     return splitPoints;
@@ -129,13 +131,18 @@ function isQueryWord(words: readonly WordMatch[], index: number): boolean {
     return true;
   }
 
-  return isPhrase(words, index, 'group', 'by') ||
+  return (
+    isPhrase(words, index, 'group', 'by') ||
     isPhrase(words, index, 'order', 'by') ||
-    isJoinPhraseStart(words, index);
+    isJoinPhraseStart(words, index)
+  );
 }
 
 function splitLogicalContinuations(line: string): string[] {
-  const scanResult = scanSqlLineOutsideLiteralsAndComments(line, cloneSqlLineScanState({ inBlockComment: false }));
+  const scanResult = scanSqlLineOutsideLiteralsAndComments(
+    line,
+    cloneSqlLineScanState({ inBlockComment: false }),
+  );
   const words = collectWords(line, scanResult.outsideSegments, 0);
   const firstWord = words[0];
 
@@ -192,7 +199,7 @@ function splitLineAtIndexes(line: string, indexes: readonly number[]): string[] 
 function collectWords(
   line: string,
   outsideSegments: readonly SqlOutsideSegment[],
-  initialDepth: number
+  initialDepth: number,
 ): WordMatch[] {
   const words: WordMatch[] = [];
   let depth = initialDepth;
@@ -231,7 +238,7 @@ function collectWords(
         start,
         end: index,
         normalized: line.slice(start, index).toLowerCase(),
-        depth
+        depth,
       });
     }
   }
@@ -239,7 +246,11 @@ function collectWords(
   return words;
 }
 
-function updateParenthesisDepth(line: string, outside: readonly boolean[], initialDepth: number): number {
+function updateParenthesisDepth(
+  line: string,
+  outside: readonly boolean[],
+  initialDepth: number,
+): number {
   let depth = initialDepth;
 
   for (let index = 0; index < line.length; index += 1) {
@@ -257,7 +268,10 @@ function updateParenthesisDepth(line: string, outside: readonly boolean[], initi
   return depth;
 }
 
-function createOutsideLookup(length: number, outsideSegments: readonly SqlOutsideSegment[]): boolean[] {
+function createOutsideLookup(
+  length: number,
+  outsideSegments: readonly SqlOutsideSegment[],
+): boolean[] {
   const outside = new Array<boolean>(length).fill(false);
 
   for (const segment of outsideSegments) {
@@ -269,11 +283,18 @@ function createOutsideLookup(length: number, outsideSegments: readonly SqlOutsid
   return outside;
 }
 
-function isPhrase(words: readonly WordMatch[], index: number, first: string, second: string): boolean {
+function isPhrase(
+  words: readonly WordMatch[],
+  index: number,
+  first: string,
+  second: string,
+): boolean {
   const word = words[index];
   const nextWord = words[index + 1];
 
-  return word?.normalized === first && nextWord?.normalized === second && word.depth === nextWord.depth;
+  return (
+    word?.normalized === first && nextWord?.normalized === second && word.depth === nextWord.depth
+  );
 }
 
 function isJoinPhraseStart(words: readonly WordMatch[], index: number): boolean {
@@ -293,10 +314,12 @@ function isJoinPhraseStart(words: readonly WordMatch[], index: number): boolean 
     return true;
   }
 
-  return nextWord?.normalized === 'outer' &&
+  return (
+    nextWord?.normalized === 'outer' &&
     thirdWord?.normalized === 'join' &&
     word.depth === nextWord.depth &&
-    word.depth === thirdWord.depth;
+    word.depth === thirdWord.depth
+  );
 }
 
 function isJoinPhraseContinuation(words: readonly WordMatch[], index: number): boolean {
@@ -311,10 +334,12 @@ function isJoinPhraseContinuation(words: readonly WordMatch[], index: number): b
     return true;
   }
 
-  return previousWord.normalized === 'outer' &&
+  return (
+    previousWord.normalized === 'outer' &&
     secondPreviousWord !== undefined &&
     secondPreviousWord.depth === words[index].depth &&
-    JOIN_PREFIXES.has(secondPreviousWord.normalized);
+    JOIN_PREFIXES.has(secondPreviousWord.normalized)
+  );
 }
 
 function hasTopLevelJoinBefore(words: readonly WordMatch[], index: number): boolean {

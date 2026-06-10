@@ -1,12 +1,33 @@
 import { expandWatcomInlineIfLine } from './passes/structural/inlineIfFormatting';
 import { expandUnionAllLine } from './passes/structural/unionAllFormatting';
-import { createInitialCursorForFormattingState, expandWatcomCursorForLine } from './passes/structural/cursorForFormatting';
-import { createInitialQueryClauseFormattingState, expandWatcomQueryClauseLine } from './passes/structural/queryClauseFormatting';
-import { createInitialExceptionFormattingState, expandWatcomExceptionLine } from './passes/structural/exceptionFormatting';
-import { createInitialIfExpressionFormattingState, expandWatcomIfExpressionLine } from './passes/structural/ifExpressionFormatting';
-import { createInitialCaseExpressionFormattingState, expandWatcomCaseExpressionLine } from './passes/structural/caseExpressionFormatting';
-import { createInitialBlockEndFormattingState, expandWatcomBlockEndLine } from './passes/structural/blockEndFormatting';
-import { createInitialParenthesisFormattingState, expandParenthesesInLine } from './passes/structural/parenthesisFormatting';
+import {
+  createInitialCursorForFormattingState,
+  expandWatcomCursorForLine,
+} from './passes/structural/cursorForFormatting';
+import {
+  createInitialQueryClauseFormattingState,
+  expandWatcomQueryClauseLine,
+} from './passes/structural/queryClauseFormatting';
+import {
+  createInitialExceptionFormattingState,
+  expandWatcomExceptionLine,
+} from './passes/structural/exceptionFormatting';
+import {
+  createInitialIfExpressionFormattingState,
+  expandWatcomIfExpressionLine,
+} from './passes/structural/ifExpressionFormatting';
+import {
+  createInitialCaseExpressionFormattingState,
+  expandWatcomCaseExpressionLine,
+} from './passes/structural/caseExpressionFormatting';
+import {
+  createInitialBlockEndFormattingState,
+  expandWatcomBlockEndLine,
+} from './passes/structural/blockEndFormatting';
+import {
+  createInitialParenthesisFormattingState,
+  expandParenthesesInLine,
+} from './passes/structural/parenthesisFormatting';
 import { createInitialSqlLineScanState } from './sqlLineScanner';
 import { shouldRunExpensiveLineFormatting } from './performanceGuards';
 import type { FormattingContext } from './formattingContext';
@@ -30,19 +51,21 @@ export function createFormattingPipeline(context: FormattingContext): Formatting
 
   return {
     expandLine(sourceLine: string): readonly string[] {
-      const initialEntries: readonly FormattingPipelineLine[] = [{
-        line: sourceLine,
-        canRunExpensiveFormatting: true
-      }];
+      const initialEntries: readonly FormattingPipelineLine[] = [
+        {
+          line: sourceLine,
+          canRunExpensiveFormatting: true,
+        },
+      ];
 
-      return passes
-        .reduce(runFormattingPipelinePass, initialEntries)
-        .map((entry) => entry.line);
-    }
+      return passes.reduce(runFormattingPipelinePass, initialEntries).map((entry) => entry.line);
+    },
   };
 }
 
-function createFormattingPipelinePasses(context: FormattingContext): readonly FormattingPipelinePass[] {
+function createFormattingPipelinePasses(
+  context: FormattingContext,
+): readonly FormattingPipelinePass[] {
   let inlineIfScanState = createInitialSqlLineScanState();
   let unionAllScanState = createInitialSqlLineScanState();
   let cursorForScanState = createInitialCursorForFormattingState();
@@ -63,7 +86,7 @@ function createFormattingPipelinePasses(context: FormattingContext): readonly Fo
           : { lines: [entry.line], nextState: inlineIfScanState };
         inlineIfScanState = result.nextState;
         return toPipelineLines(result.lines, canRunPass);
-      }
+      },
     },
     {
       name: 'unionAll',
@@ -74,7 +97,7 @@ function createFormattingPipelinePasses(context: FormattingContext): readonly Fo
           : { lines: [entry.line], nextState: unionAllScanState };
         unionAllScanState = result.nextState;
         return toPipelineLines(result.lines, canRunPass);
-      }
+      },
     },
     {
       name: 'cursorFor',
@@ -85,7 +108,7 @@ function createFormattingPipelinePasses(context: FormattingContext): readonly Fo
           : { lines: [entry.line], nextState: cursorForScanState };
         cursorForScanState = result.nextState;
         return toPipelineLines(result.lines, canRunPass);
-      }
+      },
     },
     {
       name: 'queryClauses',
@@ -96,7 +119,7 @@ function createFormattingPipelinePasses(context: FormattingContext): readonly Fo
           : { lines: [entry.line], nextState: queryClauseFormattingState };
         queryClauseFormattingState = result.nextState;
         return toPipelineLines(result.lines, canRunPass);
-      }
+      },
     },
     {
       name: 'exceptions',
@@ -107,7 +130,7 @@ function createFormattingPipelinePasses(context: FormattingContext): readonly Fo
           : { lines: [entry.line], nextState: exceptionFormattingState };
         exceptionFormattingState = result.nextState;
         return toPipelineLines(result.lines, canRunPass);
-      }
+      },
     },
     {
       name: 'ifExpressions',
@@ -118,18 +141,22 @@ function createFormattingPipelinePasses(context: FormattingContext): readonly Fo
           : { lines: [entry.line], nextState: ifExpressionFormattingState };
         ifExpressionFormattingState = result.nextState;
         return toPipelineLines(result.lines, canRunPass);
-      }
+      },
     },
     {
       name: 'caseExpressions',
       run(entry: FormattingPipelineLine): readonly FormattingPipelineLine[] {
         const canRunPass = canRunExpensivePass(entry, context);
         const result = canRunPass
-          ? expandWatcomCaseExpressionLine(entry.line, context.dialect, caseExpressionFormattingState)
+          ? expandWatcomCaseExpressionLine(
+              entry.line,
+              context.dialect,
+              caseExpressionFormattingState,
+            )
           : { lines: [entry.line], nextState: caseExpressionFormattingState };
         caseExpressionFormattingState = result.nextState;
         return toPipelineLines(result.lines, canRunPass);
-      }
+      },
     },
     {
       name: 'blockEndings',
@@ -140,7 +167,7 @@ function createFormattingPipelinePasses(context: FormattingContext): readonly Fo
           : { lines: [entry.line], nextState: blockEndFormattingState };
         blockEndFormattingState = result.nextState;
         return toPipelineLines(result.lines, canRunPass);
-      }
+      },
     },
     {
       name: 'parentheses',
@@ -151,22 +178,27 @@ function createFormattingPipelinePasses(context: FormattingContext): readonly Fo
           : { lines: [entry.line], nextState: parenthesisExpansionState };
         parenthesisExpansionState = result.nextState;
         return toPipelineLines(result.lines, canRunPass);
-      }
-    }
+      },
+    },
   ];
 }
 
 function runFormattingPipelinePass(
   entries: readonly FormattingPipelineLine[],
-  pass: FormattingPipelinePass
+  pass: FormattingPipelinePass,
 ): readonly FormattingPipelineLine[] {
   return entries.flatMap((entry) => pass.run(entry));
 }
 
 function canRunExpensivePass(entry: FormattingPipelineLine, context: FormattingContext): boolean {
-  return entry.canRunExpensiveFormatting && shouldRunExpensiveLineFormatting(entry.line, context.safety);
+  return (
+    entry.canRunExpensiveFormatting && shouldRunExpensiveLineFormatting(entry.line, context.safety)
+  );
 }
 
-function toPipelineLines(lines: readonly string[], canRunExpensiveFormatting: boolean): readonly FormattingPipelineLine[] {
+function toPipelineLines(
+  lines: readonly string[],
+  canRunExpensiveFormatting: boolean,
+): readonly FormattingPipelineLine[] {
   return lines.map((line) => ({ line, canRunExpensiveFormatting }));
 }

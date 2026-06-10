@@ -7,7 +7,7 @@ const {
   watcomDialect,
   mssqlDialect,
   defaultOptions,
-  readFixture
+  readFixture,
 } = require('./helpers');
 
 runTest('keeps UNION ALL on its own physical line', () => {
@@ -16,7 +16,7 @@ runTest('keeps UNION ALL on its own physical line', () => {
     'select 1 union all select 2;',
     'select 3 UNION ALL',
     'select 4;',
-    'end;'
+    'end;',
   ].join('\n');
 
   const expected = [
@@ -28,7 +28,7 @@ runTest('keeps UNION ALL on its own physical line', () => {
     '  UNION ALL',
     '  SELECT 4;',
     'END;',
-    ''
+    '',
   ].join('\n');
 
   const result = formatSql(input, watcomDialect, defaultOptions);
@@ -40,7 +40,7 @@ runTest('does not split UNION ALL inside strings or comments', () => {
   const input = [
     "select 'union all' as value -- union all comment",
     '/* union all inside block comment */',
-    'select 1 union all select 2;'
+    'select 1 union all select 2;',
   ].join('\n');
 
   const expected = [
@@ -49,7 +49,7 @@ runTest('does not split UNION ALL inside strings or comments', () => {
     'SELECT 1',
     'UNION ALL',
     'SELECT 2;',
-    ''
+    '',
   ].join('\n');
 
   const result = formatSql(input, watcomDialect, defaultOptions);

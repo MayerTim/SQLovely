@@ -11,7 +11,7 @@ const formatterSuites = [
   './formatter/exceptions.test',
   './formatter/safetyGuards.test',
   './formatter/statementContinuations.test',
-  './formatter/ddlParentheses.test'
+  './formatter/ddlParentheses.test',
 ];
 
 for (const suite of formatterSuites) {

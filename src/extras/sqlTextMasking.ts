@@ -6,7 +6,7 @@ export function maskSqlCommentsAndStrings(text: string): string {
     const current = chars[index];
     const next = chars[index + 1];
 
-    if (current === "'" ) {
+    if (current === "'") {
       index = maskSingleQuotedString(chars, index);
       continue;
     }

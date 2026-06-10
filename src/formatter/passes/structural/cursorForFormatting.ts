@@ -3,7 +3,7 @@ import {
   cloneSqlLineScanState,
   scanSqlLineOutsideLiteralsAndComments,
   type SqlLineScanState,
-  type SqlOutsideSegment
+  type SqlOutsideSegment,
 } from '../../sqlLineScanner';
 
 export interface CursorForFormattingState {
@@ -29,7 +29,7 @@ const SQL_WORD_PART = /[A-Za-z0-9_$#]/u;
 export function createInitialCursorForFormattingState(): CursorForFormattingState {
   return {
     scanState: { inBlockComment: false },
-    inCursorQuery: false
+    inCursorQuery: false,
   };
 }
 
@@ -44,12 +44,12 @@ export function createInitialCursorForFormattingState(): CursorForFormattingStat
 export function expandWatcomCursorForLine(
   line: string,
   dialect: SqlDialect,
-  initialState: CursorForFormattingState
+  initialState: CursorForFormattingState,
 ): ExpandedLineResult {
   const scanResult = scanSqlLineOutsideLiteralsAndComments(line, initialState.scanState);
   const baseNextState: CursorForFormattingState = {
     scanState: scanResult.nextState,
-    inCursorQuery: initialState.inCursorQuery
+    inCursorQuery: initialState.inCursorQuery,
   };
 
   if (dialect.id !== 'watcom' || scanResult.nextState.inBlockComment) {
@@ -57,15 +57,18 @@ export function expandWatcomCursorForLine(
   }
 
   const words = collectWords(line, scanResult.outsideSegments);
-  const { splitPoints, inCursorQuery } = findCursorForSplitPoints(words, initialState.inCursorQuery);
+  const { splitPoints, inCursorQuery } = findCursorForSplitPoints(
+    words,
+    initialState.inCursorQuery,
+  );
 
   if (splitPoints.length === 0) {
     return {
       lines: [line],
       nextState: {
         scanState: scanResult.nextState,
-        inCursorQuery
-      }
+        inCursorQuery,
+      },
     };
   }
 
@@ -73,14 +76,14 @@ export function expandWatcomCursorForLine(
     lines: splitLineAtIndexes(line, splitPoints),
     nextState: {
       scanState: cloneSqlLineScanState(scanResult.nextState),
-      inCursorQuery
-    }
+      inCursorQuery,
+    },
   };
 }
 
 function findCursorForSplitPoints(
   words: readonly WordMatch[],
-  isAlreadyInCursorQuery: boolean
+  isAlreadyInCursorQuery: boolean,
 ): { readonly splitPoints: readonly number[]; readonly inCursorQuery: boolean } {
   const firstWord = words[0];
 
@@ -92,7 +95,7 @@ function findCursorForSplitPoints(
     const doWord = findNextTopLevelWord(words, 0, 'do');
     return {
       splitPoints: doWord && doWord.start > 0 ? [doWord.start] : [],
-      inCursorQuery: !doWord
+      inCursorQuery: !doWord,
     };
   }
 
@@ -105,12 +108,16 @@ function findCursorForSplitPoints(
   if (cursorForIndex < 0) {
     return {
       splitPoints: findPlainForDoSplitPoints(words),
-      inCursorQuery: false
+      inCursorQuery: false,
     };
   }
 
   const selectIndex = findNextTopLevelWordIndex(words, cursorForIndex + 2, 'select');
-  const doIndex = findNextTopLevelWordIndex(words, selectIndex >= 0 ? selectIndex + 1 : cursorForIndex + 2, 'do');
+  const doIndex = findNextTopLevelWordIndex(
+    words,
+    selectIndex >= 0 ? selectIndex + 1 : cursorForIndex + 2,
+    'do',
+  );
   const splitPoints: number[] = [];
 
   if (selectIndex >= 0) {
@@ -123,7 +130,7 @@ function findCursorForSplitPoints(
 
   return {
     splitPoints,
-    inCursorQuery: doIndex < 0
+    inCursorQuery: doIndex < 0,
   };
 }
 
@@ -154,7 +161,7 @@ function findCursorForPhraseIndex(words: readonly WordMatch[]): number {
 function findNextTopLevelWord(
   words: readonly WordMatch[],
   startIndex: number,
-  normalized: string
+  normalized: string,
 ): WordMatch | undefined {
   const index = findNextTopLevelWordIndex(words, startIndex, normalized);
   return index >= 0 ? words[index] : undefined;
@@ -163,7 +170,7 @@ function findNextTopLevelWord(
 function findNextTopLevelWordIndex(
   words: readonly WordMatch[],
   startIndex: number,
-  normalized: string
+  normalized: string,
 ): number {
   for (let index = startIndex; index < words.length; index += 1) {
     const word = words[index];
@@ -236,7 +243,7 @@ function collectWords(line: string, outsideSegments: readonly SqlOutsideSegment[
         start,
         end: index,
         normalized: line.slice(start, index).toLowerCase(),
-        depth
+        depth,
       });
     }
   }

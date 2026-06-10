@@ -7,7 +7,7 @@ const {
   watcomDialect,
   mssqlDialect,
   defaultOptions,
-  readFixture
+  readFixture,
 } = require('./helpers');
 
 runTest('formats MSSQL fixture input to expected output', () => {
@@ -26,7 +26,7 @@ runTest('formats known MSSQL procedure aliases with the active MSSQL dialect', (
     'BEGIN',
     '  SELECT GETDATE();',
     'END;',
-    ''
+    '',
   ].join('\n');
 
   const result = formatSql(input, mssqlDialect, defaultOptions);
@@ -46,7 +46,7 @@ runTest('formats rudimentary MSSQL TRY/CATCH, analytic functions and GO batch se
     'end catch',
     'go',
     'select row_number() over (partition by category order by id) as rn',
-    'from dbo.items;'
+    'from dbo.items;',
   ].join('\n');
 
   const expected = [
@@ -61,7 +61,7 @@ runTest('formats rudimentary MSSQL TRY/CATCH, analytic functions and GO batch se
     'GO',
     'SELECT ROW_NUMBER() OVER (PARTITION BY category ORDER BY id) AS rn',
     'FROM dbo.items;',
-    ''
+    '',
   ].join('\n');
 
   const result = formatSql(input, mssqlDialect, defaultOptions);

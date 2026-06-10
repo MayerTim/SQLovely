@@ -15,7 +15,7 @@ export function getSqlovelyOutputChannel(): vscode.OutputChannel {
 
 export function logActivation(
   channel: vscode.OutputChannel,
-  context: vscode.ExtensionContext
+  context: vscode.ExtensionContext,
 ): void {
   const extensionVersion = context.extension.packageJSON.version as string | undefined;
   const versionText = extensionVersion ? ` v${extensionVersion}` : '';
@@ -23,7 +23,10 @@ export function logActivation(
   channel.appendLine(`${EXTENSION_NAME}${versionText} activated.`);
 }
 
-export function logFormattingSafetySummary(summary: string | undefined, resourceLabel?: string): void {
+export function logFormattingSafetySummary(
+  summary: string | undefined,
+  resourceLabel?: string,
+): void {
   if (!summary) {
     return;
   }

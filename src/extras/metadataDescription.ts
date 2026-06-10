@@ -13,7 +13,7 @@ export interface MetadataDescriptionFormatOptions {
 
 export function formatMetadataDescriptionLines(
   description: string,
-  options: MetadataDescriptionFormatOptions
+  options: MetadataDescriptionFormatOptions,
 ): readonly string[] {
   const manualLines = normalizeDescription(description).split(/\r\n|\r|\n/u);
   const lines: string[] = [];
@@ -24,8 +24,8 @@ export function formatMetadataDescriptionLines(
       manualLine,
       getAvailableContentWidth(
         isFirstOutputLine ? METADATA_DESCRIPTION_PREFIX : METADATA_DESCRIPTION_CONTINUATION_PREFIX,
-        options
-      )
+        options,
+      ),
     );
 
     for (const wrappedLine of wrappedLines) {
@@ -49,7 +49,7 @@ export function normalizeMetadataHeaderMaxLineLength(value: unknown): number {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return Math.max(
       MIN_METADATA_HEADER_MAX_LINE_LENGTH,
-      Math.min(MAX_METADATA_HEADER_MAX_LINE_LENGTH, Math.floor(value))
+      Math.min(MAX_METADATA_HEADER_MAX_LINE_LENGTH, Math.floor(value)),
     );
   }
 
@@ -82,7 +82,6 @@ function wrapManualDescriptionLine(line: string, contentWidth: number): readonly
 
     if (currentLine.length > 0) {
       wrappedLines.push(currentLine);
-      currentLine = '';
     }
 
     if (countCharacters(word) <= contentWidth) {
@@ -115,7 +114,7 @@ function splitLongWord(word: string, contentWidth: number): readonly string[] {
 
 function getAvailableContentWidth(
   prefix: string,
-  options: MetadataDescriptionFormatOptions
+  options: MetadataDescriptionFormatOptions,
 ): number {
   const maxLineLength = normalizeMetadataHeaderMaxLineLength(options.maxLineLength);
   const prefixLength = countCharacters(`${options.indentation}${prefix}`);

@@ -1,10 +1,18 @@
 import type { SqlDialect } from '../dialects';
 import type { KeywordCase } from './options';
-import { createInitialSqlLineScanState, scanSqlLineOutsideLiteralsAndComments, type SqlLineScanState } from './sqlLineScanner';
+import {
+  createInitialSqlLineScanState,
+  scanSqlLineOutsideLiteralsAndComments,
+  type SqlLineScanState,
+} from './sqlLineScanner';
 
 const SQL_WORD_PATTERN = /[A-Za-z_][A-Za-z0-9_$#]*/g;
 
-export function applyKeywordCaseToText(text: string, dialect: SqlDialect, keywordCase: KeywordCase): string {
+export function applyKeywordCaseToText(
+  text: string,
+  dialect: SqlDialect,
+  keywordCase: KeywordCase,
+): string {
   if (keywordCase === 'preserve') {
     return text;
   }
@@ -25,7 +33,7 @@ export function applyKeywordCaseToLine(
   line: string,
   dialect: SqlDialect,
   keywordCase: KeywordCase,
-  scanState: SqlLineScanState
+  scanState: SqlLineScanState,
 ): { readonly line: string; readonly nextState: SqlLineScanState } {
   if (keywordCase === 'preserve') {
     const scanResult = scanSqlLineOutsideLiteralsAndComments(line, scanState);
@@ -49,7 +57,7 @@ export function applyKeywordCaseToLine(
 
 export function collectSqlWordsOutsideLiteralsAndComments(
   line: string,
-  scanState: SqlLineScanState
+  scanState: SqlLineScanState,
 ): { readonly words: readonly string[]; readonly nextState: SqlLineScanState } {
   const scanResult = scanSqlLineOutsideLiteralsAndComments(line, scanState);
   const words: string[] = [];
@@ -73,7 +81,11 @@ export function collectSqlWordsOutsideLiteralsAndComments(
   return { words, nextState: scanResult.nextState };
 }
 
-function transformSqlWords(segmentText: string, dialect: SqlDialect, keywordCase: KeywordCase): string {
+function transformSqlWords(
+  segmentText: string,
+  dialect: SqlDialect,
+  keywordCase: KeywordCase,
+): string {
   return segmentText.replace(SQL_WORD_PATTERN, (word: string, offset: number) => {
     const previousCharacter = segmentText[offset - 1];
 
@@ -91,7 +103,11 @@ function transformSqlWords(segmentText: string, dialect: SqlDialect, keywordCase
   });
 }
 
-function splitSqlText(text: string): { readonly eol: string; readonly lines: readonly string[]; readonly hadFinalNewline: boolean } {
+function splitSqlText(text: string): {
+  readonly eol: string;
+  readonly lines: readonly string[];
+  readonly hadFinalNewline: boolean;
+} {
   const eol = text.includes('\r\n') ? '\r\n' : '\n';
   const hadFinalNewline = /(?:\r\n|\r|\n)$/.test(text);
   const lines = text.split(/\r\n|\r|\n/);

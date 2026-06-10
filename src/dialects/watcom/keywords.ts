@@ -330,5 +330,5 @@ export const watcomKeywords = new Set<string>([
   'write',
   'writetext',
   'xact_abort',
-  'xml schema collection'
+  'xml schema collection',
 ]);

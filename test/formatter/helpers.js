@@ -11,7 +11,7 @@ const defaultOptions = {
   indentSize: 2,
   insertSpaces: true,
   maxConsecutiveBlankLines: 1,
-  ensureFinalNewline: true
+  ensureFinalNewline: true,
 };
 
 function readFixture(relativePath) {
@@ -27,5 +27,5 @@ module.exports = {
   watcomDialect,
   mssqlDialect,
   defaultOptions,
-  readFixture
+  readFixture,
 };

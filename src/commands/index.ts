@@ -14,6 +14,6 @@ export function registerCommands(context: vscode.ExtensionContext): void {
     registerFormatCurrentFileCommand(),
     registerFormatSqlFilesInDirectoryCommand(),
     registerInsertOrUpdateMetadataHeaderCommand(),
-    registerApplySqlovelyExtrasCommand()
+    registerApplySqlovelyExtrasCommand(),
   );
 }

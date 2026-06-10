@@ -14,10 +14,13 @@ export function registerSwitchDialectCommand(): vscode.Disposable {
     const resource = getActiveSqlDocumentUri();
     const activeDialect = getActiveDialect(resource);
 
-    const selected = await vscode.window.showQuickPick(createDialectQuickPickItems(activeDialect.id), {
-      title: 'SQLovely: Switch Dialect',
-      placeHolder: 'Select the SQL dialect for this workspace or workspace folder'
-    });
+    const selected = await vscode.window.showQuickPick(
+      createDialectQuickPickItems(activeDialect.id),
+      {
+        title: 'SQLovely: Switch Dialect',
+        placeHolder: 'Select the SQL dialect for this workspace or workspace folder',
+      },
+    );
 
     if (!selected) {
       return;
@@ -27,7 +30,7 @@ export function registerSwitchDialectCommand(): vscode.Disposable {
 
     const dialect = DIALECTS[selected.dialectId];
     void vscode.window.showInformationMessage(
-      `SQLovely dialect set to ${dialect.displayName} (${dialect.id}).`
+      `SQLovely dialect set to ${dialect.displayName} (${dialect.id}).`,
     );
   });
 }
@@ -41,7 +44,7 @@ function createDialectQuickPickItems(activeDialectId: SqlDialectId): DialectQuic
       dialectId,
       label: `${isActive ? '$(check) ' : ''}${dialect.displayName}`,
       description: dialect.id,
-      detail: dialect.description
+      detail: dialect.description,
     };
   });
 }

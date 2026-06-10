@@ -7,7 +7,7 @@ const {
   watcomDialect,
   mssqlDialect,
   defaultOptions,
-  readFixture
+  readFixture,
 } = require('./helpers');
 
 runTest('formats Watcom cursor FOR query loops with stable indentation', () => {
@@ -16,7 +16,7 @@ runTest('formats Watcom cursor FOR query loops with stable indentation', () => {
     'for "curs" as "ZimCurs" dynamic scroll cursor for select "id" from "items" where "active" = 1 and "id" > 0 do',
     'set "v" = "id";',
     'end for;',
-    'end;'
+    'end;',
   ].join('\n');
 
   const expected = [
@@ -30,7 +30,7 @@ runTest('formats Watcom cursor FOR query loops with stable indentation', () => {
     '    SET "v" = "id";',
     '  END FOR;',
     'END;',
-    ''
+    '',
   ].join('\n');
 
   const result = formatSql(input, watcomDialect, defaultOptions);
@@ -44,7 +44,7 @@ runTest('does not split cursor FOR markers inside strings or comments', () => {
     'for "c" as "C" dynamic scroll cursor for',
     'select "id" from "items" do',
     'leave',
-    'end for;'
+    'end for;',
   ].join('\n');
 
   const expected = [
@@ -55,7 +55,7 @@ runTest('does not split cursor FOR markers inside strings or comments', () => {
     'DO',
     '  LEAVE',
     'END FOR;',
-    ''
+    '',
   ].join('\n');
 
   const result = formatSql(input, watcomDialect, defaultOptions);

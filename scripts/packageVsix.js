@@ -21,14 +21,9 @@ if (!fs.existsSync(vsceBin)) {
   process.exit(1);
 }
 
-const result = spawnSync(vsceBin, [
-  'package',
-  '--no-dependencies',
-  '--out',
-  outputFile
-], {
+const result = spawnSync(vsceBin, ['package', '--no-dependencies', '--out', outputFile], {
   cwd: root,
-  stdio: 'inherit'
+  stdio: 'inherit',
 });
 
 if (result.error) {

@@ -7,14 +7,14 @@ const {
   watcomDialect,
   mssqlDialect,
   defaultOptions,
-  readFixture
+  readFixture,
 } = require('./helpers');
 
 runTest('aligns Watcom temporary-table closing parentheses and removes trailing DDL commas', () => {
   const input = [
     'begin',
     'declare local temporary table "decode_result"("ID" varchar(4) null,"Beschreibung" varchar(254) null,"Val" varchar(30) null,) on commit delete rows;',
-    'end;'
+    'end;',
   ].join('\n');
 
   const expected = [
@@ -25,7 +25,7 @@ runTest('aligns Watcom temporary-table closing parentheses and removes trailing 
     '    "Val" varchar(30) NULL',
     '  ) ON COMMIT DELETE ROWS;',
     'END;',
-    ''
+    '',
   ].join('\n');
 
   const result = formatSql(input, watcomDialect, defaultOptions);
@@ -34,20 +34,9 @@ runTest('aligns Watcom temporary-table closing parentheses and removes trailing 
 });
 
 runTest('keeps non-DDL trailing commas and closing-parenthesis indentation unchanged', () => {
-  const input = [
-    'begin',
-    'set "v" = my_func("a",);',
-    'end;'
-  ].join('\n');
+  const input = ['begin', 'set "v" = my_func("a",);', 'end;'].join('\n');
 
-  const expected = [
-    'BEGIN',
-    '  SET "v" = my_func(',
-    '    "a",',
-    '  );',
-    'END;',
-    ''
-  ].join('\n');
+  const expected = ['BEGIN', '  SET "v" = my_func(', '    "a",', '  );', 'END;', ''].join('\n');
 
   const result = formatSql(input, watcomDialect, defaultOptions);
 
