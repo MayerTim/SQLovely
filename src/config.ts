@@ -10,6 +10,7 @@ import {
   normalizeMaxConsecutiveBlankLines,
   type KeywordCase
 } from './formatter/options';
+import { DEFAULT_FORMATTING_SAFETY_LIMITS, resolveFormattingSafetyLimits, type FormattingSafetyLimits } from './formatter/performanceGuards';
 
 export function getSqlovelyConfiguration(resource?: vscode.Uri): vscode.WorkspaceConfiguration {
   return vscode.workspace.getConfiguration(CONFIG_NAMESPACE, resource);
@@ -36,6 +37,7 @@ export interface SqlovelyFormatConfiguration {
   readonly insertSpaces: boolean;
   readonly maxConsecutiveBlankLines: number;
   readonly ensureFinalNewline: boolean;
+  readonly safetyLimits: FormattingSafetyLimits;
 }
 
 export interface SqlovelyExtrasConfiguration {
@@ -72,7 +74,25 @@ export function getFormatConfiguration(resource?: vscode.Uri): SqlovelyFormatCon
     ensureFinalNewline: configuration.get<boolean>(
       'format.ensureFinalNewline',
       DEFAULT_FORMAT_SQL_OPTIONS.ensureFinalNewline
-    )
+    ),
+    safetyLimits: resolveFormattingSafetyLimits({
+      enabled: configuration.get<boolean>(
+        'format.safety.enabled',
+        DEFAULT_FORMATTING_SAFETY_LIMITS.enabled
+      ),
+      maxComplexDocumentLength: configuration.get<number>(
+        'format.safety.maxComplexDocumentLength',
+        DEFAULT_FORMATTING_SAFETY_LIMITS.maxComplexDocumentLength
+      ),
+      maxComplexDocumentLines: configuration.get<number>(
+        'format.safety.maxComplexDocumentLines',
+        DEFAULT_FORMATTING_SAFETY_LIMITS.maxComplexDocumentLines
+      ),
+      maxComplexLineLength: configuration.get<number>(
+        'format.safety.maxComplexLineLength',
+        DEFAULT_FORMATTING_SAFETY_LIMITS.maxComplexLineLength
+      )
+    })
   };
 }
 

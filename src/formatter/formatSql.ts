@@ -1,6 +1,13 @@
 import type { SqlDialect } from '../dialects';
 import { collectSqlWordsOutsideLiteralsAndComments, applyKeywordCaseToLine } from './keywordCase';
 import { DEFAULT_FORMAT_SQL_OPTIONS, type FormatSqlOptions } from './options';
+import {
+  analyzeFormattingSafety,
+  createFormattingSafetySummary,
+  resolveFormattingSafetyLimits,
+  shouldRunExpensiveLineFormatting,
+  type FormattingSafetyDecision
+} from './performanceGuards';
 import { expandWatcomInlineIfLine } from './inlineIfFormatting';
 import { expandUnionAllLine } from './unionAllFormatting';
 import { createInitialCursorForFormattingState, expandWatcomCursorForLine } from './cursorForFormatting';
@@ -17,6 +24,8 @@ import { createInitialSqlLineScanState, cloneSqlLineScanState } from './sqlLineS
 export interface FormatSqlResult {
   readonly text: string;
   readonly changed: boolean;
+  readonly safety: FormattingSafetyDecision;
+  readonly safetySummary?: string;
 }
 
 interface SplitTextResult {
@@ -37,8 +46,22 @@ export function formatSql(
   dialect: SqlDialect,
   options: Partial<FormatSqlOptions> = {}
 ): FormatSqlResult {
-  const resolvedOptions: FormatSqlOptions = { ...DEFAULT_FORMAT_SQL_OPTIONS, ...options };
+  const resolvedOptions: FormatSqlOptions = {
+    ...DEFAULT_FORMAT_SQL_OPTIONS,
+    ...options,
+    safetyLimits: resolveFormattingSafetyLimits(options.safetyLimits)
+  };
   const split = splitSqlText(text);
+  const safety = analyzeFormattingSafety(text, split.lines, resolvedOptions.safetyLimits);
+
+  if (resolvedOptions.isCancellationRequested?.()) {
+    return {
+      text,
+      changed: false,
+      safety,
+      safetySummary: createFormattingSafetySummary(safety)
+    };
+  }
   const formattedLines: string[] = [];
   const indentString = createIndentString(resolvedOptions.indentSize, resolvedOptions.insertSpaces);
   let indentLevel = 0;
@@ -58,39 +81,67 @@ export function formatSql(
   const exceptionIndentContexts: ExceptionIndentContext[] = [];
 
   for (const sourceLine of split.lines) {
-    const expandedLineResult = expandWatcomInlineIfLine(sourceLine, dialect, inlineIfScanState);
+    if (resolvedOptions.isCancellationRequested?.()) {
+      return {
+        text,
+        changed: false,
+        safety,
+        safetySummary: createFormattingSafetySummary(safety)
+      };
+    }
+
+    const canRunSourceLineFormatting = shouldRunExpensiveLineFormatting(sourceLine, safety);
+    const expandedLineResult = canRunSourceLineFormatting
+      ? expandWatcomInlineIfLine(sourceLine, dialect, inlineIfScanState)
+      : { lines: [sourceLine], nextState: inlineIfScanState };
     inlineIfScanState = expandedLineResult.nextState;
 
     for (const inlineExpandedLine of expandedLineResult.lines) {
-      const unionAllResult = expandUnionAllLine(inlineExpandedLine, unionAllScanState);
+      const canRunUnionFormatting = canRunSourceLineFormatting && shouldRunExpensiveLineFormatting(inlineExpandedLine, safety);
+      const unionAllResult = canRunUnionFormatting
+        ? expandUnionAllLine(inlineExpandedLine, unionAllScanState)
+        : { lines: [inlineExpandedLine], nextState: unionAllScanState };
       unionAllScanState = unionAllResult.nextState;
 
       for (const unionExpandedLine of unionAllResult.lines) {
-        const cursorForResult = expandWatcomCursorForLine(unionExpandedLine, dialect, cursorForScanState);
+        const canRunCursorFormatting = canRunUnionFormatting && shouldRunExpensiveLineFormatting(unionExpandedLine, safety);
+        const cursorForResult = canRunCursorFormatting
+          ? expandWatcomCursorForLine(unionExpandedLine, dialect, cursorForScanState)
+          : { lines: [unionExpandedLine], nextState: cursorForScanState };
         cursorForScanState = cursorForResult.nextState;
 
         for (const cursorForExpandedLine of cursorForResult.lines) {
-          const queryClauseResult = expandWatcomQueryClauseLine(cursorForExpandedLine, dialect, queryClauseFormattingState);
+          const canRunQueryClauseFormatting = canRunCursorFormatting && shouldRunExpensiveLineFormatting(cursorForExpandedLine, safety);
+          const queryClauseResult = canRunQueryClauseFormatting
+            ? expandWatcomQueryClauseLine(cursorForExpandedLine, dialect, queryClauseFormattingState)
+            : { lines: [cursorForExpandedLine], nextState: queryClauseFormattingState };
           queryClauseFormattingState = queryClauseResult.nextState;
 
           for (const queryClauseExpandedLine of queryClauseResult.lines) {
-            const exceptionResult = expandWatcomExceptionLine(
-              queryClauseExpandedLine,
-              dialect,
-              exceptionFormattingState
-            );
+            const canRunExceptionFormatting = canRunQueryClauseFormatting && shouldRunExpensiveLineFormatting(queryClauseExpandedLine, safety);
+            const exceptionResult = canRunExceptionFormatting
+              ? expandWatcomExceptionLine(
+                queryClauseExpandedLine,
+                dialect,
+                exceptionFormattingState
+              )
+              : { lines: [queryClauseExpandedLine], nextState: exceptionFormattingState };
             exceptionFormattingState = exceptionResult.nextState;
 
             for (const exceptionExpandedLine of exceptionResult.lines) {
-              const caseExpressionResult = expandWatcomCaseExpressionLine(
-                exceptionExpandedLine,
-                dialect,
-                caseExpressionFormattingState
-              );
+              const canRunCaseExpressionFormatting = canRunExceptionFormatting && shouldRunExpensiveLineFormatting(exceptionExpandedLine, safety);
+              const caseExpressionResult = canRunCaseExpressionFormatting
+                ? expandWatcomCaseExpressionLine(
+                  exceptionExpandedLine,
+                  dialect,
+                  caseExpressionFormattingState
+                )
+                : { lines: [exceptionExpandedLine], nextState: caseExpressionFormattingState };
               caseExpressionFormattingState = caseExpressionResult.nextState;
 
               for (const caseExpressionExpandedLine of caseExpressionResult.lines) {
-                const parenthesisResult = dialect.id === 'watcom'
+                const canRunParenthesisFormatting = canRunCaseExpressionFormatting && shouldRunExpensiveLineFormatting(caseExpressionExpandedLine, safety);
+                const parenthesisResult = dialect.id === 'watcom' && canRunParenthesisFormatting
                   ? expandParenthesesInLine(caseExpressionExpandedLine, parenthesisExpansionState)
                   : { lines: [caseExpressionExpandedLine], nextState: parenthesisExpansionState };
                 parenthesisExpansionState = parenthesisResult.nextState;
@@ -213,7 +264,9 @@ export function formatSql(
 
   return {
     text: nextText,
-    changed: nextText !== text
+    changed: nextText !== text,
+    safety,
+    safetySummary: createFormattingSafetySummary(safety)
   };
 }
 

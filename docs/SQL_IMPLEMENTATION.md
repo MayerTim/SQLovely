@@ -84,7 +84,7 @@ Metadata updates normalize supported date formats to `YYYY-MM-DD`, including two
 
 ## Design boundaries
 
-SQLovely normalizes compact Watcom `IF ... THEN ... END IF` control-flow statements into block form before indentation is applied so closed inline IF statements do not leak indentation into following statements or objects. Expression-style Watcom `IF ... THEN ... ELSE ... ENDIF` constructs are preserved as expressions instead of being rewritten as procedural blocks. The formatter also keeps `UNION ALL` on its own physical line, splits non-empty Watcom parentheses outside strings and comments onto separate indented lines for routine parameters and nested calls, places top-level Watcom query clauses on stable physical lines, indents Watcom cursor `FOR ... CURSOR FOR ... DO ... END FOR` loops with a separate query section, formats compact Watcom `CASE WHEN THEN ELSE END` expressions without treating them as procedural blocks, and aligns Watcom `EXCEPTION` / `WHEN ... THEN` handler sections as block separators. Query-clause splitting tracks quoted identifiers, strings, comments and parenthesis depth so nested subqueries are not treated as outer clauses, while empty calls such as `proc()` and simple type lengths such as `varchar(14)` stay inline.
+SQLovely normalizes compact Watcom `IF ... THEN ... END IF` control-flow statements into block form before indentation is applied so closed inline IF statements do not leak indentation into following statements or objects. Expression-style Watcom `IF ... THEN ... ELSE ... ENDIF` constructs are preserved as expressions instead of being rewritten as procedural blocks. The formatter also keeps `UNION ALL` on its own physical line, splits non-empty Watcom parentheses outside strings and comments onto separate indented lines for routine parameters and nested calls, places top-level Watcom query clauses on stable physical lines, indents Watcom cursor `FOR ... CURSOR FOR ... DO ... END FOR` loops with a separate query section, formats compact Watcom `CASE WHEN THEN ELSE END` expressions without treating them as procedural blocks, and aligns Watcom `EXCEPTION` / `WHEN ... THEN` handler sections as block separators. Query-clause splitting tracks quoted identifiers, strings, comments and parenthesis depth so nested subqueries are not treated as outer clauses, while empty calls such as `proc()` and simple type lengths such as `varchar(14)` stay inline. Formatter safety guards classify very large documents and very long physical lines before running expensive Watcom rewrite passes; when a guard triggers, SQLovely keeps lightweight casing/whitespace/indentation cleanup but skips the rewrite-heavy passes that could otherwise make generated SQL files slow to format.
 
 SQLovely currently does not provide:
 
@@ -95,3 +95,10 @@ SQLovely currently does not provide:
 - guaranteed parsing of every possible legacy metadata style
 - dialect-exclusive error reporting
 - automatic conversion between Watcom SQL and MSSQL
+
+
+### Formatter safety guards
+
+The formatter uses `src/formatter/performanceGuards.ts` to keep the main formatting path predictable on large database exports. The guard records document length, line count and longest line length, then skips expensive Watcom rewrite passes when the document exceeds the configured safety thresholds. Individual physical lines longer than `sqlovely.format.safety.maxComplexLineLength` are also kept out of rewrite-heavy passes such as parenthesis, query-clause, cursor, CASE, exception and inline-IF splitting.
+
+The guard deliberately does not disable the whole formatter. Keyword casing, trailing whitespace removal, blank-line limiting, final-newline handling and conservative indentation continue to run. VS Code cancellation tokens are checked between source lines so canceled document or directory formatting requests return without applying partial edits.

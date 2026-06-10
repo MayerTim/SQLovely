@@ -3,10 +3,11 @@ import * as vscode from 'vscode';
 import { getActiveDialect, getDiagnosticsConfiguration, getExtrasConfiguration, getFormatConfiguration } from '../config';
 import { SQL_LANGUAGE_ID } from '../constants';
 import { formatSqlDocument } from './formatSqlDocument';
+import { logFormattingSafetySummary } from '../logging';
 
 export function registerSqlovelyDocumentFormattingProvider(): vscode.Disposable {
   return vscode.languages.registerDocumentFormattingEditProvider(SQL_LANGUAGE_ID, {
-    provideDocumentFormattingEdits(document) {
+    provideDocumentFormattingEdits(document, _options, token) {
       const formatConfiguration = getFormatConfiguration(document.uri);
 
       if (!formatConfiguration.enabled) {
@@ -22,10 +23,18 @@ export function registerSqlovelyDocumentFormattingProvider(): vscode.Disposable 
         insertSpaces: formatConfiguration.insertSpaces,
         maxConsecutiveBlankLines: formatConfiguration.maxConsecutiveBlankLines,
         ensureFinalNewline: formatConfiguration.ensureFinalNewline,
+        safetyLimits: formatConfiguration.safetyLimits,
         applyExtrasWithFormatting: extrasConfiguration.enabled && extrasConfiguration.applyWithFormatting,
         metadataHeaderEnabled: extrasConfiguration.metadataHeader.enabled,
-        maxLineLength: diagnosticsConfiguration.maxLineLength.limit
+        maxLineLength: diagnosticsConfiguration.maxLineLength.limit,
+        isCancellationRequested: () => token.isCancellationRequested
       });
+
+      logFormattingSafetySummary(result.formatting.safetySummary, vscode.workspace.asRelativePath(document.uri, false));
+
+      if (token.isCancellationRequested) {
+        return [];
+      }
 
       if (!result.changed) {
         return [];

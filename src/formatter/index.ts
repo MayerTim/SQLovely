@@ -9,3 +9,12 @@ export {
   type FormatSqlOptions,
   type KeywordCase
 } from './options';
+export {
+  DEFAULT_FORMATTING_SAFETY_LIMITS,
+  analyzeFormattingSafety,
+  resolveFormattingSafetyLimits,
+  shouldRunExpensiveLineFormatting,
+  type FormattingSafetyDecision,
+  type FormattingSafetyLimits,
+  type FormattingWorkload
+} from './performanceGuards';

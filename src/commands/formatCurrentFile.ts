@@ -5,6 +5,7 @@ import { getActiveDialect, getDiagnosticsConfiguration, getExtrasConfiguration, 
 import { requireActiveSqlEditorContext } from '../editor/activeSqlEditor';
 import { replaceDocumentText } from '../editor/replaceDocumentText';
 import { formatSqlDocument } from '../formatter';
+import { logFormattingSafetySummary } from '../logging';
 
 export function registerFormatCurrentFileCommand(): vscode.Disposable {
   return vscode.commands.registerCommand(COMMANDS.formatCurrentFile, async () => {
@@ -30,10 +31,13 @@ export function registerFormatCurrentFileCommand(): vscode.Disposable {
       insertSpaces: formatConfiguration.insertSpaces,
       maxConsecutiveBlankLines: formatConfiguration.maxConsecutiveBlankLines,
       ensureFinalNewline: formatConfiguration.ensureFinalNewline,
+      safetyLimits: formatConfiguration.safetyLimits,
       applyExtrasWithFormatting: extrasConfiguration.enabled && extrasConfiguration.applyWithFormatting,
       metadataHeaderEnabled: extrasConfiguration.metadataHeader.enabled,
       maxLineLength: diagnosticsConfiguration.maxLineLength.limit
     });
+
+    logFormattingSafetySummary(result.formatting.safetySummary, vscode.workspace.asRelativePath(activeContext.resource, false));
 
     if (!result.changed) {
       await vscode.window.showInformationMessage('SQLovely: No formatting or extra changes needed.');

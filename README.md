@@ -65,8 +65,27 @@ SQLovely formats conservatively. It keeps SQL structure intact and focuses on re
 - trailing whitespace removal
 - limiting consecutive blank lines
 - final newline handling
+- performance safety guards that skip expensive Watcom rewrite passes for very large documents or very long lines
 
 Apart from normalizing compact Watcom `IF ... THEN ... END IF` control-flow statements, preserving expression-style `IF ... THEN ... ELSE ... ENDIF` constructs, keeping `UNION ALL` on its own line, splitting Watcom parenthesized argument/parameter lists across indented lines, placing top-level Watcom query clauses on stable physical lines, indenting cursor `FOR ... DO` loops, formatting Watcom `CASE` expressions and aligning Watcom exception handlers, the formatter does not perform schema-aware rewrites or migrate SQL between dialects.
+
+
+### Formatter safety guards
+
+SQLovely includes safety guards for very large generated SQL files. When a document exceeds the configured safety limits, expensive Watcom rewrite passes such as query-clause splitting, parenthesis splitting, cursor-loop splitting, CASE formatting and compact IF expansion are skipped. Lightweight cleanup such as keyword casing, whitespace cleanup and indentation still runs.
+
+Default limits:
+
+```json
+{
+  "sqlovely.format.safety.enabled": true,
+  "sqlovely.format.safety.maxComplexDocumentLength": 1000000,
+  "sqlovely.format.safety.maxComplexDocumentLines": 5000,
+  "sqlovely.format.safety.maxComplexLineLength": 5000
+}
+```
+
+When a guard triggers, SQLovely writes a short note to the SQLovely output channel.
 
 ### Format one file
 

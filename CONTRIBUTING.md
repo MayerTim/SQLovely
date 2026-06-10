@@ -15,7 +15,7 @@ npm run package:vsix
 
 ## Guidelines
 
-- Keep formatter behavior conservative.
+- Keep formatter behavior conservative. New rewrite passes should be lexical, bounded and compatible with the formatter safety guards for large SQL files.
 - Add regression tests for behavior changes.
 - Keep `README.md` user-facing.
 - Put maintainer/developer details in `docs/`.
