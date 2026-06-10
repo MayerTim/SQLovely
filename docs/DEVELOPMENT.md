@@ -171,6 +171,15 @@ format(input) === expected
 format(expected) === expected
 ```
 
+The same checks run against synthetic CRLF variants of every fixture pair. This protects line-ending stability without storing CRLF fixture files in Git:
+
+```text
+format(CRLF input) === CRLF expected
+format(CRLF expected) === CRLF expected
+```
+
+The runner rejects unpaired or unsupported corpus SQL files so ZIP overlay workflows cannot leave stale fixtures silently ignored. Corpus SQL files must be named as `*.input.sql` or `*.expected.sql` pairs.
+
 When adding a fixture:
 
 - use sanitized SQL that can safely live in the public repository
