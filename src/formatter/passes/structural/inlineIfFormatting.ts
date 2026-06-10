@@ -1,6 +1,7 @@
 import type { SqlDialect } from '../../../dialects';
 import {
   cloneSqlLineScanState,
+  createSqlOutsideLookup,
   scanSqlLineOutsideLiteralsAndComments,
   type SqlLineScanState,
   type SqlOutsideSegment,
@@ -167,13 +168,7 @@ function splitConditionOnLogicalOperators(condition: string): string[] {
     condition,
     cloneSqlLineScanState({ inBlockComment: false }),
   );
-  const outside = new Array<boolean>(condition.length).fill(false);
-
-  for (const segment of scanResult.outsideSegments) {
-    for (let index = segment.start; index < segment.end; index += 1) {
-      outside[index] = true;
-    }
-  }
+  const outside = createSqlOutsideLookup(condition.length, scanResult.outsideSegments);
 
   const parts: string[] = [];
   let lastSplit = 0;

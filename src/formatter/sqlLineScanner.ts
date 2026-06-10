@@ -20,6 +20,41 @@ export function cloneSqlLineScanState(state: SqlLineScanState): SqlLineScanState
   return { inBlockComment: state.inBlockComment };
 }
 
+export function createSqlOutsideLookup(
+  length: number,
+  outsideSegments: readonly SqlOutsideSegment[],
+): readonly boolean[] {
+  const outside = new Array<boolean>(length).fill(false);
+
+  for (const segment of outsideSegments) {
+    for (let index = segment.start; index < segment.end; index += 1) {
+      outside[index] = true;
+    }
+  }
+
+  return outside;
+}
+
+export function rewriteSqlLineOutsideLiteralsAndComments(
+  line: string,
+  initialState: SqlLineScanState,
+  rewrite: (segmentText: string, segment: SqlOutsideSegment) => string,
+): { readonly line: string; readonly nextState: SqlLineScanState } {
+  const scanResult = scanSqlLineOutsideLiteralsAndComments(line, initialState);
+  let rewritten = '';
+  let cursor = 0;
+
+  for (const segment of scanResult.outsideSegments) {
+    rewritten += line.slice(cursor, segment.start);
+    rewritten += rewrite(line.slice(segment.start, segment.end), segment);
+    cursor = segment.end;
+  }
+
+  rewritten += line.slice(cursor);
+
+  return { line: rewritten, nextState: scanResult.nextState };
+}
+
 export function scanSqlLineOutsideLiteralsAndComments(
   line: string,
   initialState: SqlLineScanState,

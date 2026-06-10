@@ -1,6 +1,7 @@
 import {
   createInitialSqlLineScanState,
-  scanSqlLineOutsideLiteralsAndComments,
+  rewriteSqlLineOutsideLiteralsAndComments,
+  type SqlLineScanState,
 } from '../../sqlLineScanner';
 
 export function cleanupWatcomStatementContinuations(
@@ -57,22 +58,17 @@ export function cleanupWatcomStatementContinuations(
 
 function rewriteOutsideSqlText(
   line: string,
-  scanState: ReturnType<typeof createInitialSqlLineScanState>,
+  scanState: SqlLineScanState,
   rewrite: (line: string, start: number, end: number) => string,
-): { line: string } {
-  const result = scanSqlLineOutsideLiteralsAndComments(line, scanState);
-  let rewritten = '';
-  let cursor = 0;
-
-  for (const segment of result.outsideSegments) {
-    rewritten += line.slice(cursor, segment.start);
-    rewritten += rewrite(line, segment.start, segment.end);
-    cursor = segment.end;
-  }
-
-  rewritten += line.slice(cursor);
+): { readonly line: string } {
+  const result = rewriteSqlLineOutsideLiteralsAndComments(
+    line,
+    scanState,
+    (_segmentText, segment) => rewrite(line, segment.start, segment.end),
+  );
   scanState.inBlockComment = result.nextState.inBlockComment;
-  return { line: rewritten };
+
+  return { line: result.line };
 }
 
 function cleanupStatementOutsideSqlText(line: string, start: number, end: number): string {
