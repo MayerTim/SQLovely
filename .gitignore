@@ -4,5 +4,3 @@ out/
 *.vsix
 *.zip
 
-# Local planning and handoff files
-sqlovely_private_companion_pack*/
