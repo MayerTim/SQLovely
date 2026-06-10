@@ -208,7 +208,7 @@ export function formatSql(
                   const activeExceptionContext = exceptionIndentContexts[exceptionIndentContexts.length - 1];
                   const isExceptionWhenLine = activeExceptionContext !== undefined && firstWord === 'when' && containsWord(lineWords, 'then');
                   const closesExceptionSection = isFinalExceptionEndLine(lineWords, indentLevel, activeExceptionContext);
-                  const shouldTemporarilyReincrease = (firstWord === 'else' || firstWord === 'elseif') && !isCaseElseLine;
+                  const shouldTemporarilyReincrease = firstWord === 'else' && !isCaseElseLine;
                   const logicalContinuationIndentLevel = isLogicalContinuationLine(trimmedLine, lineWords) ? 1 : 0;
                   const queryContinuationIndentBeforeLine = getQueryContinuationIndentBeforeLine(
                     lineWords,
@@ -387,6 +387,10 @@ function getIndentIncreaseAfterLine(words: readonly string[]): number {
   increase += countIfThenOpeners(words);
 
   if (firstWord === 'then') {
+    increase += 1;
+  }
+
+  if (firstWord === 'elseif' && containsWord(words, 'then')) {
     increase += 1;
   }
 

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed Watcom `ELSEIF` indentation so branch conditions do not add an extra block level before `THEN`.
 - Fixed Watcom continuation indentation for multiline `SELECT` / `INTO` / `ORDER BY` lists and predicate function arguments.
 - Fixed split Watcom `IF ... THEN ... ELSE ... ENDIF` expressions so formatter output keeps them expression-style instead of treating `THEN` / `END IF` as procedural block indentation.
 - Fixed Watcom formatter indentation state when one physical line contains multiple block openings or endings, so same-line `BEGIN ... END` and compact nested `IF ... END IF` statements do not leak indentation.

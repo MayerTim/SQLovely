@@ -546,6 +546,61 @@ runTest('indents Watcom query list continuations and predicate function argument
 });
 
 
+runTest('treats Watcom ELSEIF as a branch keyword without leaking indentation', () => {
+  const input = [
+    'begin',
+    'while "vPos" <= "vEnde" loop',
+    'if "vZeichen" between \'0\' and \'9\' then',
+    'set "vReineZiffern" = "vReineZiffern" || "vZeichen"',
+    'elseif "vZeichen" in(\' \', "char"(9), "char"(10), "char"(13)) then',
+    '-- ignorieren',
+    'else',
+    'set "vFehlerhafteZeichenVorhanden" = 1;',
+    'leave',
+    'end if;',
+    'set "vPos" = "vPos"+1',
+    'end loop;',
+    'select 1;',
+    'end;',
+    'grant execute on "FCT"."elseif_test" to "FCT";'
+  ].join('\n');
+
+  const expected = [
+    'BEGIN',
+    '  WHILE "vPos" <= "vEnde" LOOP',
+    '    IF "vZeichen" BETWEEN \'0\' AND \'9\' THEN',
+    '      SET "vReineZiffern" = "vReineZiffern" || "vZeichen"',
+    '    ELSEIF "vZeichen" IN(',
+    '      \' \',',
+    '      "char"(',
+    '        9',
+    '      ),',
+    '      "char"(',
+    '        10',
+    '      ),',
+    '      "char"(',
+    '        13',
+    '      )',
+    '    ) THEN',
+    '      -- ignorieren',
+    '    ELSE',
+    '      SET "vFehlerhafteZeichenVorhanden" = 1;',
+    '      LEAVE',
+    '    END IF;',
+    '    SET "vPos" = "vPos"+1',
+    '  END LOOP;',
+    '  SELECT 1;',
+    'END;',
+    'GRANT EXECUTE ON "FCT"."elseif_test" TO "FCT";',
+    ''
+  ].join('\n');
+
+  const result = formatSql(input, watcomDialect, defaultOptions);
+
+  assert.equal(result.text, expected);
+});
+
+
 runTest('splits Watcom parenthesized parameter lists across indented lines', () => {
   const input = [
     'CREATE OR REPLACE FUNCTION "FCT"."OP_GTIN_VorherIstGrenze"(',
