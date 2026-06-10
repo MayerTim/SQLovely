@@ -21,7 +21,7 @@ import {
   createInitialParenthesisFormattingState,
   expandParenthesesInLine
 } from './parenthesisFormatting';
-import { createInitialSqlLineScanState, cloneSqlLineScanState } from './sqlLineScanner';
+import { createInitialSqlLineScanState, cloneSqlLineScanState, scanSqlLineOutsideLiteralsAndComments } from './sqlLineScanner';
 
 export interface FormatSqlResult {
   readonly text: string;
@@ -80,6 +80,8 @@ export function formatSql(
   let parenthesisIndentLevel = 0;
   let caseExpressionIndentLevel = 0;
   let parenthesisIndentScanState = createInitialSqlLineScanState();
+  let parenthesisContinuationIndentStack: number[] = [];
+  let queryContinuationIndentLevel = 0;
   const exceptionIndentContexts: ExceptionIndentContext[] = [];
 
   for (const sourceLine of split.lines) {
@@ -207,12 +209,31 @@ export function formatSql(
                   const isExceptionWhenLine = activeExceptionContext !== undefined && firstWord === 'when' && containsWord(lineWords, 'then');
                   const closesExceptionSection = isFinalExceptionEndLine(lineWords, indentLevel, activeExceptionContext);
                   const shouldTemporarilyReincrease = (firstWord === 'else' || firstWord === 'elseif') && !isCaseElseLine;
-                  const continuationIndentLevel = isLogicalContinuationLine(trimmedLine, lineWords) ? 1 : 0;
+                  const logicalContinuationIndentLevel = isLogicalContinuationLine(trimmedLine, lineWords) ? 1 : 0;
+                  const queryContinuationIndentBeforeLine = getQueryContinuationIndentBeforeLine(
+                    lineWords,
+                    queryContinuationIndentLevel
+                  );
+                  const continuationIndentLevel = Math.max(
+                    logicalContinuationIndentLevel,
+                    queryContinuationIndentBeforeLine
+                  );
                   const parenthesisIndentAnalysis = analyzeParenthesesForIndent(trimmedLine, parenthesisIndentScanState);
+                  const parenthesisContinuationIndentLevel = getParenthesisContinuationIndentForLine(
+                    parenthesisContinuationIndentStack,
+                    parenthesisIndentAnalysis.leadingClosingParentheses
+                  );
+                  const closedParenthesisContinuationIndentLevel = getClosedParenthesisContinuationIndentForLine(
+                    parenthesisContinuationIndentStack,
+                    parenthesisIndentAnalysis.leadingClosingParentheses
+                  );
                   const effectiveParenthesisIndentLevel = Math.max(
                     0,
                     parenthesisIndentLevel - parenthesisIndentAnalysis.leadingClosingParentheses
                   );
+                  const lineContinuationOwnerIndent = parenthesisIndentAnalysis.leadingClosingParentheses > 0
+                    ? closedParenthesisContinuationIndentLevel
+                    : continuationIndentLevel;
                   const leadingBlockIndentDecrease = getLeadingBlockIndentDecrease(lineWords, {
                     isCaseEndLine,
                     isCaseElseLine
@@ -223,6 +244,8 @@ export function formatSql(
                   if (isBatchSeparator) {
                     indentLevel = 0;
                     parenthesisIndentLevel = 0;
+                    parenthesisContinuationIndentStack = [];
+                    queryContinuationIndentLevel = 0;
                     caseExpressionIndentLevel = 0;
                     exceptionIndentContexts.length = 0;
                   } else if (isExceptionWhenLine) {
@@ -239,11 +262,22 @@ export function formatSql(
                   );
                   const formattedContent = keywordResult.line.trim();
                   formattedLines.push(
-                    `${indentString.repeat(indentLevel + effectiveParenthesisIndentLevel + effectiveCaseExpressionIndentLevel + continuationIndentLevel)}${formattedContent}`
+                    `${indentString.repeat(indentLevel + effectiveParenthesisIndentLevel + parenthesisContinuationIndentLevel + effectiveCaseExpressionIndentLevel + continuationIndentLevel)}${formattedContent}`
                   );
 
+                  parenthesisContinuationIndentStack = updateParenthesisContinuationIndentStack(
+                    trimmedLine,
+                    parenthesisIndentScanState,
+                    parenthesisContinuationIndentStack,
+                    lineContinuationOwnerIndent
+                  );
                   parenthesisIndentLevel = Math.max(0, parenthesisIndentLevel + parenthesisIndentAnalysis.depthDelta);
                   parenthesisIndentScanState = parenthesisIndentAnalysis.nextScanState;
+                  queryContinuationIndentLevel = getQueryContinuationIndentAfterLine(
+                    trimmedLine,
+                    lineWords,
+                    queryContinuationIndentBeforeLine
+                  );
                   caseExpressionIndentLevel = Math.max(
                     0,
                     effectiveCaseExpressionIndentLevel + getCaseExpressionIndentIncreaseAfterLine(lineWords)
@@ -252,6 +286,8 @@ export function formatSql(
                   if (isBatchSeparator) {
                     indentLevel = 0;
                     parenthesisIndentLevel = 0;
+                    parenthesisContinuationIndentStack = [];
+                    queryContinuationIndentLevel = 0;
                     caseExpressionIndentLevel = 0;
                     exceptionIndentContexts.length = 0;
                     continue;
@@ -563,6 +599,210 @@ function isBlockEndPhrase(words: readonly string[]): boolean {
     nextWord === 'try' ||
     nextWord === 'catch' ||
     nextWord === 'while';
+}
+
+
+function getParenthesisContinuationIndentForLine(
+  stack: readonly number[],
+  leadingClosingParentheses: number
+): number {
+  if (stack.length === 0) {
+    return 0;
+  }
+
+  if (leadingClosingParentheses <= 0) {
+    return sumIndentStack(stack);
+  }
+
+  const firstClosedIndex = Math.max(0, stack.length - leadingClosingParentheses);
+  const remaining = stack.slice(0, firstClosedIndex);
+  const closed = stack.slice(firstClosedIndex);
+  return sumIndentStack([...remaining, ...closed]);
+}
+
+function getClosedParenthesisContinuationIndentForLine(
+  stack: readonly number[],
+  leadingClosingParentheses: number
+): number {
+  if (stack.length === 0 || leadingClosingParentheses <= 0) {
+    return 0;
+  }
+
+  const firstClosedIndex = Math.max(0, stack.length - leadingClosingParentheses);
+  return sumIndentStack(stack.slice(firstClosedIndex));
+}
+
+function sumIndentStack(stack: readonly number[]): number {
+  return stack.reduce((total, value) => total + value, 0);
+}
+
+function updateParenthesisContinuationIndentStack(
+  line: string,
+  initialState: ReturnType<typeof cloneSqlLineScanState>,
+  stack: readonly number[],
+  lineOwnerIndent: number
+): number[] {
+  const scanResult = scanSqlLineOutsideLiteralsAndComments(line, initialState);
+  const nextStack = [...stack];
+
+  for (const segment of scanResult.outsideSegments) {
+    for (let index = segment.start; index < segment.end; index += 1) {
+      const char = line[index];
+
+      if (char === '(') {
+        nextStack.push(lineOwnerIndent);
+      } else if (char === ')') {
+        nextStack.pop();
+      }
+    }
+  }
+
+  return nextStack;
+}
+
+function getQueryContinuationIndentBeforeLine(words: readonly string[], currentIndent: number): number {
+  if (currentIndent <= 0) {
+    return 0;
+  }
+
+  if (words.length === 0) {
+    return currentIndent;
+  }
+
+  if (isLeadingQueryClauseLine(words) || isStatementBoundaryLine(words)) {
+    return 0;
+  }
+
+  return currentIndent;
+}
+
+function getQueryContinuationIndentAfterLine(
+  line: string,
+  words: readonly string[],
+  previousContinuationIndent: number
+): number {
+  if (words.length === 0) {
+    return endsStatement(line) ? 0 : previousContinuationIndent;
+  }
+
+  if (isStatementBoundaryLine(words)) {
+    return 0;
+  }
+
+  if (isQueryClauseOnlyLine(line, words)) {
+    return 1;
+  }
+
+  if (previousContinuationIndent > 0 && !endsStatement(line)) {
+    return previousContinuationIndent;
+  }
+
+  if (isInlineQueryClauseListContinuationLine(line, words)) {
+    return 1;
+  }
+
+  return 0;
+}
+
+function isQueryClauseOnlyLine(line: string, words: readonly string[]): boolean {
+  const clauseLength = getLeadingQueryClauseLength(words);
+
+  if (clauseLength === 0 || words.length !== clauseLength) {
+    return false;
+  }
+
+  const withoutClause = line.trim().replace(/;$/u, '').trim();
+  const clauseText = words.slice(0, clauseLength).join(' ');
+  return withoutClause.toLowerCase() === clauseText;
+}
+
+function isLeadingQueryClauseLine(words: readonly string[]): boolean {
+  return getLeadingQueryClauseLength(words) > 0;
+}
+
+function getLeadingQueryClauseLength(words: readonly string[]): number {
+  const firstWord = words[0];
+
+  if (!firstWord) {
+    return 0;
+  }
+
+  if (
+    firstWord === 'select' ||
+    firstWord === 'from' ||
+    firstWord === 'where' ||
+    firstWord === 'having' ||
+    firstWord === 'into' ||
+    (firstWord === 'on' && words[1] !== 'exception')
+  ) {
+    return 1;
+  }
+
+  if (firstWord === 'group' && words[1] === 'by') {
+    return 2;
+  }
+
+  if (firstWord === 'order' && words[1] === 'by') {
+    return 2;
+  }
+
+  if (isLeadingJoinClause(words)) {
+    return words[0] === 'join' ? 1 : words[1] === 'join' ? 2 : 3;
+  }
+
+  return 0;
+}
+
+function isLeadingJoinClause(words: readonly string[]): boolean {
+  const firstWord = words[0];
+  const secondWord = words[1];
+  const thirdWord = words[2];
+
+  if (firstWord === 'join') {
+    return true;
+  }
+
+  if (firstWord !== 'cross' && firstWord !== 'full' && firstWord !== 'inner' && firstWord !== 'left' && firstWord !== 'right') {
+    return false;
+  }
+
+  return secondWord === 'join' || (secondWord === 'outer' && thirdWord === 'join');
+}
+
+function isStatementBoundaryLine(words: readonly string[]): boolean {
+  const firstWord = words[0];
+
+  return firstWord === 'begin' ||
+    firstWord === 'end' ||
+    firstWord === 'endif' ||
+    firstWord === 'else' ||
+    firstWord === 'elseif' ||
+    firstWord === 'then' ||
+    firstWord === 'do' ||
+    firstWord === 'exception' ||
+    firstWord === 'when' ||
+    firstWord === 'declare' ||
+    firstWord === 'set' ||
+    firstWord === 'insert' ||
+    firstWord === 'update' ||
+    firstWord === 'delete' ||
+    firstWord === 'return' ||
+    firstWord === 'create' ||
+    firstWord === 'alter' ||
+    firstWord === 'grant' ||
+    firstWord === 'revoke' ||
+    firstWord === 'call' ||
+    firstWord === 'for' ||
+    firstWord === 'while' ||
+    firstWord === 'leave';
+}
+
+function isInlineQueryClauseListContinuationLine(line: string, words: readonly string[]): boolean {
+  return isLeadingQueryClauseLine(words) && /,\s*$/u.test(line.trim());
+}
+
+function endsStatement(line: string): boolean {
+  return /;\s*$/u.test(line.trim());
 }
 
 function isLogicalContinuationLine(line: string, words: readonly string[]): boolean {

@@ -479,15 +479,63 @@ runTest('normalizes split Watcom IF expressions without treating them as procedu
   const expected = [
     'BEGIN',
     '  ORDER BY',
-    "  IF \"pr\".\"Role\" = 'Instrumenteur1' THEN 1 ELSE 2 ENDIF,",
-    '  "pr"."Reihenfolge",',
-    '  "pr"."lfd";',
+    "    IF \"pr\".\"Role\" = 'Instrumenteur1' THEN 1 ELSE 2 ENDIF,",
+    '    "pr"."Reihenfolge",',
+    '    "pr"."lfd";',
     '  IF a = 1',
     '  THEN',
     '    SET b = 1',
     '  ELSE',
     '    SET b = 2',
     '  END IF;',
+    'END;',
+    ''
+  ].join('\n');
+
+  const result = formatSql(input, watcomDialect, defaultOptions);
+
+  assert.equal(result.text, expected);
+});
+
+
+runTest('indents Watcom query list continuations and predicate function arguments', () => {
+  const input = [
+    'begin',
+    'select',
+    '"art",',
+    '"Einheit"',
+    'into',
+    '"vMaterialart",',
+    '"vEinheit"',
+    'from "DBA"."OP_MATERIAL"',
+    'where "lfd" = "vMaterialLfd"',
+    'and isnull("omp"."Lf_MakroTermin", 0) = isnull("vMakroTerminLfd", 0)',
+    'order by',
+    'if "pr"."Role" = \'Instrumenteur1\' then 1 else 2 endif,',
+    '"pr"."Reihenfolge";',
+    'end;'
+  ].join('\n');
+
+  const expected = [
+    'BEGIN',
+    '  SELECT',
+    '    "art",',
+    '    "Einheit"',
+    '  INTO',
+    '    "vMaterialart",',
+    '    "vEinheit"',
+    '  FROM "DBA"."OP_MATERIAL"',
+    '  WHERE "lfd" = "vMaterialLfd"',
+    '    AND ISNULL(',
+    '      "omp"."Lf_MakroTermin",',
+    '      0',
+    '    ) = ISNULL(',
+    '      "vMakroTerminLfd",',
+    '      0',
+    '    )',
+    '  ORDER BY',
+    '    IF "pr"."Role" = \'Instrumenteur1\' THEN 1 ELSE 2 ENDIF,',
+    '    "pr"."Reihenfolge";',
     'END;',
     ''
   ].join('\n');

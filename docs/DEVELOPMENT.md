@@ -53,6 +53,7 @@ Useful smoke tests:
 - run **SQLovely: Format SQL Files in Directory**
 - verify compact Watcom inline `IF ... THEN ... END IF` statements expand without leaking indentation
 - verify Watcom parenthesized parameter lists and nested calls split without touching strings, comments or type lengths
+- verify multiline `SELECT` / `INTO` / `ORDER BY` lists and predicate function arguments keep continuation indentation
 - run **SQLovely: Insert or Update Metadata Header**
 - verify diagnostics and quick fixes
 - verify metadata headers in a script with multiple procedures, functions or triggers
