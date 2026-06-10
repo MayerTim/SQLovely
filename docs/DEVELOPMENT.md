@@ -57,6 +57,7 @@ Useful smoke tests:
 - verify split `ORDER BY IF ... ENDIF` expression continuations keep the comma before the next sort key
 - run **SQLovely: Insert or Update Metadata Header**
 - verify diagnostics and quick fixes
+- verify diagnostics update after a short edit debounce and stay responsive on large SQL files
 - verify metadata headers in a script with multiple procedures, functions or triggers
 - verify loose legacy metadata headers are normalized only when they contain a recognizable version field
 - verify long metadata descriptions are wrapped without removing manual line breaks
@@ -102,6 +103,10 @@ For MSSQL-oriented smoke tests:
 **SQLovely: Format SQL Files in Directory** uses the normal `sqlovely.format.*` settings.
 
 It intentionally does not apply SQLovely Extras. Keep this behavior conservative because the command can touch many files at once. Directory formatting forwards VS Code cancellation requests into the formatter and uses the same safety guards as normal document formatting.
+
+## Diagnostics performance behavior
+
+SQLovely diagnostics run immediately when SQL documents are opened and when relevant configuration changes. Text-change diagnostics are debounced so large SQL files are not reparsed on every keystroke. Missing-metadata diagnostics reuse the formatter safety limits and are skipped for documents that exceed the complex-document thresholds; max-line-length diagnostics remain available because they are lightweight and line-oriented.
 
 ## Metadata-header regression focus
 

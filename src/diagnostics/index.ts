@@ -11,3 +11,4 @@ export {
   MAX_LINE_LENGTH_DIAGNOSTIC_CODE,
   type MaxLineLengthIssue
 } from './lineLengthDiagnostics';
+export { analyzeDiagnosticSafety, type DiagnosticSafetyDecision } from './diagnosticSafety';

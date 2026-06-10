@@ -137,3 +137,43 @@ runTest('reports SQLovely max-line-length diagnostics', () => {
   assert.equal(issues[0].line, 0);
   assert.equal(issues[0].limit, 120);
 });
+
+runTest('keeps metadata diagnostics enabled for normal-sized documents', () => {
+  const { analyzeDiagnosticSafety } = require('../dist/diagnostics/diagnosticSafety');
+
+  const decision = analyzeDiagnosticSafety('CREATE PROCEDURE dbo.small()\nBEGIN\nEND;\n', {
+    enabled: true,
+    maxComplexDocumentLength: 1000,
+    maxComplexDocumentLines: 100,
+    maxComplexLineLength: 1000
+  });
+
+  assert.equal(decision.skipExpensiveMetadataDiagnostics, false);
+});
+
+runTest('skips expensive metadata diagnostics for large documents', () => {
+  const { analyzeDiagnosticSafety } = require('../dist/diagnostics/diagnosticSafety');
+
+  const decision = analyzeDiagnosticSafety('line1\nline2\nline3\n', {
+    enabled: true,
+    maxComplexDocumentLength: 1000,
+    maxComplexDocumentLines: 2,
+    maxComplexLineLength: 1000
+  });
+
+  assert.equal(decision.skipExpensiveMetadataDiagnostics, true);
+  assert.ok(decision.formattingSafety.reasons.some((reason) => reason.includes('line count')));
+});
+
+runTest('does not skip diagnostics when safety guards are disabled', () => {
+  const { analyzeDiagnosticSafety } = require('../dist/diagnostics/diagnosticSafety');
+
+  const decision = analyzeDiagnosticSafety('line1\nline2\nline3\n', {
+    enabled: false,
+    maxComplexDocumentLength: 1,
+    maxComplexDocumentLines: 1,
+    maxComplexLineLength: 1
+  });
+
+  assert.equal(decision.skipExpensiveMetadataDiagnostics, false);
+});
