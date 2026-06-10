@@ -1,8 +1,9 @@
 import type { SqlDialect } from '../../../dialects';
 import {
+  collectSqlWordsFromSegments,
   scanSqlLineOutsideLiteralsAndComments,
   type SqlLineScanState,
-  type SqlOutsideSegment,
+  type SqlWordMatch,
 } from '../../sqlLineScanner';
 
 export interface ExceptionFormattingState {
@@ -15,14 +16,7 @@ interface ExpandedLineResult {
   readonly nextState: ExceptionFormattingState;
 }
 
-interface WordMatch {
-  readonly start: number;
-  readonly end: number;
-  readonly normalized: string;
-}
-
-const SQL_WORD_START = /[A-Za-z_]/u;
-const SQL_WORD_PART = /[A-Za-z0-9_$#]/u;
+type WordMatch = SqlWordMatch;
 
 export function createInitialExceptionFormattingState(): ExceptionFormattingState {
   return {
@@ -45,7 +39,7 @@ export function expandWatcomExceptionLine(
   initialState: ExceptionFormattingState,
 ): ExpandedLineResult {
   const scanResult = scanSqlLineOutsideLiteralsAndComments(line, initialState.scanState);
-  const words = collectWords(line, scanResult.outsideSegments);
+  const words = collectSqlWordsFromSegments(line, scanResult.outsideSegments);
   const nextState: ExceptionFormattingState = {
     scanState: scanResult.nextState,
     inExceptionSection: calculateNextExceptionSectionState(words, initialState.inExceptionSection),
@@ -186,34 +180,4 @@ function pushTrimmed(lines: string[], text: string): void {
   if (trimmed.length > 0) {
     lines.push(trimmed);
   }
-}
-
-function collectWords(line: string, outsideSegments: readonly SqlOutsideSegment[]): WordMatch[] {
-  const words: WordMatch[] = [];
-
-  for (const segment of outsideSegments) {
-    let index = segment.start;
-
-    while (index < segment.end) {
-      if (!SQL_WORD_START.test(line[index])) {
-        index += 1;
-        continue;
-      }
-
-      const start = index;
-      index += 1;
-
-      while (index < segment.end && SQL_WORD_PART.test(line[index])) {
-        index += 1;
-      }
-
-      words.push({
-        start,
-        end: index,
-        normalized: line.slice(start, index).toLowerCase(),
-      });
-    }
-  }
-
-  return words;
 }

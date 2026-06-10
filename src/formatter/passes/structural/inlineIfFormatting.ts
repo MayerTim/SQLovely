@@ -2,9 +2,13 @@ import type { SqlDialect } from '../../../dialects';
 import {
   cloneSqlLineScanState,
   createSqlOutsideLookup,
+  findNextSqlWord,
+  isSqlWordStart,
+  readSqlWordAt,
   scanSqlLineOutsideLiteralsAndComments,
   type SqlLineScanState,
   type SqlOutsideSegment,
+  type SqlWordMatch,
 } from '../../sqlLineScanner';
 
 interface ExpandedLineResult {
@@ -12,14 +16,7 @@ interface ExpandedLineResult {
   readonly nextState: SqlLineScanState;
 }
 
-interface KeywordMatch {
-  readonly start: number;
-  readonly end: number;
-  readonly text: string;
-}
-
-const SQL_WORD_START = /[A-Za-z_]/u;
-const SQL_WORD_PART = /[A-Za-z0-9_$#]/u;
+type KeywordMatch = SqlWordMatch;
 
 /**
  * Normalizes compact Watcom IF statements before the line-based formatter applies indentation.
@@ -67,7 +64,7 @@ function startsWithIfOutsideComments(
     }
 
     const word = readWordAt(line, firstContentIndex);
-    return word?.text.toLowerCase() === 'if';
+    return word?.normalized === 'if';
   });
 }
 
@@ -83,7 +80,7 @@ function tryExpandInlineIf(
 
   const ifMatch = readWordAt(line, firstContentIndex);
 
-  if (!ifMatch || ifMatch.text.toLowerCase() !== 'if') {
+  if (!ifMatch || ifMatch.normalized !== 'if') {
     return undefined;
   }
 
@@ -196,7 +193,7 @@ function splitConditionOnLogicalOperators(condition: string): string[] {
       continue;
     }
 
-    if (!SQL_WORD_START.test(current)) {
+    if (!isSqlWordStart(current)) {
       index += 1;
       continue;
     }
@@ -208,7 +205,7 @@ function splitConditionOnLogicalOperators(condition: string): string[] {
       continue;
     }
 
-    const normalized = word.text.toLowerCase();
+    const normalized = word.normalized;
 
     if (parenDepth === 0 && (normalized === 'and' || normalized === 'or')) {
       if (normalized === 'and' && betweenPending) {
@@ -249,19 +246,13 @@ function findKeyword(
     let index = Math.max(segment.start, startIndex);
 
     while (index < segment.end) {
-      const nextIndex = findWordStart(line, index, segment.end);
+      const word = findNextSqlWord(line, index, segment.end);
 
-      if (nextIndex < 0) {
+      if (!word) {
         break;
       }
 
-      const word = readWordAt(line, nextIndex);
-
-      if (!word || word.end > segment.end) {
-        break;
-      }
-
-      if (word.text.toLowerCase() === keyword) {
+      if (word.normalized === keyword) {
         return word;
       }
 
@@ -281,34 +272,28 @@ function findEndIf(
     let index = Math.max(segment.start, startIndex);
 
     while (index < segment.end) {
-      const nextIndex = findWordStart(line, index, segment.end);
+      const firstWord = findNextSqlWord(line, index, segment.end);
 
-      if (nextIndex < 0) {
+      if (!firstWord) {
         break;
       }
 
-      const firstWord = readWordAt(line, nextIndex);
-
-      if (!firstWord || firstWord.end > segment.end) {
-        break;
-      }
-
-      const normalized = firstWord.text.toLowerCase();
+      const normalized = firstWord.normalized;
 
       if (normalized === 'endif') {
         return firstWord;
       }
 
       if (normalized === 'end') {
-        const secondWordStart = findWordStart(line, firstWord.end, segment.end);
-        const secondWord = secondWordStart >= 0 ? readWordAt(line, secondWordStart) : undefined;
+        const secondWord = findNextSqlWord(line, firstWord.end, segment.end);
 
-        if (secondWord && secondWord.end <= segment.end && secondWord.text.toLowerCase() === 'if') {
+        if (secondWord?.normalized === 'if') {
           const trailingSemicolonEnd = consumeOptionalSemicolon(line, secondWord.end, segment.end);
           return {
             start: firstWord.start,
             end: trailingSemicolonEnd,
             text: line.slice(firstWord.start, trailingSemicolonEnd),
+            normalized: line.slice(firstWord.start, trailingSemicolonEnd).toLowerCase(),
           };
         }
       }
@@ -334,26 +319,6 @@ function consumeOptionalSemicolon(line: string, start: number, segmentEnd: numbe
   return line[index] === ';' ? index + 1 : start;
 }
 
-function findWordStart(line: string, start: number, end: number): number {
-  for (let index = start; index < end; index += 1) {
-    if (SQL_WORD_START.test(line[index])) {
-      return index;
-    }
-  }
-
-  return -1;
-}
-
 function readWordAt(line: string, start: number): KeywordMatch | undefined {
-  if (!SQL_WORD_START.test(line[start] ?? '')) {
-    return undefined;
-  }
-
-  let end = start + 1;
-
-  while (end < line.length && SQL_WORD_PART.test(line[end])) {
-    end += 1;
-  }
-
-  return { start, end, text: line.slice(start, end) };
+  return readSqlWordAt(line, start);
 }

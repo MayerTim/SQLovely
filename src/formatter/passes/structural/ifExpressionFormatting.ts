@@ -1,9 +1,12 @@
 import type { SqlDialect } from '../../../dialects';
 import {
   cloneSqlLineScanState,
+  collectSqlWordsFromSegments,
+  findNextSqlWord,
   scanSqlLineOutsideLiteralsAndComments,
   type SqlLineScanState,
   type SqlOutsideSegment,
+  type SqlWordMatch,
 } from '../../sqlLineScanner';
 
 export interface IfExpressionFormattingState {
@@ -24,11 +27,7 @@ interface ExpandedLineResult {
   readonly nextState: IfExpressionFormattingState;
 }
 
-interface WordMatch {
-  readonly start: number;
-  readonly end: number;
-  readonly normalized: string;
-}
+type WordMatch = SqlWordMatch;
 
 interface EndIfMatch {
   readonly start: number;
@@ -36,8 +35,6 @@ interface EndIfMatch {
   readonly suffix: string;
 }
 
-const SQL_WORD_START = /[A-Za-z_]/u;
-const SQL_WORD_PART = /[A-Za-z0-9_$#]/u;
 const PROCEDURAL_BRANCH_STARTERS = new Set([
   'alter',
   'begin',
@@ -389,7 +386,7 @@ function findKeyword(
     let index = Math.max(segment.start, startIndex);
 
     while (index < segment.end) {
-      const word = readNextWord(line, index, segment.end);
+      const word = findNextSqlWord(line, index, segment.end);
 
       if (!word) {
         break;
@@ -415,7 +412,7 @@ function findEndIf(
     let index = Math.max(segment.start, startIndex);
 
     while (index < segment.end) {
-      const firstWord = readNextWord(line, index, segment.end);
+      const firstWord = findNextSqlWord(line, index, segment.end);
 
       if (!firstWord) {
         break;
@@ -430,7 +427,7 @@ function findEndIf(
       }
 
       if (firstWord.normalized === 'end') {
-        const secondWord = readNextWord(line, firstWord.end, segment.end);
+        const secondWord = findNextSqlWord(line, firstWord.end, segment.end);
 
         if (secondWord?.normalized === 'if') {
           return {
@@ -448,48 +445,11 @@ function findEndIf(
   return undefined;
 }
 
-function readNextWord(line: string, startIndex: number, endIndex: number): WordMatch | undefined {
-  for (let index = startIndex; index < endIndex; index += 1) {
-    if (!SQL_WORD_START.test(line[index])) {
-      continue;
-    }
-
-    const start = index;
-    index += 1;
-
-    while (index < endIndex && SQL_WORD_PART.test(line[index])) {
-      index += 1;
-    }
-
-    return {
-      start,
-      end: index,
-      normalized: line.slice(start, index).toLowerCase(),
-    };
-  }
-
-  return undefined;
-}
-
-function collectWords(line: string, outsideSegments: readonly SqlOutsideSegment[]): WordMatch[] {
-  const words: WordMatch[] = [];
-
-  for (const segment of outsideSegments) {
-    let index = segment.start;
-
-    while (index < segment.end) {
-      const word = readNextWord(line, index, segment.end);
-
-      if (!word) {
-        break;
-      }
-
-      words.push(word);
-      index = word.end;
-    }
-  }
-
-  return words;
+function collectWords(
+  line: string,
+  outsideSegments: readonly SqlOutsideSegment[],
+): readonly WordMatch[] {
+  return collectSqlWordsFromSegments(line, outsideSegments);
 }
 
 function isProceduralBranchText(text: string): boolean {

@@ -1,6 +1,7 @@
 import {
   cloneSqlLineScanState,
   createSqlOutsideLookup,
+  readSqlWordBefore,
   scanSqlLineOutsideLiteralsAndComments,
   type SqlLineScanState,
 } from '../../sqlLineScanner';
@@ -21,7 +22,6 @@ export interface ParenthesisIndentAnalysis {
   readonly nextScanState: SqlLineScanState;
 }
 
-const SQL_WORD_PART = /[A-Za-z0-9_$#]/u;
 const TYPE_LENGTH_WORDS = new Set([
   'binary',
   'bit',
@@ -340,28 +340,8 @@ function isTypeLengthParenthesis(line: string, openIndex: number, inner: string)
     return false;
   }
 
-  const previousWord = readWordBefore(line, openIndex);
-  return previousWord !== undefined && TYPE_LENGTH_WORDS.has(previousWord.toLowerCase());
-}
-
-function readWordBefore(line: string, index: number): string | undefined {
-  let cursor = index - 1;
-
-  while (cursor >= 0 && /\s/u.test(line[cursor])) {
-    cursor -= 1;
-  }
-
-  const end = cursor + 1;
-
-  while (cursor >= 0 && SQL_WORD_PART.test(line[cursor])) {
-    cursor -= 1;
-  }
-
-  if (end === cursor + 1) {
-    return undefined;
-  }
-
-  return line.slice(cursor + 1, end);
+  const previousWord = readSqlWordBefore(line, openIndex);
+  return previousWord !== undefined && TYPE_LENGTH_WORDS.has(previousWord.normalized);
 }
 
 function skipWhitespace(line: string, start: number): number {
