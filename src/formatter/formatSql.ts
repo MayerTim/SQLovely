@@ -326,7 +326,10 @@ export function formatSql(
     }
   }
 
-  let nextText = formattedLines.join(split.eol);
+  const separatorNormalizedLines = dialect.id === 'watcom'
+    ? restoreOrderByIfExpressionSeparators(formattedLines)
+    : formattedLines;
+  let nextText = separatorNormalizedLines.join(split.eol);
 
   if (resolvedOptions.ensureFinalNewline || split.hadFinalNewline) {
     nextText += split.eol;
@@ -345,6 +348,88 @@ export function formatSqlRangeText(
   options: Partial<FormatSqlOptions> = {}
 ): FormatSqlResult {
   return formatSql(text, dialect, { ...options, ensureFinalNewline: false });
+}
+
+
+function restoreOrderByIfExpressionSeparators(lines: readonly string[]): string[] {
+  const normalizedLines = [...lines];
+
+  for (let index = 0; index < normalizedLines.length; index += 1) {
+    const line = normalizedLines[index];
+    const trimmed = line.trim();
+
+    if (!isIfExpressionLineMissingSeparator(trimmed) || !isInsideOrderByContinuation(normalizedLines, index)) {
+      continue;
+    }
+
+    const nextLineIndex = findNextNonBlankLineIndex(normalizedLines, index + 1);
+
+    if (nextLineIndex < 0) {
+      continue;
+    }
+
+    const nextLine = normalizedLines[nextLineIndex];
+
+    if (countLeadingWhitespace(nextLine) !== countLeadingWhitespace(line)) {
+      continue;
+    }
+
+    if (!isLikelyOrderByListContinuationLine(nextLine.trim())) {
+      continue;
+    }
+
+    normalizedLines[index] = `${line},`;
+  }
+
+  return normalizedLines;
+}
+
+function isIfExpressionLineMissingSeparator(trimmedLine: string): boolean {
+  return /^if\b.+\bthen\b.+\belse\b.+\bendif$/iu.test(trimmedLine) && !/[;,]$/u.test(trimmedLine);
+}
+
+function isInsideOrderByContinuation(lines: readonly string[], lineIndex: number): boolean {
+  const currentIndent = countLeadingWhitespace(lines[lineIndex]);
+
+  for (let index = lineIndex - 1; index >= 0; index -= 1) {
+    const previousLine = lines[index];
+    const trimmed = previousLine.trim();
+
+    if (trimmed.length === 0) {
+      continue;
+    }
+
+    if (countLeadingWhitespace(previousLine) >= currentIndent) {
+      continue;
+    }
+
+    return /^order\s+by\b/iu.test(trimmed);
+  }
+
+  return false;
+}
+
+function findNextNonBlankLineIndex(lines: readonly string[], startIndex: number): number {
+  for (let index = startIndex; index < lines.length; index += 1) {
+    if (lines[index].trim().length > 0) {
+      return index;
+    }
+  }
+
+  return -1;
+}
+
+function isLikelyOrderByListContinuationLine(trimmedLine: string): boolean {
+  if (trimmedLine.length === 0 || /^[),;]/u.test(trimmedLine)) {
+    return false;
+  }
+
+  return !/^(?:select|into|from|where|group\s+by|having|order\s+by|union|limit|offset|fetch|for\s+update|end|else|elseif|when|then|do|begin|grant|create)\b/iu.test(trimmedLine);
+}
+
+function countLeadingWhitespace(line: string): number {
+  const match = /^\s*/u.exec(line);
+  return match?.[0].length ?? 0;
 }
 
 function splitSqlText(text: string): SplitTextResult {

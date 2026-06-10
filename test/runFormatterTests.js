@@ -498,6 +498,35 @@ runTest('normalizes split Watcom IF expressions without treating them as procedu
 });
 
 
+runTest('restores ORDER BY separators after split Watcom IF expression continuations', () => {
+  const input = [
+    'begin',
+    'order by',
+    "if \"pr\".\"Role\" = 'Instrumenteur1'",
+    'then',
+    '1 else 2',
+    'end if',
+    '"pr"."Reihenfolge",',
+    '"pr"."lfd";',
+    'end;'
+  ].join('\n');
+
+  const expected = [
+    'BEGIN',
+    '  ORDER BY',
+    "    IF \"pr\".\"Role\" = 'Instrumenteur1' THEN 1 ELSE 2 ENDIF,",
+    '    "pr"."Reihenfolge",',
+    '    "pr"."lfd";',
+    'END;',
+    ''
+  ].join('\n');
+
+  const result = formatSql(input, watcomDialect, defaultOptions);
+
+  assert.equal(result.text, expected);
+});
+
+
 runTest('indents Watcom query list continuations and predicate function arguments', () => {
   const input = [
     'begin',
