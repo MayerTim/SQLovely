@@ -5,6 +5,7 @@ const suites = [
   './runMetadataHeaderTests',
   './runMetadataRegressionTests',
   './runFormatterTests',
+  './runFormatterCorpusTests',
   './runDiagnosticsTests',
 ];
 
