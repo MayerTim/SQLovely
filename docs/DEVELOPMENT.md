@@ -134,6 +134,10 @@ Metadata-header behavior is split into small internal modules under `src/extras/
 
 Keep `src/extras/metadataHeader.ts` as the public orchestration entry point. New metadata behavior should usually live in the focused helper module that owns that concern, with regression coverage in the metadata test suites.
 
+## Formatter test organization
+
+Formatter regression coverage is grouped by topic under `test/formatter/`. Keep `test/runFormatterTests.js` as the stable entry point for `npm run test:formatter`, and add new formatter regressions to the closest topic suite instead of expanding the runner directly. Use `test/formatter/helpers.js` for shared formatter imports, dialects, default options and fixture loading.
+
 ## Formatter pipeline internals
 
 Watcom structural rewrites are coordinated through `src/formatter/formattingPipeline.ts`. Shared formatter inputs such as the active dialect, resolved options, indentation string, cancellation checks and safety decision live in `src/formatter/formattingContext.ts`. Keep the pipeline order explicit and behavior-preserving: compact/control-flow expansion, query/cursor/exception/expression normalization, block-ending normalization and parenthesis splitting should run before `formatSql.ts` applies indentation and final cleanup passes. When adding a formatter rule, prefer a small stateful pipeline pass that consumes the shared formatting context instead of adding another nested loop to `formatSql.ts`.
