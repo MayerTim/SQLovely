@@ -15,6 +15,9 @@
       "include": "#strings"
     },
     {
+      "include": "#quotedBuiltinFunctions"
+    },
+    {
       "include": "#delimitedIdentifiers"
     },
     {
@@ -692,6 +695,25 @@
               "match": "[^\\r\\n]+"
             }
           ]
+        }
+      ]
+    },
+    "quotedBuiltinFunctions": {
+      "patterns": [
+        {
+          "name": "support.function.builtin.quoted.sql.sqlovely",
+          "match": "(?i)(\")(connection_property|current\\s+timestamp|character_length|session_property|current\\s+date|current\\s+time|scope_identity|datefromparts|xmlserialize|char_length|first_value|html_encode|suser_sname|sysdatetime|try_convert|dateformat|dense_rank|difference|getutcdate|last_value|row_number|string_agg|xmlelement|isnumeric|monthname|object_id|quotename|replicate|substring|timestamp|user_name|xmlconcat|coalesce|datediff|datename|datepart|hextoint|inttohex|patindex|property|try_cast|variance|xmlparse|xmlquery|ceiling|convert|dateadd|dayname|db_name|degrees|eomonth|getdate|greater|replace|reverse|similar|soundex|concat|ifnull|isdate|isjson|isnull|length|lesser|locate|minute|nullif|repeat|second|stddev|string|substr|ascii|atan2|count|floor|log10|lower|ltrim|month|newid|ntile|power|right|round|rtrim|space|stuff|today|upper|acos|asin|atan|cast|ceil|char|date|days|hour|lead|left|list|rand|rank|sign|sqrt|trim|year|abs|avg|cos|cot|day|exp|iif|lag|len|log|max|min|mod|now|sin|str|sum|tan)(\")(?=\\s*\\()",
+          "captures": {
+            "1": {
+              "name": "punctuation.definition.identifier.begin.sql.sqlovely"
+            },
+            "2": {
+              "name": "support.function.builtin.sql.sqlovely"
+            },
+            "3": {
+              "name": "punctuation.definition.identifier.end.sql.sqlovely"
+            }
+          }
         }
       ]
     }

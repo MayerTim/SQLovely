@@ -6,7 +6,7 @@ It is focused on Watcom SQL by default and also includes a small MSSQL-oriented 
 
 ## Features
 
-- SQL syntax highlighting for regular `.sql` files
+- SQL syntax highlighting for regular `.sql` files, including quoted Watcom built-in calls
 - Conservative SQL formatting
 - Optional metadata-header extras for every detected procedure, function and trigger in a script
 - Diagnostics and quick fixes for supported SQLovely rules
@@ -152,7 +152,7 @@ Supported values:
 - `watcom`: default dialect
 - `mssql`: small secondary dialect surface
 
-The syntax grammar is intentionally broad. Dialect-specific behavior is handled by formatting, object detection, extras, diagnostics and quick fixes.
+The syntax grammar is intentionally broad. It highlights regular built-in function calls and common quoted Watcom built-in calls such as `"isnull"(...)`, `"string"(...)`, `"date"(...)`, `"substr"(...)` and `"xmlelement"(...)` while still treating other double-quoted names as identifiers. Dialect-specific behavior is handled by formatting, object detection, extras, diagnostics and quick fixes.
 
 ## Diagnostics
 

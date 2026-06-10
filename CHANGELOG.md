@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added syntax highlighting for quoted Watcom built-in function calls such as `"isnull"(...)`, `"string"(...)`, `"date"(...)`, `"substr"(...)` and `"xmlelement"(...)`.
 - Added Watcom `CASE WHEN THEN ELSE END` expression formatting with stable indentation and nested CASE support.
 - Added Watcom cursor `FOR ... CURSOR FOR ... DO ... END FOR` formatting with stable query/body indentation.
 - Added Watcom query-clause formatting for top-level `SELECT`, `FROM`, `WHERE`, `JOIN`, `ON`, `GROUP BY`, `HAVING` and `ORDER BY` clauses, including logical predicate continuations.

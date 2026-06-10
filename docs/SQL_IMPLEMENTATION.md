@@ -19,7 +19,7 @@ Supported values:
 - `watcom`: default dialect
 - `mssql`: small secondary dialect surface for basic SQL Server-style workflows
 
-The grammar stays intentionally broad. Dialect-specific behavior lives in:
+The grammar stays intentionally broad. Quoted built-in function matching is ordered before generic double-quoted identifier matching, so calls like `"isnull"(...)`, `"string"(...)` and `"xmlelement"(...)` receive function scopes without changing normal quoted object names. Dialect-specific behavior lives in:
 
 - formatter rules
 - object detection
@@ -36,6 +36,7 @@ The grammar highlights useful lexical regions in `.sql` files.
 | Comments | `--`, `//`, `/* ... */` |
 | Strings | single-quoted strings, `N'...'`, doubled apostrophe escaping, hex/binary literals |
 | Identifiers | bracketed identifiers, double-quoted identifiers, backtick identifiers, qualified object names |
+| Quoted built-in calls | common Watcom built-ins followed by `(`, for example `"isnull"(...)`, `"date"(...)`, `"string"(...)`, `"substr"(...)` and `"xmlelement"(...)` |
 | Variables | `@local`, `@@system`, `:host`, `?`, `$1`-style numbered parameters |
 | Literals | decimal numbers, scientific notation, hexadecimal numbers, common language constants |
 | DDL | common create/alter/drop statements and schema-object declarations |
@@ -54,6 +55,7 @@ The grammar highlights useful lexical regions in `.sql` files.
 | Single-quoted strings | yes | preserved | ignored during object detection |
 | Bracketed identifiers | yes | preserved | supported for MSSQL objects |
 | Double-quoted identifiers | yes | preserved | supported for Watcom and MSSQL objects |
+| Quoted Watcom built-in calls | yes, when followed by `(` | preserved | not object-relevant |
 | Host variables `:name` and `?` | yes | preserved | not object-relevant |
 | SQL Server variables `@name`, `@@name` | yes | preserved | supported for MSSQL surface |
 | Numeric and hex literals | yes | preserved | not object-relevant |
