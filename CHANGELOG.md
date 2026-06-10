@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Split metadata-header parsing, rendering, history synchronization and placement helpers into dedicated internal modules without changing generated metadata behavior.
 - Debounced SQL diagnostics on document changes and reused formatter safety limits to skip expensive metadata diagnostics for very large SQL documents.
 - Centralized formatter options, indentation settings, cancellation checks and safety decisions in a shared formatting context.
 - Grouped formatter passes into structural and cleanup phases to clarify rule ownership without changing formatter behavior.

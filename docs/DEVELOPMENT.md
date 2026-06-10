@@ -121,6 +121,19 @@ When changing metadata-header behavior, add or update regression tests for:
 - multiline description wrapping and manual line-break preservation
 
 
+
+## Metadata-header internals
+
+Metadata-header behavior is split into small internal modules under `src/extras/metadata/`:
+
+- `metadataHeaderParser.ts` locates current, legacy and loose legacy headers and parses fields/history entries.
+- `metadataHeaderRenderer.ts` renders the current compact `-- METADATA` header layout.
+- `metadataHistory.ts` synchronizes version and history entries.
+- `metadataHeaderPlacement.ts` decides where headers are inserted relative to the detected SQL object.
+- `metadataText.ts` owns shared text-range and line-boundary helpers.
+
+Keep `src/extras/metadataHeader.ts` as the public orchestration entry point. New metadata behavior should usually live in the focused helper module that owns that concern, with regression coverage in the metadata test suites.
+
 ## Formatter pipeline internals
 
 Watcom structural rewrites are coordinated through `src/formatter/formattingPipeline.ts`. Shared formatter inputs such as the active dialect, resolved options, indentation string, cancellation checks and safety decision live in `src/formatter/formattingContext.ts`. Keep the pipeline order explicit and behavior-preserving: compact/control-flow expansion, query/cursor/exception/expression normalization, block-ending normalization and parenthesis splitting should run before `formatSql.ts` applies indentation and final cleanup passes. When adding a formatter rule, prefer a small stateful pipeline pass that consumes the shared formatting context instead of adding another nested loop to `formatSql.ts`.
