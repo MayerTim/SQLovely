@@ -116,6 +116,10 @@ When changing metadata-header behavior, add or update regression tests for:
 - multiline description wrapping and manual line-break preservation
 
 
+## Formatter pipeline internals
+
+Watcom structural rewrites are coordinated through `src/formatter/formattingPipeline.ts`. Keep the pipeline order explicit and behavior-preserving: compact/control-flow expansion, query/cursor/exception/expression normalization, block-ending normalization and parenthesis splitting should run before `formatSql.ts` applies indentation and final cleanup passes. When adding a formatter rule, prefer a small stateful pipeline pass instead of adding another nested loop to `formatSql.ts`.
+
 ## Formatter performance regression focus
 
 When adding formatter passes, keep them lexical and linear where possible. Add or update tests for:
