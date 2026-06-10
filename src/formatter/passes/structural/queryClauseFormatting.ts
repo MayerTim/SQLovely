@@ -1,6 +1,7 @@
 import type { SqlDialect } from '../../../dialects';
 import {
   cloneSqlLineScanState,
+  createSqlOutsideLookup,
   scanSqlLineOutsideLiteralsAndComments,
   type SqlLineScanState,
   type SqlOutsideSegment,
@@ -48,7 +49,7 @@ export function expandWatcomQueryClauseLine(
   initialState: QueryClauseFormattingState,
 ): ExpandedLineResult {
   const scanResult = scanSqlLineOutsideLiteralsAndComments(line, initialState.scanState);
-  const outside = createOutsideLookup(line.length, scanResult.outsideSegments);
+  const outside = createSqlOutsideLookup(line.length, scanResult.outsideSegments);
   const nextState: QueryClauseFormattingState = {
     scanState: scanResult.nextState,
     parenthesisDepth: updateParenthesisDepth(line, outside, initialState.parenthesisDepth),
@@ -266,21 +267,6 @@ function updateParenthesisDepth(
   }
 
   return depth;
-}
-
-function createOutsideLookup(
-  length: number,
-  outsideSegments: readonly SqlOutsideSegment[],
-): boolean[] {
-  const outside = new Array<boolean>(length).fill(false);
-
-  for (const segment of outsideSegments) {
-    for (let index = segment.start; index < segment.end; index += 1) {
-      outside[index] = true;
-    }
-  }
-
-  return outside;
 }
 
 function isPhrase(

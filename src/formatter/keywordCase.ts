@@ -3,6 +3,7 @@ import type { KeywordCase } from './options';
 import {
   createInitialSqlLineScanState,
   scanSqlLineOutsideLiteralsAndComments,
+  rewriteSqlLineOutsideLiteralsAndComments,
   type SqlLineScanState,
 } from './sqlLineScanner';
 
@@ -40,19 +41,11 @@ export function applyKeywordCaseToLine(
     return { line, nextState: scanResult.nextState };
   }
 
-  const scanResult = scanSqlLineOutsideLiteralsAndComments(line, scanState);
-  let cursor = 0;
-  let nextLine = '';
+  const result = rewriteSqlLineOutsideLiteralsAndComments(line, scanState, (segmentText) =>
+    transformSqlWords(segmentText, dialect, keywordCase),
+  );
 
-  for (const segment of scanResult.outsideSegments) {
-    nextLine += line.slice(cursor, segment.start);
-    nextLine += transformSqlWords(line.slice(segment.start, segment.end), dialect, keywordCase);
-    cursor = segment.end;
-  }
-
-  nextLine += line.slice(cursor);
-
-  return { line: nextLine, nextState: scanResult.nextState };
+  return { line: result.line, nextState: result.nextState };
 }
 
 export function collectSqlWordsOutsideLiteralsAndComments(

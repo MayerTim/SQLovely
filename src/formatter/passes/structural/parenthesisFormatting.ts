@@ -1,8 +1,8 @@
 import {
   cloneSqlLineScanState,
+  createSqlOutsideLookup,
   scanSqlLineOutsideLiteralsAndComments,
   type SqlLineScanState,
-  type SqlOutsideSegment,
 } from '../../sqlLineScanner';
 
 export interface ParenthesisFormattingState {
@@ -70,7 +70,7 @@ export function expandParenthesesInLine(
   initialState: ParenthesisFormattingState,
 ): ParenthesisExpansionResult {
   const scanResult = scanSqlLineOutsideLiteralsAndComments(line, initialState.scanState);
-  const outside = createOutsideLookup(line.length, scanResult.outsideSegments);
+  const outside = createSqlOutsideLookup(line.length, scanResult.outsideSegments);
 
   if (!lineContainsSplittableParenthesis(line, outside, initialState.parenthesisDepth)) {
     return {
@@ -173,7 +173,7 @@ export function analyzeParenthesesForIndent(
   initialState: SqlLineScanState,
 ): ParenthesisIndentAnalysis {
   const scanResult = scanSqlLineOutsideLiteralsAndComments(line, initialState);
-  const outside = createOutsideLookup(line.length, scanResult.outsideSegments);
+  const outside = createSqlOutsideLookup(line.length, scanResult.outsideSegments);
   let leadingClosingParentheses = 0;
   let depthDelta = 0;
   let hasSeenNonWhitespace = false;
@@ -362,21 +362,6 @@ function readWordBefore(line: string, index: number): string | undefined {
   }
 
   return line.slice(cursor + 1, end);
-}
-
-function createOutsideLookup(
-  length: number,
-  outsideSegments: readonly SqlOutsideSegment[],
-): boolean[] {
-  const outside = new Array<boolean>(length).fill(false);
-
-  for (const segment of outsideSegments) {
-    for (let index = segment.start; index < segment.end; index += 1) {
-      outside[index] = true;
-    }
-  }
-
-  return outside;
 }
 
 function skipWhitespace(line: string, start: number): number {
