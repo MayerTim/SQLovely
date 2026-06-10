@@ -113,12 +113,20 @@ runTest('VSIX packaging scripts are available and keep package output isolated',
   const vscodeIgnore = fs.readFileSync(path.join(root, '.vscodeignore'), 'utf8');
 
   assert.ok(manifest.devDependencies['@vscode/vsce']);
+  assert.ok(manifest.devDependencies['@vscode/test-electron']);
   assert.equal(manifest.scripts.validate, 'npm run check && npm test');
+  assert.equal(
+    manifest.scripts['test:extension'],
+    'npm run compile && node ./test/extension/runExtensionTests.js',
+  );
   assert.equal(
     manifest.scripts['package:vsix'],
     'npm run validate && node ./scripts/packageVsix.js',
   );
   assert.ok(exists('scripts/packageVsix.js'));
+  assert.ok(exists('test/extension/runExtensionTests.js'));
+  assert.ok(exists('test/extension/suite/index.js'));
+  assert.ok(exists('test/extension/suite/formattingSmoke.test.js'));
   assert.ok(vscodeIgnore.includes('scripts/**'));
   assert.ok(vscodeIgnore.includes('out/**'));
   assert.ok(vscodeIgnore.includes('PACKAGING.md'));
@@ -194,6 +202,7 @@ runTest('project package hygiene rules exclude local-only files from distributab
   assert.ok(vscodeIgnore.includes('test/**'));
   assert.ok(vscodeIgnore.includes('scripts/**'));
   assert.ok(vscodeIgnore.includes('out/**'));
+  assert.ok(vscodeIgnore.includes('.vscode-test/**'));
   assert.ok(vscodeIgnore.includes('*.vsix'));
   assert.ok(vscodeIgnore.includes('*.zip'));
   assert.ok(!vscodeIgnore.split('\n').includes('dist/**'));
@@ -201,6 +210,7 @@ runTest('project package hygiene rules exclude local-only files from distributab
   assert.ok(gitIgnore.includes('node_modules/'));
   assert.ok(gitIgnore.includes('dist/'));
   assert.ok(gitIgnore.includes('out/'));
+  assert.ok(gitIgnore.includes('.vscode-test/'));
   assert.ok(gitIgnore.includes('*.vsix'));
   assert.ok(gitIgnore.includes('*.zip'));
 });
