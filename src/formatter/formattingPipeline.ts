@@ -1,4 +1,3 @@
-import type { SqlDialect } from '../dialects';
 import { expandWatcomInlineIfLine } from './passes/structural/inlineIfFormatting';
 import { expandUnionAllLine } from './passes/structural/unionAllFormatting';
 import { createInitialCursorForFormattingState, expandWatcomCursorForLine } from './passes/structural/cursorForFormatting';
@@ -9,12 +8,8 @@ import { createInitialCaseExpressionFormattingState, expandWatcomCaseExpressionL
 import { createInitialBlockEndFormattingState, expandWatcomBlockEndLine } from './passes/structural/blockEndFormatting';
 import { createInitialParenthesisFormattingState, expandParenthesesInLine } from './passes/structural/parenthesisFormatting';
 import { createInitialSqlLineScanState } from './sqlLineScanner';
-import { shouldRunExpensiveLineFormatting, type FormattingSafetyDecision } from './performanceGuards';
-
-interface FormattingPipelineContext {
-  readonly dialect: SqlDialect;
-  readonly safety: FormattingSafetyDecision;
-}
+import { shouldRunExpensiveLineFormatting } from './performanceGuards';
+import type { FormattingContext } from './formattingContext';
 
 interface FormattingPipelineLine {
   readonly line: string;
@@ -30,7 +25,7 @@ export interface FormattingPipeline {
   readonly expandLine: (sourceLine: string) => readonly string[];
 }
 
-export function createFormattingPipeline(context: FormattingPipelineContext): FormattingPipeline {
+export function createFormattingPipeline(context: FormattingContext): FormattingPipeline {
   const passes = createFormattingPipelinePasses(context);
 
   return {
@@ -47,7 +42,7 @@ export function createFormattingPipeline(context: FormattingPipelineContext): Fo
   };
 }
 
-function createFormattingPipelinePasses(context: FormattingPipelineContext): readonly FormattingPipelinePass[] {
+function createFormattingPipelinePasses(context: FormattingContext): readonly FormattingPipelinePass[] {
   let inlineIfScanState = createInitialSqlLineScanState();
   let unionAllScanState = createInitialSqlLineScanState();
   let cursorForScanState = createInitialCursorForFormattingState();
@@ -62,7 +57,7 @@ function createFormattingPipelinePasses(context: FormattingPipelineContext): rea
     {
       name: 'inlineIf',
       run(entry: FormattingPipelineLine): readonly FormattingPipelineLine[] {
-        const canRunPass = canRunExpensivePass(entry, context.safety);
+        const canRunPass = canRunExpensivePass(entry, context);
         const result = canRunPass
           ? expandWatcomInlineIfLine(entry.line, context.dialect, inlineIfScanState)
           : { lines: [entry.line], nextState: inlineIfScanState };
@@ -73,7 +68,7 @@ function createFormattingPipelinePasses(context: FormattingPipelineContext): rea
     {
       name: 'unionAll',
       run(entry: FormattingPipelineLine): readonly FormattingPipelineLine[] {
-        const canRunPass = canRunExpensivePass(entry, context.safety);
+        const canRunPass = canRunExpensivePass(entry, context);
         const result = canRunPass
           ? expandUnionAllLine(entry.line, unionAllScanState)
           : { lines: [entry.line], nextState: unionAllScanState };
@@ -84,7 +79,7 @@ function createFormattingPipelinePasses(context: FormattingPipelineContext): rea
     {
       name: 'cursorFor',
       run(entry: FormattingPipelineLine): readonly FormattingPipelineLine[] {
-        const canRunPass = canRunExpensivePass(entry, context.safety);
+        const canRunPass = canRunExpensivePass(entry, context);
         const result = canRunPass
           ? expandWatcomCursorForLine(entry.line, context.dialect, cursorForScanState)
           : { lines: [entry.line], nextState: cursorForScanState };
@@ -95,7 +90,7 @@ function createFormattingPipelinePasses(context: FormattingPipelineContext): rea
     {
       name: 'queryClauses',
       run(entry: FormattingPipelineLine): readonly FormattingPipelineLine[] {
-        const canRunPass = canRunExpensivePass(entry, context.safety);
+        const canRunPass = canRunExpensivePass(entry, context);
         const result = canRunPass
           ? expandWatcomQueryClauseLine(entry.line, context.dialect, queryClauseFormattingState)
           : { lines: [entry.line], nextState: queryClauseFormattingState };
@@ -106,7 +101,7 @@ function createFormattingPipelinePasses(context: FormattingPipelineContext): rea
     {
       name: 'exceptions',
       run(entry: FormattingPipelineLine): readonly FormattingPipelineLine[] {
-        const canRunPass = canRunExpensivePass(entry, context.safety);
+        const canRunPass = canRunExpensivePass(entry, context);
         const result = canRunPass
           ? expandWatcomExceptionLine(entry.line, context.dialect, exceptionFormattingState)
           : { lines: [entry.line], nextState: exceptionFormattingState };
@@ -117,7 +112,7 @@ function createFormattingPipelinePasses(context: FormattingPipelineContext): rea
     {
       name: 'ifExpressions',
       run(entry: FormattingPipelineLine): readonly FormattingPipelineLine[] {
-        const canRunPass = canRunExpensivePass(entry, context.safety);
+        const canRunPass = canRunExpensivePass(entry, context);
         const result = canRunPass
           ? expandWatcomIfExpressionLine(entry.line, context.dialect, ifExpressionFormattingState)
           : { lines: [entry.line], nextState: ifExpressionFormattingState };
@@ -128,7 +123,7 @@ function createFormattingPipelinePasses(context: FormattingPipelineContext): rea
     {
       name: 'caseExpressions',
       run(entry: FormattingPipelineLine): readonly FormattingPipelineLine[] {
-        const canRunPass = canRunExpensivePass(entry, context.safety);
+        const canRunPass = canRunExpensivePass(entry, context);
         const result = canRunPass
           ? expandWatcomCaseExpressionLine(entry.line, context.dialect, caseExpressionFormattingState)
           : { lines: [entry.line], nextState: caseExpressionFormattingState };
@@ -139,7 +134,7 @@ function createFormattingPipelinePasses(context: FormattingPipelineContext): rea
     {
       name: 'blockEndings',
       run(entry: FormattingPipelineLine): readonly FormattingPipelineLine[] {
-        const canRunPass = canRunExpensivePass(entry, context.safety);
+        const canRunPass = canRunExpensivePass(entry, context);
         const result = canRunPass
           ? expandWatcomBlockEndLine(entry.line, context.dialect, blockEndFormattingState)
           : { lines: [entry.line], nextState: blockEndFormattingState };
@@ -150,7 +145,7 @@ function createFormattingPipelinePasses(context: FormattingPipelineContext): rea
     {
       name: 'parentheses',
       run(entry: FormattingPipelineLine): readonly FormattingPipelineLine[] {
-        const canRunPass = context.dialect.id === 'watcom' && canRunExpensivePass(entry, context.safety);
+        const canRunPass = context.dialect.id === 'watcom' && canRunExpensivePass(entry, context);
         const result = canRunPass
           ? expandParenthesesInLine(entry.line, parenthesisExpansionState)
           : { lines: [entry.line], nextState: parenthesisExpansionState };
@@ -168,8 +163,8 @@ function runFormattingPipelinePass(
   return entries.flatMap((entry) => pass.run(entry));
 }
 
-function canRunExpensivePass(entry: FormattingPipelineLine, safety: FormattingSafetyDecision): boolean {
-  return entry.canRunExpensiveFormatting && shouldRunExpensiveLineFormatting(entry.line, safety);
+function canRunExpensivePass(entry: FormattingPipelineLine, context: FormattingContext): boolean {
+  return entry.canRunExpensiveFormatting && shouldRunExpensiveLineFormatting(entry.line, context.safety);
 }
 
 function toPipelineLines(lines: readonly string[], canRunExpensiveFormatting: boolean): readonly FormattingPipelineLine[] {

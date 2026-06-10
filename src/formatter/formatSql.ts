@@ -1,14 +1,10 @@
 import type { SqlDialect } from '../dialects';
 import { collectSqlWordsOutsideLiteralsAndComments, applyKeywordCaseToLine } from './keywordCase';
-import { DEFAULT_FORMAT_SQL_OPTIONS, type FormatSqlOptions } from './options';
-import {
-  analyzeFormattingSafety,
-  createFormattingSafetySummary,
-  resolveFormattingSafetyLimits,
-  type FormattingSafetyDecision
-} from './performanceGuards';
+import type { FormatSqlOptions } from './options';
+import type { FormattingSafetyDecision } from './performanceGuards';
 import { analyzeParenthesesForIndent } from './passes/structural/parenthesisFormatting';
 import { createFormattingPipeline } from './formattingPipeline';
+import { createFormattingContext, isFormattingCancellationRequested, type FormattingContext } from './formattingContext';
 import { createInitialSqlLineScanState, cloneSqlLineScanState, scanSqlLineOutsideLiteralsAndComments } from './sqlLineScanner';
 import { cleanupWatcomStatementContinuations } from './passes/cleanup/statementContinuationCleanup';
 import { cleanupWatcomDdlParentheses } from './passes/cleanup/ddlParenthesisCleanup';
@@ -36,29 +32,19 @@ export function formatSql(
   dialect: SqlDialect,
   options: Partial<FormatSqlOptions> = {}
 ): FormatSqlResult {
-  const resolvedOptions: FormatSqlOptions = {
-    ...DEFAULT_FORMAT_SQL_OPTIONS,
-    ...options,
-    safetyLimits: resolveFormattingSafetyLimits(options.safetyLimits)
-  };
   const split = splitSqlText(text);
-  const safety = analyzeFormattingSafety(text, split.lines, resolvedOptions.safetyLimits);
+  const context = createFormattingContext({ text, lines: split.lines, dialect, options });
+  const { dialect: activeDialect, options: resolvedOptions, safety, indentString } = context;
 
-  if (resolvedOptions.isCancellationRequested?.()) {
-    return {
-      text,
-      changed: false,
-      safety,
-      safetySummary: createFormattingSafetySummary(safety)
-    };
+  if (isFormattingCancellationRequested(context)) {
+    return createUnchangedFormatResult(text, context);
   }
   const formattedLines: string[] = [];
-  const indentString = createIndentString(resolvedOptions.indentSize, resolvedOptions.insertSpaces);
   let indentLevel = 0;
   let blankLineCount = 0;
   let keywordScanState = createInitialSqlLineScanState();
   let wordScanState = createInitialSqlLineScanState();
-  const formattingPipeline = createFormattingPipeline({ dialect, safety });
+  const formattingPipeline = createFormattingPipeline(context);
   let parenthesisIndentLevel = 0;
   let caseExpressionIndentLevel = 0;
   let parenthesisIndentScanState = createInitialSqlLineScanState();
@@ -67,13 +53,8 @@ export function formatSql(
   const exceptionIndentContexts: ExceptionIndentContext[] = [];
 
   for (const sourceLine of split.lines) {
-    if (resolvedOptions.isCancellationRequested?.()) {
-      return {
-        text,
-        changed: false,
-        safety,
-        safetySummary: createFormattingSafetySummary(safety)
-      };
+    if (isFormattingCancellationRequested(context)) {
+      return createUnchangedFormatResult(text, context);
     }
 
     const expandedLines = formattingPipeline.expandLine(sourceLine);
@@ -84,7 +65,7 @@ export function formatSql(
 
       const keywordResult = applyKeywordCaseToLine(
         withoutTrailingWhitespace,
-        dialect,
+        activeDialect,
         resolvedOptions.keywordCase,
         keywordScanState
       );
@@ -106,7 +87,7 @@ export function formatSql(
 
       const lineWords = [...wordResult.words];
       const firstWord = lineWords[0];
-      const isBatchSeparator = isBatchSeparatorLine(lineWords, dialect);
+      const isBatchSeparator = isBatchSeparatorLine(lineWords, activeDialect);
       const isCaseEndLine = isCaseExpressionEndLine(lineWords, caseExpressionIndentLevel);
       const isCaseElseLine = caseExpressionIndentLevel > 0 && firstWord === 'else';
       const isCaseThenLine = caseExpressionIndentLevel > 0 && firstWord === 'then';
@@ -224,13 +205,13 @@ export function formatSql(
     }
   }
 
-  const separatorNormalizedLines = dialect.id === 'watcom'
+  const separatorNormalizedLines = activeDialect.id === 'watcom'
     ? restoreOrderByIfExpressionSeparators(formattedLines)
     : formattedLines;
-  const statementCleanedLines = dialect.id === 'watcom'
+  const statementCleanedLines = activeDialect.id === 'watcom'
     ? cleanupWatcomStatementContinuations(separatorNormalizedLines, indentString)
     : separatorNormalizedLines;
-  const ddlParenthesisCleanedLines = dialect.id === 'watcom'
+  const ddlParenthesisCleanedLines = activeDialect.id === 'watcom'
     ? cleanupWatcomDdlParentheses(statementCleanedLines)
     : statementCleanedLines;
   let nextText = ddlParenthesisCleanedLines.join(split.eol);
@@ -243,7 +224,7 @@ export function formatSql(
     text: nextText,
     changed: nextText !== text,
     safety,
-    safetySummary: createFormattingSafetySummary(safety)
+    safetySummary: context.safetySummary
   };
 }
 export function formatSqlRangeText(
@@ -254,6 +235,14 @@ export function formatSqlRangeText(
   return formatSql(text, dialect, { ...options, ensureFinalNewline: false });
 }
 
+function createUnchangedFormatResult(text: string, context: FormattingContext): FormatSqlResult {
+  return {
+    text,
+    changed: false,
+    safety: context.safety,
+    safetySummary: context.safetySummary
+  };
+}
 
 function restoreOrderByIfExpressionSeparators(lines: readonly string[]): string[] {
   const normalizedLines = [...lines];
@@ -346,14 +335,6 @@ function splitSqlText(text: string): SplitTextResult {
   }
 
   return { eol, lines, hadFinalNewline };
-}
-
-function createIndentString(indentSize: number, insertSpaces: boolean): string {
-  if (!insertSpaces) {
-    return '\t';
-  }
-
-  return ' '.repeat(Math.max(1, indentSize));
 }
 
 function isBatchSeparatorLine(words: readonly string[], dialect: SqlDialect): boolean {
