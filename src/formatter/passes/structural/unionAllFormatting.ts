@@ -1,8 +1,10 @@
 import {
   cloneSqlLineScanState,
+  findNextSqlWord,
   scanSqlLineOutsideLiteralsAndComments,
   type SqlLineScanState,
   type SqlOutsideSegment,
+  type SqlWordMatch,
 } from '../../sqlLineScanner';
 
 interface ExpandedLineResult {
@@ -10,14 +12,7 @@ interface ExpandedLineResult {
   readonly nextState: SqlLineScanState;
 }
 
-interface KeywordMatch {
-  readonly start: number;
-  readonly end: number;
-  readonly text: string;
-}
-
-const SQL_WORD_START = /[A-Za-z_]/u;
-const SQL_WORD_PART = /[A-Za-z0-9_$#]/u;
+type KeywordMatch = SqlWordMatch;
 
 /**
  * Keeps UNION ALL as its own physical SQL line.
@@ -60,31 +55,25 @@ function findUnionAllMatches(
     let index = segment.start;
 
     while (index < segment.end) {
-      const unionStart = findWordStart(line, index, segment.end);
+      const unionWord = findNextSqlWord(line, index, segment.end);
 
-      if (unionStart < 0) {
+      if (!unionWord) {
         break;
       }
 
-      const unionWord = readWordAt(line, unionStart);
-
-      if (!unionWord || unionWord.end > segment.end) {
-        break;
-      }
-
-      if (unionWord.text.toLowerCase() !== 'union') {
+      if (unionWord.normalized !== 'union') {
         index = unionWord.end;
         continue;
       }
 
-      const allStart = findWordStart(line, unionWord.end, segment.end);
-      const allWord = allStart >= 0 ? readWordAt(line, allStart) : undefined;
+      const allWord = findNextSqlWord(line, unionWord.end, segment.end);
 
-      if (allWord && allWord.end <= segment.end && allWord.text.toLowerCase() === 'all') {
+      if (allWord?.normalized === 'all') {
         matches.push({
           start: unionWord.start,
           end: allWord.end,
           text: line.slice(unionWord.start, allWord.end),
+          normalized: line.slice(unionWord.start, allWord.end).toLowerCase(),
         });
         index = allWord.end;
         continue;
@@ -118,28 +107,4 @@ function pushTrimmed(lines: string[], value: string): void {
   if (trimmed.length > 0) {
     lines.push(trimmed);
   }
-}
-
-function findWordStart(line: string, start: number, end: number): number {
-  for (let index = start; index < end; index += 1) {
-    if (SQL_WORD_START.test(line[index])) {
-      return index;
-    }
-  }
-
-  return -1;
-}
-
-function readWordAt(line: string, start: number): KeywordMatch | undefined {
-  if (!SQL_WORD_START.test(line[start] ?? '')) {
-    return undefined;
-  }
-
-  let end = start + 1;
-
-  while (end < line.length && SQL_WORD_PART.test(line[end])) {
-    end += 1;
-  }
-
-  return { start, end, text: line.slice(start, end) };
 }

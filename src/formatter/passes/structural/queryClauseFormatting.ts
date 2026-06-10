@@ -2,9 +2,10 @@ import type { SqlDialect } from '../../../dialects';
 import {
   cloneSqlLineScanState,
   createSqlOutsideLookup,
+  collectSqlWordsWithParenthesisDepth,
   scanSqlLineOutsideLiteralsAndComments,
   type SqlLineScanState,
-  type SqlOutsideSegment,
+  type SqlWordDepthMatch,
 } from '../../sqlLineScanner';
 
 export interface QueryClauseFormattingState {
@@ -17,15 +18,8 @@ interface ExpandedLineResult {
   readonly nextState: QueryClauseFormattingState;
 }
 
-interface WordMatch {
-  readonly start: number;
-  readonly end: number;
-  readonly normalized: string;
-  readonly depth: number;
-}
+type WordMatch = SqlWordDepthMatch;
 
-const SQL_WORD_START = /[A-Za-z_]/u;
-const SQL_WORD_PART = /[A-Za-z0-9_$#]/u;
 const JOIN_PREFIXES = new Set(['cross', 'full', 'inner', 'left', 'right']);
 const LOGICAL_CLAUSE_STARTERS = new Set(['where', 'on', 'having', 'and', 'or']);
 
@@ -59,7 +53,11 @@ export function expandWatcomQueryClauseLine(
     return { lines: [line], nextState };
   }
 
-  const words = collectWords(line, scanResult.outsideSegments, initialState.parenthesisDepth);
+  const words = collectSqlWordsWithParenthesisDepth(
+    line,
+    scanResult.outsideSegments,
+    initialState.parenthesisDepth,
+  );
 
   if (words.length === 0) {
     return { lines: [line], nextState };
@@ -144,7 +142,7 @@ function splitLogicalContinuations(line: string): string[] {
     line,
     cloneSqlLineScanState({ inBlockComment: false }),
   );
-  const words = collectWords(line, scanResult.outsideSegments, 0);
+  const words = collectSqlWordsWithParenthesisDepth(line, scanResult.outsideSegments);
   const firstWord = words[0];
 
   if (!firstWord || firstWord.depth !== 0 || !LOGICAL_CLAUSE_STARTERS.has(firstWord.normalized)) {
@@ -195,56 +193,6 @@ function splitLineAtIndexes(line: string, indexes: readonly number[]): string[] 
   pushTrimmed(lines, line.slice(segmentStart));
 
   return lines.length > 0 ? lines : [line];
-}
-
-function collectWords(
-  line: string,
-  outsideSegments: readonly SqlOutsideSegment[],
-  initialDepth: number,
-): WordMatch[] {
-  const words: WordMatch[] = [];
-  let depth = initialDepth;
-
-  for (const segment of outsideSegments) {
-    let index = segment.start;
-
-    while (index < segment.end) {
-      const char = line[index];
-
-      if (char === '(') {
-        depth += 1;
-        index += 1;
-        continue;
-      }
-
-      if (char === ')') {
-        depth = Math.max(0, depth - 1);
-        index += 1;
-        continue;
-      }
-
-      if (!SQL_WORD_START.test(char)) {
-        index += 1;
-        continue;
-      }
-
-      const start = index;
-      index += 1;
-
-      while (index < segment.end && SQL_WORD_PART.test(line[index])) {
-        index += 1;
-      }
-
-      words.push({
-        start,
-        end: index,
-        normalized: line.slice(start, index).toLowerCase(),
-        depth,
-      });
-    }
-  }
-
-  return words;
 }
 
 function updateParenthesisDepth(

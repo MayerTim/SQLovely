@@ -1,8 +1,9 @@
 import type { SqlDialect } from '../../../dialects';
 import {
+  collectSqlWordsFromSegments,
   scanSqlLineOutsideLiteralsAndComments,
   type SqlLineScanState,
-  type SqlOutsideSegment,
+  type SqlWordMatch,
 } from '../../sqlLineScanner';
 
 export interface CaseExpressionFormattingState {
@@ -15,14 +16,8 @@ interface ExpandedLineResult {
   readonly nextState: CaseExpressionFormattingState;
 }
 
-interface WordMatch {
-  readonly start: number;
-  readonly end: number;
-  readonly normalized: string;
-}
+type WordMatch = SqlWordMatch;
 
-const SQL_WORD_START = /[A-Za-z_]/u;
-const SQL_WORD_PART = /[A-Za-z0-9_$#]/u;
 const CASE_SPLIT_WORDS = new Set(['when', 'then', 'else']);
 const BLOCK_END_FOLLOWERS = new Set(['for', 'if', 'loop', 'try', 'catch', 'while']);
 
@@ -46,7 +41,7 @@ export function expandWatcomCaseExpressionLine(
   initialState: CaseExpressionFormattingState,
 ): ExpandedLineResult {
   const scanResult = scanSqlLineOutsideLiteralsAndComments(line, initialState.scanState);
-  const words = collectWords(line, scanResult.outsideSegments);
+  const words = collectSqlWordsFromSegments(line, scanResult.outsideSegments);
   const nextState: CaseExpressionFormattingState = {
     scanState: scanResult.nextState,
     caseDepth: calculateNextCaseDepth(words, initialState.caseDepth),
@@ -181,34 +176,4 @@ function pushTrimmed(lines: string[], text: string): void {
   if (trimmed.length > 0) {
     lines.push(trimmed);
   }
-}
-
-function collectWords(line: string, outsideSegments: readonly SqlOutsideSegment[]): WordMatch[] {
-  const words: WordMatch[] = [];
-
-  for (const segment of outsideSegments) {
-    let index = segment.start;
-
-    while (index < segment.end) {
-      if (!SQL_WORD_START.test(line[index])) {
-        index += 1;
-        continue;
-      }
-
-      const start = index;
-      index += 1;
-
-      while (index < segment.end && SQL_WORD_PART.test(line[index])) {
-        index += 1;
-      }
-
-      words.push({
-        start,
-        end: index,
-        normalized: line.slice(start, index).toLowerCase(),
-      });
-    }
-  }
-
-  return words;
 }

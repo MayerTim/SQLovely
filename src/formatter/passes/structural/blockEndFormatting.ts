@@ -1,5 +1,6 @@
 import type { SqlDialect } from '../../../dialects';
 import {
+  collectSqlWordsFromSegments,
   scanSqlLineOutsideLiteralsAndComments,
   type SqlLineScanState,
   type SqlOutsideSegment,
@@ -21,14 +22,6 @@ interface EndPhraseToken {
   readonly hasSemicolon: boolean;
 }
 
-interface WordMatch {
-  readonly start: number;
-  readonly end: number;
-  readonly normalized: string;
-}
-
-const SQL_WORD_START = /[A-Za-z_]/u;
-const SQL_WORD_PART = /[A-Za-z0-9_$#]/u;
 const BLOCK_END_FOLLOWERS = new Set(['if', 'for', 'loop', 'while', 'try', 'catch']);
 
 export function createInitialBlockEndFormattingState(): BlockEndFormattingState {
@@ -89,7 +82,7 @@ function collectBlockEndPhrases(
   line: string,
   outsideSegments: readonly SqlOutsideSegment[],
 ): EndPhraseToken[] {
-  const words = collectWords(line, outsideSegments);
+  const words = collectSqlWordsFromSegments(line, outsideSegments);
   const phrases: EndPhraseToken[] = [];
   let index = 0;
 
@@ -170,34 +163,4 @@ function consumeOptionalSemicolon(
   }
 
   return { end: start, hasSemicolon: false };
-}
-
-function collectWords(line: string, outsideSegments: readonly SqlOutsideSegment[]): WordMatch[] {
-  const words: WordMatch[] = [];
-
-  for (const segment of outsideSegments) {
-    let index = segment.start;
-
-    while (index < segment.end) {
-      if (!SQL_WORD_START.test(line[index])) {
-        index += 1;
-        continue;
-      }
-
-      const start = index;
-      index += 1;
-
-      while (index < segment.end && SQL_WORD_PART.test(line[index])) {
-        index += 1;
-      }
-
-      words.push({
-        start,
-        end: index,
-        normalized: line.slice(start, index).toLowerCase(),
-      });
-    }
-  }
-
-  return words;
 }
