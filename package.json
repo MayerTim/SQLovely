@@ -63,12 +63,14 @@
     "test:project": "npm run compile && node ./test/runProjectValidationTests.js",
     "test:diagnostics": "npm run compile && node ./test/runDiagnosticsTests.js",
     "validate": "npm run check && npm test",
-    "package:vsix": "npm run validate && node ./scripts/packageVsix.js"
+    "package:vsix": "npm run validate && node ./scripts/packageVsix.js",
+    "test:extension": "npm run compile && node ./test/extension/runExtensionTests.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^16.18.0",
     "@types/vscode": "1.75.0",
+    "@vscode/test-electron": "^3.0.0",
     "@vscode/vsce": "^3.9.2",
     "eslint": "^10.4.1",
     "prettier": "^3.8.4",
