@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added Watcom `EXCEPTION` / `WHEN ... THEN` handler formatting with stable indentation while preserving `ON EXCEPTION RESUME` and exception declarations.
 - Added syntax highlighting for quoted Watcom built-in function calls such as `"isnull"(...)`, `"string"(...)`, `"date"(...)`, `"substr"(...)` and `"xmlelement"(...)`.
 - Added Watcom `CASE WHEN THEN ELSE END` expression formatting with stable indentation and nested CASE support.
 - Added Watcom cursor `FOR ... CURSOR FOR ... DO ... END FOR` formatting with stable query/body indentation.

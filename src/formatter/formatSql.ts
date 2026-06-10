@@ -6,6 +6,7 @@ import { expandUnionAllLine } from './unionAllFormatting';
 import { createInitialCursorForFormattingState, expandWatcomCursorForLine } from './cursorForFormatting';
 import { createInitialQueryClauseFormattingState, expandWatcomQueryClauseLine } from './queryClauseFormatting';
 import { createInitialCaseExpressionFormattingState, expandWatcomCaseExpressionLine } from './caseExpressionFormatting';
+import { createInitialExceptionFormattingState, expandWatcomExceptionLine } from './exceptionFormatting';
 import {
   analyzeParenthesesForIndent,
   createInitialParenthesisFormattingState,
@@ -24,7 +25,12 @@ interface SplitTextResult {
   readonly hadFinalNewline: boolean;
 }
 
-const DECREASE_BEFORE_LINE = new Set(['end', 'endif', 'else', 'elseif', 'do']);
+interface ExceptionIndentContext {
+  baseIndentLevel: number;
+  handlerBodyIndentLevel: number;
+}
+
+const DECREASE_BEFORE_LINE = new Set(['end', 'endif', 'else', 'elseif', 'do', 'exception']);
 
 export function formatSql(
   text: string,
@@ -43,11 +49,13 @@ export function formatSql(
   let unionAllScanState = createInitialSqlLineScanState();
   let cursorForScanState = createInitialCursorForFormattingState();
   let queryClauseFormattingState = createInitialQueryClauseFormattingState();
+  let exceptionFormattingState = createInitialExceptionFormattingState();
   let caseExpressionFormattingState = createInitialCaseExpressionFormattingState();
   let parenthesisExpansionState = createInitialParenthesisFormattingState();
   let parenthesisIndentLevel = 0;
   let caseExpressionIndentLevel = 0;
   let parenthesisIndentScanState = createInitialSqlLineScanState();
+  const exceptionIndentContexts: ExceptionIndentContext[] = [];
 
   for (const sourceLine of split.lines) {
     const expandedLineResult = expandWatcomInlineIfLine(sourceLine, dialect, inlineIfScanState);
@@ -66,94 +74,129 @@ export function formatSql(
           queryClauseFormattingState = queryClauseResult.nextState;
 
           for (const queryClauseExpandedLine of queryClauseResult.lines) {
-            const caseExpressionResult = expandWatcomCaseExpressionLine(
+            const exceptionResult = expandWatcomExceptionLine(
               queryClauseExpandedLine,
               dialect,
-              caseExpressionFormattingState
+              exceptionFormattingState
             );
-            caseExpressionFormattingState = caseExpressionResult.nextState;
+            exceptionFormattingState = exceptionResult.nextState;
 
-            for (const caseExpressionExpandedLine of caseExpressionResult.lines) {
-              const parenthesisResult = dialect.id === 'watcom'
-                ? expandParenthesesInLine(caseExpressionExpandedLine, parenthesisExpansionState)
-                : { lines: [caseExpressionExpandedLine], nextState: parenthesisExpansionState };
-              parenthesisExpansionState = parenthesisResult.nextState;
-
-              for (const originalLine of parenthesisResult.lines) {
-              const withoutTrailingWhitespace = originalLine.replace(/[ \t]+$/u, '');
-              const trimmedLine = withoutTrailingWhitespace.trim();
-
-              const keywordResult = applyKeywordCaseToLine(
-                withoutTrailingWhitespace,
+            for (const exceptionExpandedLine of exceptionResult.lines) {
+              const caseExpressionResult = expandWatcomCaseExpressionLine(
+                exceptionExpandedLine,
                 dialect,
-                resolvedOptions.keywordCase,
-                keywordScanState
+                caseExpressionFormattingState
               );
-              keywordScanState = keywordResult.nextState;
+              caseExpressionFormattingState = caseExpressionResult.nextState;
 
-              const wordResult = collectSqlWordsOutsideLiteralsAndComments(trimmedLine, wordScanState);
-              wordScanState = wordResult.nextState;
+              for (const caseExpressionExpandedLine of caseExpressionResult.lines) {
+                const parenthesisResult = dialect.id === 'watcom'
+                  ? expandParenthesesInLine(caseExpressionExpandedLine, parenthesisExpansionState)
+                  : { lines: [caseExpressionExpandedLine], nextState: parenthesisExpansionState };
+                parenthesisExpansionState = parenthesisResult.nextState;
 
-              if (trimmedLine.length === 0) {
-                if (blankLineCount < resolvedOptions.maxConsecutiveBlankLines) {
-                  formattedLines.push('');
+                for (const originalLine of parenthesisResult.lines) {
+                  const withoutTrailingWhitespace = originalLine.replace(/[ \t]+$/u, '');
+                  const trimmedLine = withoutTrailingWhitespace.trim();
+
+                  const keywordResult = applyKeywordCaseToLine(
+                    withoutTrailingWhitespace,
+                    dialect,
+                    resolvedOptions.keywordCase,
+                    keywordScanState
+                  );
+                  keywordScanState = keywordResult.nextState;
+
+                  const wordResult = collectSqlWordsOutsideLiteralsAndComments(trimmedLine, wordScanState);
+                  wordScanState = wordResult.nextState;
+
+                  if (trimmedLine.length === 0) {
+                    if (blankLineCount < resolvedOptions.maxConsecutiveBlankLines) {
+                      formattedLines.push('');
+                    }
+
+                    blankLineCount += 1;
+                    continue;
+                  }
+
+                  blankLineCount = 0;
+
+                  const lineWords = [...wordResult.words];
+                  const firstWord = lineWords[0];
+                  const isBatchSeparator = isBatchSeparatorLine(lineWords, dialect);
+                  const isCaseEndLine = isCaseExpressionEndLine(lineWords, caseExpressionIndentLevel);
+                  const isCaseElseLine = caseExpressionIndentLevel > 0 && firstWord === 'else';
+                  const isCaseThenLine = caseExpressionIndentLevel > 0 && firstWord === 'then';
+                  const isExceptionLine = firstWord === 'exception';
+                  const activeExceptionContext = exceptionIndentContexts[exceptionIndentContexts.length - 1];
+                  const isExceptionWhenLine = activeExceptionContext !== undefined && firstWord === 'when' && containsWord(lineWords, 'then');
+                  const closesExceptionSection = isFinalExceptionEndLine(lineWords, indentLevel, activeExceptionContext);
+                  const shouldTemporarilyReincrease = (firstWord === 'else' || firstWord === 'elseif') && !isCaseElseLine;
+                  const continuationIndentLevel = isLogicalContinuationLine(trimmedLine, lineWords) ? 1 : 0;
+                  const parenthesisIndentAnalysis = analyzeParenthesesForIndent(trimmedLine, parenthesisIndentScanState);
+                  const effectiveParenthesisIndentLevel = Math.max(
+                    0,
+                    parenthesisIndentLevel - parenthesisIndentAnalysis.leadingClosingParentheses
+                  );
+
+                  if (isBatchSeparator) {
+                    indentLevel = 0;
+                    parenthesisIndentLevel = 0;
+                    caseExpressionIndentLevel = 0;
+                    exceptionIndentContexts.length = 0;
+                  } else if (isExceptionWhenLine) {
+                    indentLevel = closePreviousExceptionHandlerBody(indentLevel, activeExceptionContext);
+                  } else if (closesExceptionSection && activeExceptionContext) {
+                    indentLevel = activeExceptionContext.baseIndentLevel;
+                  } else if (firstWord && DECREASE_BEFORE_LINE.has(firstWord) && !isCaseEndLine && !isCaseElseLine) {
+                    indentLevel = Math.max(0, indentLevel - 1);
+                  }
+
+                  const effectiveCaseExpressionIndentLevel = Math.max(
+                    0,
+                    caseExpressionIndentLevel - (isCaseEndLine ? 1 : 0)
+                  );
+                  const formattedContent = keywordResult.line.trim();
+                  formattedLines.push(
+                    `${indentString.repeat(indentLevel + effectiveParenthesisIndentLevel + effectiveCaseExpressionIndentLevel + continuationIndentLevel)}${formattedContent}`
+                  );
+
+                  parenthesisIndentLevel = Math.max(0, parenthesisIndentLevel + parenthesisIndentAnalysis.depthDelta);
+                  parenthesisIndentScanState = parenthesisIndentAnalysis.nextScanState;
+                  caseExpressionIndentLevel = Math.max(
+                    0,
+                    effectiveCaseExpressionIndentLevel + getCaseExpressionIndentIncreaseAfterLine(lineWords)
+                  );
+
+                  if (isBatchSeparator) {
+                    indentLevel = 0;
+                    parenthesisIndentLevel = 0;
+                    caseExpressionIndentLevel = 0;
+                    exceptionIndentContexts.length = 0;
+                    continue;
+                  }
+
+                  if (closesExceptionSection) {
+                    exceptionIndentContexts.pop();
+                    continue;
+                  }
+
+                  if (isExceptionLine) {
+                    exceptionIndentContexts.push({ baseIndentLevel: indentLevel, handlerBodyIndentLevel: 0 });
+                    indentLevel += 1;
+                    continue;
+                  }
+
+                  indentLevel = Math.max(0, indentLevel + (isCaseThenLine ? 0 : getIndentIncreaseAfterLine(lineWords)));
+
+                  if (isExceptionWhenLine && activeExceptionContext) {
+                    activeExceptionContext.handlerBodyIndentLevel = 1;
+                  }
+
+                  if (shouldTemporarilyReincrease) {
+                    indentLevel += 1;
+                  }
                 }
-
-                blankLineCount += 1;
-                continue;
-              }
-
-              blankLineCount = 0;
-
-              const lineWords = [...wordResult.words];
-              const firstWord = lineWords[0];
-              const isBatchSeparator = isBatchSeparatorLine(lineWords, dialect);
-              const isCaseEndLine = isCaseExpressionEndLine(lineWords, caseExpressionIndentLevel);
-              const isCaseElseLine = caseExpressionIndentLevel > 0 && firstWord === 'else';
-              const isCaseThenLine = caseExpressionIndentLevel > 0 && firstWord === 'then';
-              const shouldTemporarilyReincrease = (firstWord === 'else' || firstWord === 'elseif') && !isCaseElseLine;
-              const continuationIndentLevel = isLogicalContinuationLine(trimmedLine, lineWords) ? 1 : 0;
-              const parenthesisIndentAnalysis = analyzeParenthesesForIndent(trimmedLine, parenthesisIndentScanState);
-              const effectiveParenthesisIndentLevel = Math.max(
-                0,
-                parenthesisIndentLevel - parenthesisIndentAnalysis.leadingClosingParentheses
-              );
-
-              if (isBatchSeparator) {
-                indentLevel = 0;
-                parenthesisIndentLevel = 0;
-                caseExpressionIndentLevel = 0;
-              } else if (firstWord && DECREASE_BEFORE_LINE.has(firstWord) && !isCaseEndLine && !isCaseElseLine) {
-                indentLevel = Math.max(0, indentLevel - 1);
-              }
-
-              const effectiveCaseExpressionIndentLevel = Math.max(
-                0,
-                caseExpressionIndentLevel - (isCaseEndLine ? 1 : 0)
-              );
-              const formattedContent = keywordResult.line.trim();
-              formattedLines.push(
-                `${indentString.repeat(indentLevel + effectiveParenthesisIndentLevel + effectiveCaseExpressionIndentLevel + continuationIndentLevel)}${formattedContent}`
-              );
-
-              parenthesisIndentLevel = Math.max(0, parenthesisIndentLevel + parenthesisIndentAnalysis.depthDelta);
-              parenthesisIndentScanState = parenthesisIndentAnalysis.nextScanState;
-              caseExpressionIndentLevel = Math.max(
-                0,
-                effectiveCaseExpressionIndentLevel + getCaseExpressionIndentIncreaseAfterLine(lineWords)
-              );
-
-              if (isBatchSeparator) {
-                indentLevel = 0;
-                parenthesisIndentLevel = 0;
-                caseExpressionIndentLevel = 0;
-                continue;
-              }
-
-              indentLevel = Math.max(0, indentLevel + (isCaseThenLine ? 0 : getIndentIncreaseAfterLine(lineWords)));
-
-              if (shouldTemporarilyReincrease) {
-                indentLevel += 1;
               }
             }
           }
@@ -161,7 +204,6 @@ export function formatSql(
       }
     }
   }
-}
 
   let nextText = formattedLines.join(split.eol);
 
@@ -231,6 +273,9 @@ function getIndentIncreaseAfterLine(words: readonly string[]): number {
     increase += 1;
   }
 
+  if (firstWord === 'when' && containsWord(words, 'then')) {
+    increase += 1;
+  }
 
   if (firstWord === 'while' && containsWord(words, 'loop') && !containsWord(words, 'end')) {
     increase += 1;
@@ -247,6 +292,32 @@ function getIndentIncreaseAfterLine(words: readonly string[]): number {
   return increase;
 }
 
+
+function closePreviousExceptionHandlerBody(
+  indentLevel: number,
+  context: ExceptionIndentContext
+): number {
+  if (context.handlerBodyIndentLevel <= 0) {
+    return indentLevel;
+  }
+
+  const handlerIndentLevel = context.baseIndentLevel + 1;
+  const closedIndentLevel = Math.max(handlerIndentLevel, indentLevel - context.handlerBodyIndentLevel);
+  context.handlerBodyIndentLevel = 0;
+  return closedIndentLevel;
+}
+
+function isFinalExceptionEndLine(
+  words: readonly string[],
+  indentLevel: number,
+  context: ExceptionIndentContext | undefined
+): boolean {
+  if (!context || words[0] !== 'end' || isBlockEndPhrase(words)) {
+    return false;
+  }
+
+  return indentLevel <= context.baseIndentLevel + 1 + context.handlerBodyIndentLevel;
+}
 
 function isCaseExpressionEndLine(words: readonly string[], caseExpressionIndentLevel: number): boolean {
   if (caseExpressionIndentLevel <= 0 || words[0] !== 'end') {

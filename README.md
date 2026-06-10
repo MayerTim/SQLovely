@@ -61,11 +61,12 @@ SQLovely formats conservatively. It keeps SQL structure intact and focuses on re
 - top-level Watcom query-clause line breaks for `SELECT`, `FROM`, `WHERE`, `JOIN`, `ON`, `GROUP BY`, `HAVING` and `ORDER BY`
 - Watcom cursor `FOR ... CURSOR FOR ... DO ... END FOR` indentation
 - Watcom `CASE WHEN THEN ELSE END` expression line breaks and indentation
+- Watcom `EXCEPTION` / `WHEN ... THEN` handler line breaks and indentation
 - trailing whitespace removal
 - limiting consecutive blank lines
 - final newline handling
 
-Apart from normalizing compact Watcom `IF ... THEN ... END IF` control-flow statements, preserving expression-style `IF ... THEN ... ELSE ... ENDIF` constructs, keeping `UNION ALL` on its own line, splitting Watcom parenthesized argument/parameter lists across indented lines, placing top-level Watcom query clauses on stable physical lines, indenting cursor `FOR ... DO` loops and formatting Watcom `CASE` expressions, the formatter does not perform schema-aware rewrites or migrate SQL between dialects.
+Apart from normalizing compact Watcom `IF ... THEN ... END IF` control-flow statements, preserving expression-style `IF ... THEN ... ELSE ... ENDIF` constructs, keeping `UNION ALL` on its own line, splitting Watcom parenthesized argument/parameter lists across indented lines, placing top-level Watcom query clauses on stable physical lines, indenting cursor `FOR ... DO` loops, formatting Watcom `CASE` expressions and aligning Watcom exception handlers, the formatter does not perform schema-aware rewrites or migrate SQL between dialects.
 
 ### Format one file
 
