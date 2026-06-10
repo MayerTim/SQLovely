@@ -127,6 +127,7 @@ runTest('VSIX packaging scripts are available and keep package output isolated',
   assert.ok(exists('test/extension/runExtensionTests.js'));
   assert.ok(exists('test/extension/suite/index.js'));
   assert.ok(exists('test/extension/suite/formattingSmoke.test.js'));
+  assert.ok(exists('test/extension/suite/diagnosticsSmoke.test.js'));
   assert.ok(vscodeIgnore.includes('scripts/**'));
   assert.ok(vscodeIgnore.includes('out/**'));
   assert.ok(vscodeIgnore.includes('PACKAGING.md'));
