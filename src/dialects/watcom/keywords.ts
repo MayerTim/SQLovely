@@ -200,6 +200,7 @@ export const watcomKeywords = new Set<string>([
   'order',
   'order by',
   'others',
+  'outer',
   'outer apply',
   'output',
   'over',

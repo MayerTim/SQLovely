@@ -63,6 +63,7 @@ The grammar highlights useful lexical regions in `.sql` files.
 | Watcom control flow | yes | basic indentation and compact inline IF normalization | not object-relevant |
 | Watcom parentheses | yes | multiline parameters and nested calls outside strings/comments | not object-relevant |
 | `UNION ALL` queries | yes | split before and after `UNION ALL` outside strings/comments | not object-relevant |
+| Watcom query clauses | yes | split top-level `SELECT`/`FROM`/`WHERE`/`JOIN`/`ON`/`GROUP BY`/`HAVING`/`ORDER BY` clauses and logical predicates outside strings/comments/nested parentheses | not object-relevant |
 | Watcom handlers/exceptions | yes | keyword casing | not object-relevant |
 | Transactions and savepoints | yes | keyword casing | not object-relevant |
 | MSSQL batches with `GO` | yes | root-level keyword handling | not object-relevant |
@@ -79,7 +80,7 @@ Metadata updates normalize supported date formats to `YYYY-MM-DD`, preserve and 
 
 ## Design boundaries
 
-SQLovely normalizes compact Watcom `IF ... THEN ... END IF` control-flow statements into block form before indentation is applied so closed inline IF statements do not leak indentation into following statements or objects. Expression-style Watcom `IF ... THEN ... ELSE ... ENDIF` constructs are preserved as expressions instead of being rewritten as procedural blocks. The formatter also keeps `UNION ALL` on its own physical line and splits non-empty Watcom parentheses outside strings and comments onto separate indented lines for routine parameters and nested calls, while keeping empty calls such as `proc()` and simple type lengths such as `varchar(14)` inline.
+SQLovely normalizes compact Watcom `IF ... THEN ... END IF` control-flow statements into block form before indentation is applied so closed inline IF statements do not leak indentation into following statements or objects. Expression-style Watcom `IF ... THEN ... ELSE ... ENDIF` constructs are preserved as expressions instead of being rewritten as procedural blocks. The formatter also keeps `UNION ALL` on its own physical line, splits non-empty Watcom parentheses outside strings and comments onto separate indented lines for routine parameters and nested calls, and places top-level Watcom query clauses on stable physical lines. Query-clause splitting tracks quoted identifiers, strings, comments and parenthesis depth so nested subqueries are not treated as outer clauses, while empty calls such as `proc()` and simple type lengths such as `varchar(14)` stay inline.
 
 SQLovely currently does not provide:
 
