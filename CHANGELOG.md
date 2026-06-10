@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.8 - 2026-06-10
+
 - Streamlined CI validation to run the combined validation workflow once before packaging the VSIX.
 - Added explicit Prettier formatting, ESLint linting and TypeScript typecheck scripts to the project validation workflow.
 - Isolated loose legacy metadata-header aliases, candidate parsing and migration logic into focused internal modules.

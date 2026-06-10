@@ -2,7 +2,7 @@
   "name": "sqlovely",
   "displayName": "SQLovely",
   "description": "SQL language support for .sql files, with Watcom SQL as the default dialect and a conservative formatter.",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "publisher": "MayerTim",
   "license": "MIT",
   "repository": {
