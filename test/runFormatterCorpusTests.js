@@ -65,6 +65,10 @@ function getRelativeFixturePath(fixturePath) {
   return path.relative(process.cwd(), fixturePath);
 }
 
+function toCrLf(text) {
+  return text.replace(/\r\n|\r|\n/gu, '\n').replace(/\n/gu, '\r\n');
+}
+
 function findCorpusFixturePairingIssues(directory) {
   return listSqlFixtureFiles(directory).flatMap((fixturePath) => {
     const relativeFixturePath = getRelativeFixturePath(fixturePath);
@@ -120,3 +124,22 @@ for (const inputPath of inputFixtures) {
     );
   });
 }
+
+runTest('formatter corpus preserves CRLF line endings', () => {
+  for (const inputPath of inputFixtures) {
+    const expectedPath = getExpectedFixturePath(inputPath);
+    const fixtureName = getFixtureName(inputPath);
+    const input = toCrLf(fs.readFileSync(inputPath, 'utf8'));
+    const expected = toCrLf(fs.readFileSync(expectedPath, 'utf8'));
+    const dialect = getDialectForFixture(inputPath);
+    const result = formatSql(input, dialect, defaultOptions);
+    const idempotentResult = formatSql(expected, dialect, defaultOptions);
+
+    assert.equal(result.text, expected, `${fixtureName} did not preserve CRLF output.`);
+    assert.equal(
+      idempotentResult.text,
+      expected,
+      `${fixtureName} expected CRLF output is not idempotent.`,
+    );
+  }
+});
