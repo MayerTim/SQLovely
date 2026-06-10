@@ -3,6 +3,7 @@ import { collectSqlWordsOutsideLiteralsAndComments, applyKeywordCaseToLine } fro
 import { DEFAULT_FORMAT_SQL_OPTIONS, type FormatSqlOptions } from './options';
 import { expandWatcomInlineIfLine } from './inlineIfFormatting';
 import { expandUnionAllLine } from './unionAllFormatting';
+import { createInitialCursorForFormattingState, expandWatcomCursorForLine } from './cursorForFormatting';
 import { createInitialQueryClauseFormattingState, expandWatcomQueryClauseLine } from './queryClauseFormatting';
 import {
   analyzeParenthesesForIndent,
@@ -22,7 +23,7 @@ interface SplitTextResult {
   readonly hadFinalNewline: boolean;
 }
 
-const DECREASE_BEFORE_LINE = new Set(['end', 'endif', 'else', 'elseif']);
+const DECREASE_BEFORE_LINE = new Set(['end', 'endif', 'else', 'elseif', 'do']);
 
 export function formatSql(
   text: string,
@@ -39,6 +40,7 @@ export function formatSql(
   let wordScanState = createInitialSqlLineScanState();
   let inlineIfScanState = createInitialSqlLineScanState();
   let unionAllScanState = createInitialSqlLineScanState();
+  let cursorForScanState = createInitialCursorForFormattingState();
   let queryClauseFormattingState = createInitialQueryClauseFormattingState();
   let parenthesisExpansionState = createInitialParenthesisFormattingState();
   let parenthesisIndentLevel = 0;
@@ -53,77 +55,82 @@ export function formatSql(
       unionAllScanState = unionAllResult.nextState;
 
       for (const unionExpandedLine of unionAllResult.lines) {
-        const queryClauseResult = expandWatcomQueryClauseLine(unionExpandedLine, dialect, queryClauseFormattingState);
-        queryClauseFormattingState = queryClauseResult.nextState;
+        const cursorForResult = expandWatcomCursorForLine(unionExpandedLine, dialect, cursorForScanState);
+        cursorForScanState = cursorForResult.nextState;
 
-        for (const queryClauseExpandedLine of queryClauseResult.lines) {
-          const parenthesisResult = dialect.id === 'watcom'
-            ? expandParenthesesInLine(queryClauseExpandedLine, parenthesisExpansionState)
-            : { lines: [queryClauseExpandedLine], nextState: parenthesisExpansionState };
-          parenthesisExpansionState = parenthesisResult.nextState;
+        for (const cursorForExpandedLine of cursorForResult.lines) {
+          const queryClauseResult = expandWatcomQueryClauseLine(cursorForExpandedLine, dialect, queryClauseFormattingState);
+          queryClauseFormattingState = queryClauseResult.nextState;
 
-          for (const originalLine of parenthesisResult.lines) {
-            const withoutTrailingWhitespace = originalLine.replace(/[ 	]+$/u, '');
-            const trimmedLine = withoutTrailingWhitespace.trim();
+          for (const queryClauseExpandedLine of queryClauseResult.lines) {
+            const parenthesisResult = dialect.id === 'watcom'
+              ? expandParenthesesInLine(queryClauseExpandedLine, parenthesisExpansionState)
+              : { lines: [queryClauseExpandedLine], nextState: parenthesisExpansionState };
+            parenthesisExpansionState = parenthesisResult.nextState;
 
-            const keywordResult = applyKeywordCaseToLine(
-              withoutTrailingWhitespace,
-              dialect,
-              resolvedOptions.keywordCase,
-              keywordScanState
-            );
-            keywordScanState = keywordResult.nextState;
+            for (const originalLine of parenthesisResult.lines) {
+              const withoutTrailingWhitespace = originalLine.replace(/[ \t]+$/u, '');
+              const trimmedLine = withoutTrailingWhitespace.trim();
 
-            const wordResult = collectSqlWordsOutsideLiteralsAndComments(trimmedLine, wordScanState);
-            wordScanState = wordResult.nextState;
+              const keywordResult = applyKeywordCaseToLine(
+                withoutTrailingWhitespace,
+                dialect,
+                resolvedOptions.keywordCase,
+                keywordScanState
+              );
+              keywordScanState = keywordResult.nextState;
 
-            if (trimmedLine.length === 0) {
-              if (blankLineCount < resolvedOptions.maxConsecutiveBlankLines) {
-                formattedLines.push('');
+              const wordResult = collectSqlWordsOutsideLiteralsAndComments(trimmedLine, wordScanState);
+              wordScanState = wordResult.nextState;
+
+              if (trimmedLine.length === 0) {
+                if (blankLineCount < resolvedOptions.maxConsecutiveBlankLines) {
+                  formattedLines.push('');
+                }
+
+                blankLineCount += 1;
+                continue;
               }
 
-              blankLineCount += 1;
-              continue;
-            }
+              blankLineCount = 0;
 
-            blankLineCount = 0;
+              const lineWords = [...wordResult.words];
+              const firstWord = lineWords[0];
+              const isBatchSeparator = isBatchSeparatorLine(lineWords, dialect);
+              const shouldTemporarilyReincrease = firstWord === 'else' || firstWord === 'elseif';
+              const continuationIndentLevel = isLogicalContinuationLine(trimmedLine, lineWords) ? 1 : 0;
+              const parenthesisIndentAnalysis = analyzeParenthesesForIndent(trimmedLine, parenthesisIndentScanState);
+              const effectiveParenthesisIndentLevel = Math.max(
+                0,
+                parenthesisIndentLevel - parenthesisIndentAnalysis.leadingClosingParentheses
+              );
 
-            const lineWords = [...wordResult.words];
-            const firstWord = lineWords[0];
-            const isBatchSeparator = isBatchSeparatorLine(lineWords, dialect);
-            const shouldTemporarilyReincrease = firstWord === 'else' || firstWord === 'elseif';
-            const continuationIndentLevel = isLogicalContinuationLine(trimmedLine, lineWords) ? 1 : 0;
-            const parenthesisIndentAnalysis = analyzeParenthesesForIndent(trimmedLine, parenthesisIndentScanState);
-            const effectiveParenthesisIndentLevel = Math.max(
-              0,
-              parenthesisIndentLevel - parenthesisIndentAnalysis.leadingClosingParentheses
-            );
+              if (isBatchSeparator) {
+                indentLevel = 0;
+                parenthesisIndentLevel = 0;
+              } else if (firstWord && DECREASE_BEFORE_LINE.has(firstWord)) {
+                indentLevel = Math.max(0, indentLevel - 1);
+              }
 
-            if (isBatchSeparator) {
-              indentLevel = 0;
-              parenthesisIndentLevel = 0;
-            } else if (firstWord && DECREASE_BEFORE_LINE.has(firstWord)) {
-              indentLevel = Math.max(0, indentLevel - 1);
-            }
+              const formattedContent = keywordResult.line.trim();
+              formattedLines.push(
+                `${indentString.repeat(indentLevel + effectiveParenthesisIndentLevel + continuationIndentLevel)}${formattedContent}`
+              );
 
-            const formattedContent = keywordResult.line.trim();
-            formattedLines.push(
-              `${indentString.repeat(indentLevel + effectiveParenthesisIndentLevel + continuationIndentLevel)}${formattedContent}`
-            );
+              parenthesisIndentLevel = Math.max(0, parenthesisIndentLevel + parenthesisIndentAnalysis.depthDelta);
+              parenthesisIndentScanState = parenthesisIndentAnalysis.nextScanState;
 
-            parenthesisIndentLevel = Math.max(0, parenthesisIndentLevel + parenthesisIndentAnalysis.depthDelta);
-            parenthesisIndentScanState = parenthesisIndentAnalysis.nextScanState;
+              if (isBatchSeparator) {
+                indentLevel = 0;
+                parenthesisIndentLevel = 0;
+                continue;
+              }
 
-            if (isBatchSeparator) {
-              indentLevel = 0;
-              parenthesisIndentLevel = 0;
-              continue;
-            }
+              indentLevel = Math.max(0, indentLevel + getIndentIncreaseAfterLine(lineWords));
 
-            indentLevel = Math.max(0, indentLevel + getIndentIncreaseAfterLine(lineWords));
-
-            if (shouldTemporarilyReincrease) {
-              indentLevel += 1;
+              if (shouldTemporarilyReincrease) {
+                indentLevel += 1;
+              }
             }
           }
         }
@@ -207,6 +214,14 @@ function getIndentIncreaseAfterLine(words: readonly string[]): number {
     increase += 1;
   }
 
+  if (firstWord === 'for' && (containsWord(words, 'do') || containsCursorForPhrase(words))) {
+    increase += 1;
+  }
+
+  if (firstWord === 'do') {
+    increase += 1;
+  }
+
   return increase;
 }
 
@@ -217,6 +232,10 @@ function isLogicalContinuationLine(line: string, words: readonly string[]): bool
   }
 
   return firstWord === 'on' && words[1] !== 'exception' && line.trim().length > firstWord.length;
+}
+
+function containsCursorForPhrase(words: readonly string[]): boolean {
+  return words.some((word, index) => word === 'cursor' && words[index + 1] === 'for');
 }
 
 function containsEndIfPhrase(words: readonly string[]): boolean {

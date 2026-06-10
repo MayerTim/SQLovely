@@ -385,7 +385,7 @@
         },
         {
           "name": "keyword.other.sql.sqlovely",
-          "match": "(?i)\\b(?:set\\s+temporary\\s+option|with\\s+check\\s+option|case\\s+insensitive|case\\s+sensitive|at\\s+isolation|at\\s+location|nulls\\s+first|nulls\\s+last|set\\s+option|passthrough|synchronize|checkpoint|deallocate|disconnect|excluding|including|no\\s+wait|recompile|allocate|describe|connect|explain|prepare|setuser|option|debug|start|dbcc|desc|plan|stop|wait|asc|use)\\b"
+          "match": "(?i)\\b(?:set\\s+temporary\\s+option|with\\s+check\\s+option|case\\s+insensitive|case\\s+sensitive|at\\s+isolation|at\\s+location|nulls\\s+first|nulls\\s+last|set\\s+option|passthrough|synchronize|checkpoint|deallocate|disconnect|excluding|including|no\\s+wait|recompile|allocate|describe|connect|dynamic|explain|prepare|setuser|option|scroll|debug|start|dbcc|desc|plan|stop|wait|asc|use)\\b"
         },
         {
           "name": "keyword.other.batch-separator.sql.sqlovely",
