@@ -196,6 +196,7 @@ runTest('project package hygiene rules exclude local-only files from distributab
   assert.ok(vscodeIgnore.includes('out/**'));
   assert.ok(vscodeIgnore.includes('*.vsix'));
   assert.ok(vscodeIgnore.includes('*.zip'));
+  assert.ok(vscodeIgnore.includes('sqlovely_private_companion_pack*/**'));
   assert.ok(!vscodeIgnore.split('\n').includes('dist/**'));
 
   assert.ok(gitIgnore.includes('node_modules/'));
@@ -203,6 +204,7 @@ runTest('project package hygiene rules exclude local-only files from distributab
   assert.ok(gitIgnore.includes('out/'));
   assert.ok(gitIgnore.includes('*.vsix'));
   assert.ok(gitIgnore.includes('*.zip'));
+  assert.ok(gitIgnore.includes('sqlovely_private_companion_pack*/'));
 });
 
 runTest('SQLovely grammar exposes the expected repository sections', () => {
